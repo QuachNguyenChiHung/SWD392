@@ -30,7 +30,7 @@ class UserService {
         const token = jwt.sign(user, process.env.SECRET_KEY as string, { expiresIn: '1h' });
         return token;
     }
-    async verifyToken(token: string) {
+    verifyToken(token: string) {
         try {
             // Bearer 'token' or just 'token'
             const split = (token.startsWith('Bearer ') ? token.split(' ')[1] : token) as string;

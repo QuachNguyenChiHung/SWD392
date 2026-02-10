@@ -3,10 +3,8 @@ import UserService from "../services/UserService.ts";
 import zod from "zod";
 import { tr } from "zod/locales";
 import { loginSchema, registerSchema } from "../dto/AuthDTO.ts";
-export const UserLoginRequest = zod.object({
-    email: zod.string().email(),
-    password: zod.string().min(6),
-});
+import type { UserGetFromTokenDTO } from "../dto/UserDTO.ts";
+
 class UserController {
     async getAllUsers(req: Request, res: Response, next: NextFunction) {
         try {
@@ -101,7 +99,7 @@ class UserController {
             // Authorization: Bearer <token>
             //Signed cookies
             const token = req.signedCookies.Authorization;
-            const verified = await UserService.verifyToken(token as string);
+            const verified =  UserService.verifyToken(token as string);
             if (!verified) {
                 return res.status(401).json({ message: "Invalid or expired token" });
             }

@@ -1,15 +1,16 @@
 import { Router } from "express";
 import UserController from "../controller/UserController.ts";
+import verifyRole from "../ultis/verifyRole.ts";
 const route = Router();
 
-route.get('/users', UserController.getAllUsers);
-route.get('/users/:id', UserController.getUserById);
-route.post('/users', UserController.createUser);
-route.patch('/users/:id', UserController.updateUser);
-route.delete('/users/:id', UserController.deleteUser);
+route.get('/users', verifyRole.verifyAdmin, UserController.getAllUsers);
+route.get('/users/:id', verifyRole.verifyAdmin, UserController.getUserById);
+route.post('/users', verifyRole.verifyAdmin, UserController.createUser);
+route.patch('/users/:id', verifyRole.verifyAdmin, UserController.updateUser);
+route.delete('/users/:id', verifyRole.verifyAdmin, UserController.deleteUser);
 
 // User status management
-route.patch('/users/:id/status', UserController.toggleStatus);
+route.patch('/users/:id/status', verifyRole.verifyAdmin, UserController.toggleStatus);
 
 // Authentication routes
 route.post('/register', UserController.registerUser);
@@ -18,7 +19,7 @@ route.get('/me', UserController.getUserInfo);
 // Logout route
 route.post('/logout', UserController.removeToken);
 
-// Search functionality
-route.get('/users/search', UserController.findByKeyWord);
+// Search users by keyword functionality
+route.get('/users/search', verifyRole.verifyAdmin, UserController.findByKeyWord);
 
 export default route;
