@@ -1,0 +1,121 @@
+import type { NextFunction, Request, Response } from "express";
+import UserService from "../services/UserService.ts";
+import zod from "zod";
+import { tr } from "zod/locales";
+import { loginSchema, registerSchema } from "../dto/AuthDTO.ts";
+export const UserLoginRequest = zod.object({
+    email: zod.string().email(),
+    password: zod.string().min(6),
+});
+class UserController {
+    async getAllUsers(req: Request, res: Response, next: NextFunction) {
+        try {
+            const page = parseInt(req.query.page as string) || 1;
+            const users = await UserService.getAllUsers(page);
+            return res.status(200).json(users);
+        } catch (error: any) {
+            next(error);
+        }
+    }
+    async getUserById(req: Request, res: Response, next: NextFunction) {
+        try {
+            const user = await UserService.getUserById(req.params.id as string);
+            return res.status(200).json(user);
+        } catch (error: any) {
+            next(error);
+        }
+    }
+    async createUser(req: Request, res: Response, next: NextFunction) {
+        try {
+            const created = await UserService.createUser(registerSchema.parse(req.body));
+            if (created === "Email already exists") {
+                return res.status(400).json({ message: "Email already exists" });
+            }
+            return res.status(201).json(created);
+        } catch (error: any) {
+            next(error);
+        }
+    }
+    async updateUser(req: Request, res: Response, next: NextFunction) {
+        try {
+            const updated = await UserService.updateUser(req.params.id as string, req.body);
+            if (!updated) {
+                return res.status(404).json({ message: "User not found" });
+            }
+            return res.status(200).json(updated);
+        } catch (error: any) {
+            next(error);
+        }
+    }
+    async deleteUser(req: Request, res: Response, next: NextFunction) {
+        try {
+            const deleted = await UserService.deleteUser(req.params.id as string);
+            if (!deleted) {
+                return res.status(404).json({ message: "User not found" });
+            }
+            return res.status(200).json(deleted);
+        } catch (error: any) {
+            next(error);
+        }
+    }
+    async toggleStatus(req: Request, res: Response, next: NextFunction) {
+        try {
+            const toggled = await UserService.toggleStatus(req.params.id as string);
+            if (!toggled) {
+                return res.status(404).json({ message: "User not found" });
+            }
+            return res.status(200).json(toggled);
+        } catch (error: any) {
+            next(error);
+        }
+    }
+    async registerUser(req: Request, res: Response, next: NextFunction) {
+        try {
+            req.body.role = 'student';
+            const created = await UserService.createUser(registerSchema.parse(req.body));
+            if (created === "Email already exists") {
+                return res.status(400).json({ message: "Email already exists" });
+            }
+            return res.status(201).json(created);
+        } catch (error: any) {
+            next(error);
+        }
+    }
+    async loginUser(req: Request, res: Response, next: NextFunction) {
+        try {
+            const p = await UserService.loginUser(loginSchema.parse(req.body));
+            if (!p) {
+                return res.status(401).json({ message: "Password or email is incorrect" });
+            }
+            const token = await UserService.generateToken(p);
+            res.cookie('Authorization', `Bearer ${token}`,
+                { expires: new Date(Date.now() + 3600000), httpOnly: true, sameSite: 'lax', signed: true });
+
+            return res.status(200).json({ token: token });
+        } catch (error: any) {
+            next(error);
+        }
+    }
+    async verifyToken(req: Request, res: Response, next: NextFunction) {
+        try {
+            const token = req.headers.authorization?.startsWith('Bearer ') ?
+                req.headers.authorization : req.cookies['Authorization'];
+            const verified = await UserService.verifyToken(token as string);
+            if (!verified) {
+                return res.status(401).json({ message: "Invalid or expired token" });
+            }
+            return res.status(200).json(verified);
+        } catch (error: any) {
+            next(error);
+        }
+    }
+    async findByKeyWord(req: Request, res: Response, next: NextFunction) {
+        try {
+            const results = await UserService.findByKeyWord(req.query.q as string);
+            return res.status(200).json(results);
+        } catch (error: any) {
+            next(error);
+        }
+    }
+}
+export default new UserController();
