@@ -96,15 +96,25 @@ class UserController {
             next(error);
         }
     }
-    async verifyToken(req: Request, res: Response, next: NextFunction) {
+    async getUserInfo(req: Request, res: Response, next: NextFunction) {
         try {
-            const token = req.headers.authorization?.startsWith('Bearer ') ?
-                req.headers.authorization : req.cookies['Authorization'];
+            // Authorization: Bearer <token>
+            //Signed cookies
+            const token = req.signedCookies.Authorization;
             const verified = await UserService.verifyToken(token as string);
             if (!verified) {
                 return res.status(401).json({ message: "Invalid or expired token" });
             }
             return res.status(200).json(verified);
+        } catch (error: any) {
+            next(error);
+        }
+    }
+    async removeToken(req: Request, res: Response, next: NextFunction) {
+        try {
+            res.clearCookie('Authorization');
+            //the token still valid until it expires, but client cannot send it anymore
+            return res.status(200).json({ message: "Logged out successfully" });
         } catch (error: any) {
             next(error);
         }

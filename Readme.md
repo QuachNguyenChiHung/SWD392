@@ -12,9 +12,12 @@ for example:
 export const User = mongoose.model<IUser>('User', UserSchema);
 when typing in repo, service, controller, properties like role, username, email will be suggested
 
-export const User = mongoose.model('User', UserSchema);
+export const User = mongoose.model('User', UserSchema) ;
 when type in repo, service, controller, properties will not be suggested, leading to possible typos and bugs
 user.userName X
 user.username O
 
-dto is using zod schema to validate input data
+You may see in dto folder, there are types and schemas defined using zod
+
+types are for typing only in typescript(using in function parameters)(check it in service and repo folders)
+schemas are for runtime validation(using in controller to validate req.body)

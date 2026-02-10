@@ -14,7 +14,9 @@ route.patch('/users/:id/status', UserController.toggleStatus);
 // Authentication routes
 route.post('/register', UserController.registerUser);
 route.post('/login', UserController.loginUser);
-route.get('/me', UserController.verifyToken);
+route.get('/me', UserController.getUserInfo);
+// Logout route
+route.post('/logout', UserController.removeToken);
 
 // Search functionality
 route.get('/users/search', UserController.findByKeyWord);

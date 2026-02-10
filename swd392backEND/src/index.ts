@@ -18,7 +18,7 @@ const spec = swaggerJSDoc({
 });
 //
 const app = express();
-app.use(cookieParser(process.env.COOKIE_KEY));
+app.use(cookieParser(process.env.COOKIE_KEY || 'default_cookie_key'));
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
