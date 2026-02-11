@@ -27,13 +27,15 @@ export interface AuthState {
 
 // Class interface
 export interface Class {
-  id: string;
-  name: string;
-  code: string;
-  teacherId: string;
-  description?: string;
-  createdAt: Date;
-  updatedAt: Date;
+  class_id: string;
+  class_name: string;
+  keypass: string;
+  course_id: string;
+  teacher_id: string;
+  img_cover_link: string;
+  keywords: string;
+  date_create: Date;
+  status: "active" | "inactive" | "archived";
 }
 
 // Lesson interface
@@ -71,3 +73,4 @@ export interface Question {
   explanation?: string;
   has2DVisualization?: boolean;
 }
+
