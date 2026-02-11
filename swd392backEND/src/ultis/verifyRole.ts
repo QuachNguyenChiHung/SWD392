@@ -41,11 +41,12 @@ class VerifyRole {
     }
     async verifyStudent(req: Request, res: Response, next: NextFunction) {
         try {
-            const token = req.signedCookies.Authorization;
+            const token = req.signedCookies?.Authorization;
             const verified = UserGetFromTokenSchema.parse(UserService.verifyToken(token as string));
             if (verified.role === 'student') {
                 return next();
             }
+            return res.status(403).json({ message: "Forbidden: Students only" });
         } catch (error) {
             return res.status(403).json({ message: "Forbidden: Students only" });
         }

@@ -16,6 +16,9 @@ route.patch('/users/:id/status', verifyRole.verifyAdmin, UserController.toggleSt
 route.post('/register', UserController.registerUser);
 route.post('/login', UserController.loginUser);
 route.get('/me', UserController.getUserInfo);
+
+// Update own profile, but needs to update token(fix this later)
+route.patch('/me', UserController.updateSelf);
 // Logout route
 route.post('/logout', UserController.removeToken);
 

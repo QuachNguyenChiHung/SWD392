@@ -3,7 +3,7 @@ import UserService from "../services/UserService.ts";
 import zod from "zod";
 import { tr } from "zod/locales";
 import { loginSchema, registerSchema } from "../dto/AuthDTO.ts";
-import type { UserGetFromTokenDTO } from "../dto/UserDTO.ts";
+import { UserUpdateSchema, type UserGetFromTokenDTO } from "../dto/UserDTO.ts";
 
 class UserController {
     async getAllUsers(req: Request, res: Response, next: NextFunction) {
@@ -36,7 +36,28 @@ class UserController {
     }
     async updateUser(req: Request, res: Response, next: NextFunction) {
         try {
-            const updated = await UserService.updateUser(req.params.id as string, req.body);
+            const updateBody = UserUpdateSchema.parse(req.body);
+            const updated = await UserService.updateUser(req.params.id as string, updateBody);
+            if (!updated) {
+                return res.status(404).json({ message: "User not found" });
+            }
+            return res.status(200).json(updated);
+        } catch (error: any) {
+            next(error);
+        }
+    }
+    async updateSelf(req: Request, res: Response, next: NextFunction) {
+        try {
+            //prevent user from updating role and status by themselves
+            const { role, status, ...rest } = req.body;
+            const updateBody = UserUpdateSchema.parse(rest);
+
+            const token = req.signedCookies.Authorization;
+            const verified = UserService.verifyToken(token as string) as UserGetFromTokenDTO;
+            if (!verified) {
+                return res.status(401).json({ message: "Invalid or expired token" });
+            }
+            const updated = await UserService.updateUser(verified._id, updateBody);
             if (!updated) {
                 return res.status(404).json({ message: "User not found" });
             }
@@ -99,11 +120,11 @@ class UserController {
             // Authorization: Bearer <token>
             //Signed cookies
             const token = req.signedCookies.Authorization;
-            const verified =  UserService.verifyToken(token as string);
+            const verified = UserService.verifyToken(token as string) as UserGetFromTokenDTO;
             if (!verified) {
                 return res.status(401).json({ message: "Invalid or expired token" });
             }
-            return res.status(200).json(verified);
+            return res.status(200).json({ user: verified });
         } catch (error: any) {
             next(error);
         }

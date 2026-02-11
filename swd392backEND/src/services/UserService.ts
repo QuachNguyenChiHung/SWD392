@@ -1,4 +1,6 @@
+import { de } from "zod/locales";
 import type { loginDTO, registerDTO } from "../dto/AuthDTO.ts";
+import type { UserUpdateDTO } from "../dto/UserDTO.ts";
 import UserRepo from "../repository/UserRepo.ts";
 import jwt from "jsonwebtoken";
 class UserService {
@@ -12,7 +14,7 @@ class UserService {
         }
         return await UserRepo.createUser(userData);
     }
-    async updateUser(userId: string, updateData: any) {
+    async updateUser(userId: string, updateData: UserUpdateDTO) {
         return await UserRepo.updateUser(userId, updateData);
     }
     async loginUser(userLogin: loginDTO) {

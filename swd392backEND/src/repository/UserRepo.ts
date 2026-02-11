@@ -2,6 +2,7 @@ import { Schema } from "mongoose";
 import { User } from "../entities/User.ts";
 import type { IUser } from "../interface/IUser.ts";
 import type { registerDTO } from "../dto/AuthDTO.ts";
+import type { UserUpdateDTO} from "../dto/UserDTO.ts";
 
 class UserRepo {
     async getAllUsers(page: number) {
@@ -17,7 +18,7 @@ class UserRepo {
         const user = new User(userData);
         return await user.save();
     }
-    async updateUser(id: string, updateData: any) {
+    async updateUser(id: string, updateData: UserUpdateDTO) {
         return await User.findByIdAndUpdate(id, updateData, { new: true });
     }
     async deleteUser(id: string) {

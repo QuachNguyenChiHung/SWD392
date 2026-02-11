@@ -79,17 +79,26 @@
  *         username:
  *           type: string
  *           description: Username
- *         name:
+ *         password:
  *           type: string
- *           description: Full name
- *         email:
- *           type: string
- *           format: email
- *           description: User email
+ *           description: New password (min 10 chars, must include uppercase, number, special char)
  *         role:
  *           type: string
  *           enum: [student, teacher, admin, moderator]
  *           description: User role
+ *         status:
+ *           type: string
+ *           enum: [active, banned]
+ *           description: User status
+ *     UpdateSelfRequest:
+ *       type: object
+ *       properties:
+ *         username:
+ *           type: string
+ *           description: Username
+ *         password:
+ *           type: string
+ *           description: New password (min 10 chars, must include uppercase, number, special char)
  *     LoginResponse:
  *       type: object
  *       properties:
@@ -115,6 +124,8 @@
  *   get:
  *     summary: Get all users with pagination
  *     tags: [Users]
+ *     security:
+ *       - BearerAuth: []
  *     parameters:
  *       - in: query
  *         name: page
@@ -141,6 +152,8 @@
  *   post:
  *     summary: Create a new user
  *     tags: [Users]
+ *     security:
+ *       - BearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -174,6 +187,8 @@
  *   get:
  *     summary: Get user by ID
  *     tags: [Users]
+ *     security:
+ *       - BearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -203,6 +218,8 @@
  *   patch:
  *     summary: Update user by ID
  *     tags: [Users]
+ *     security:
+ *       - BearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -238,6 +255,8 @@
  *   delete:
  *     summary: Delete user by ID
  *     tags: [Users]
+ *     security:
+ *       - BearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -272,6 +291,8 @@
  *   patch:
  *     summary: Toggle user status (active/inactive/banned)
  *     tags: [Users]
+ *     security:
+ *       - BearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -403,10 +424,82 @@
 
 /**
  * @openapi
+ * /api/me:
+ *   patch:
+ *     summary: Update current user's own profile
+ *     description: Allows the authenticated user to update their own profile. Role and status fields are ignored.
+ *     tags: [Authentication]
+ *     security:
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/UpdateSelfRequest'
+ *     responses:
+ *       200:
+ *         description: Profile updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/User'
+ *       401:
+ *         description: Invalid or expired token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       404:
+ *         description: User not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+
+/**
+ * @openapi
+ * /api/logout:
+ *   post:
+ *     summary: Logout current user
+ *     description: Clears the Authorization cookie. The token remains valid until expiry but the client can no longer send it.
+ *     tags: [Authentication]
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Logged out successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Logged out successfully
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+
+/**
+ * @openapi
  * /api/users/search:
  *   get:
  *     summary: Search users by keyword
  *     tags: [Users]
+ *     security:
+ *       - BearerAuth: []
  *     parameters:
  *       - in: query
  *         name: q
