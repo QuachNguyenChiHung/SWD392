@@ -1,4 +1,3 @@
-import { Fragment } from "react";
 import {
   Box,
   Typography,
@@ -6,91 +5,48 @@ import {
   Paper,
   Button,
   Grid,
-  Chip,
-  Divider,
   List,
-  ListItem,
-  ListItemText,
-  IconButton,
-  CircularProgress,
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableRow,
 } from "@mui/material";
-import { MoreVert } from "@mui/icons-material";
+import CourseProgressCard from "../../components/dashboard/CourseProgressCard";
+import DueAssignmentRow from "../../components/dashboard/DueAssignmentRow";
+import UploadedFileItem from "../../components/dashboard/UploadedFileItem";
+import AnnouncementCard from "../../components/dashboard/AnnouncementCard";
+import type {
+  Announcement,
+  ClassCompletionStat,
+  DueAssignment,
+  UploadedFileRecord,
+} from "../../types";
 
 const TeacherDashboard = () => {
-  type ProgressCard = {
-    course: string;
-    progress: number;
-    classes: string;
-  };
-
-  type ScheduleSlot = {
-    slot: string;
-    time: string;
-    course: string;
-    topic: string;
-    place: string;
-  };
-
-  type DueAssignment = {
-    course: string;
-    unit: string;
-    dueDate: string;
-    completionRate: number;
-    status: "waiting" | "ready" | "graded";
-  };
-
-  type UploadedFile = {
-    file: string;
-    course: string;
-    createdAt: string;
-  };
-
-  type GradeSummary = {
-    title: string;
-    course: string;
-    category: string;
-    score: string;
-  };
-
-  type Announcement = {
-    title: string;
-    detail: string;
-    timestamp: string;
-  };
-
-  const courseProgress: ProgressCard[] = [
-    { course: "Math 101", progress: 63, classes: "5 classes" },
-    { course: "Math 102", progress: 45, classes: "3 classes" },
-    { course: "Math 103", progress: 33, classes: "4 classes" },
-    { course: "Math 104", progress: 25, classes: "2 classes" },
+  const classCompletionStats: ClassCompletionStat[] = [
+    { course: "Math 101", completed: 26, enrolled: 30 },
+    { course: "Math 102", completed: 18, enrolled: 24 },
+    { course: "Math 103", completed: 14, enrolled: 20 },
+    { course: "Math 104", completed: 10, enrolled: 18 },
   ];
 
-  const schedule: ScheduleSlot[] = [
+  type QuickAction = {
+    title: string;
+    description: string;
+    actionLabel: string;
+  };
+
+  const quickActions: QuickAction[] = [
     {
-      slot: "Slot 3",
-      time: "10:45 AM - 11:30 AM",
-      course: "Math 101",
-      topic: "Unit 33: Simple equations",
-      place: "Classroom 3a",
+      title: "Create a new class",
+      description: "Set up a fresh class workspace with materials.",
+      actionLabel: "Create class",
     },
     {
-      slot: "Slot 4",
-      time: "12:00 PM - 12:45 PM",
-      course: "Math 101",
-      topic: "Unit 33: Multiple numbers",
-      place: "Classroom 3b",
-    },
-    {
-      slot: "Slot 5",
-      time: "02:00 PM - 02:45 PM",
-      course: "Math 103",
-      topic: "Unit 12: Algebraic expressions",
-      place: "Classroom 2a",
+      title: "View all courses",
+      description: "Browse the current course catalog you manage.",
+      actionLabel: "Course list",
     },
   ];
 
@@ -118,7 +74,7 @@ const TeacherDashboard = () => {
     },
   ];
 
-  const uploadedFiles: UploadedFile[] = [
+  const uploadedFiles: UploadedFileRecord[] = [
     {
       file: "ClassPresentation.PDF",
       course: "Math 101 | Unit 2",
@@ -133,27 +89,6 @@ const TeacherDashboard = () => {
       file: "Solving Sheet.XLS",
       course: "Math 104 | Linear equations",
       createdAt: "08 Dec 2017",
-    },
-  ];
-
-  const gradeSummary: GradeSummary[] = [
-    {
-      title: "Attendance",
-      course: "Math 101",
-      category: "Classwork",
-      score: "4 / 5",
-    },
-    {
-      title: "Assignment",
-      course: "Math 104",
-      category: "Homework",
-      score: "8.4 / 10",
-    },
-    {
-      title: "Quiz",
-      course: "Math 103",
-      category: "Quiz",
-      score: "14 / 15",
     },
   ];
 
@@ -189,302 +124,173 @@ const TeacherDashboard = () => {
       </Typography>
       <Stack spacing={3}>
         <Grid container spacing={3}>
-          <Grid size={{ xs: 6, md: 8 }}>
-            <Paper sx={{ p: 3 }}>
-              <Stack
-                direction="row"
-                justifyContent="space-between"
-                alignItems="center"
-                mb={2}
-              >
-                <Typography variant="h6">Courses progress</Typography>
-                <Typography variant="body2" color="text.secondary"></Typography>
-              </Stack>
-              <Grid container spacing={2}>
-                {courseProgress.map((course) => (
-                  <Grid key={course.course} size={{ xs: 6, md: 4 }}>
-                    <Paper
-                      variant="outlined"
-                      sx={{ p: 2, textAlign: "center", height: "100%" }}
-                    >
-                      <Box
-                        sx={{
-                          position: "relative",
-                          display: "inline-flex",
-                          mb: 1,
-                        }}
-                      >
-                        <CircularProgress
-                          variant="determinate"
-                          value={course.progress}
-                          size={80}
-                          thickness={4}
-                          color="primary"
-                        />
-                        <Box
-                          sx={{
-                            top: 0,
-                            left: 0,
-                            bottom: 0,
-                            right: 0,
-                            position: "absolute",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                          }}
-                        >
-                          <Typography variant="subtitle1" fontWeight={600}>
-                            {course.progress}%
-                          </Typography>
-                        </Box>
-                      </Box>
-                      <Typography variant="subtitle1" fontWeight={600}>
-                        {course.course}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {course.classes}
-                      </Typography>
-                    </Paper>
-                  </Grid>
-                ))}
-              </Grid>
-            </Paper>
-          </Grid>
-          <Grid size={{ xs: 6, md: 4 }}>
-            <Paper sx={{ p: 3, height: "100%" }}>
-              <Stack
-                direction="row"
-                justifyContent="space-between"
-                alignItems="center"
-                mb={2}
-              >
-                <Typography variant="h6">Today schedule</Typography>
-                <Typography variant="caption" color="text.secondary">
-                  3 slots
-                </Typography>
-              </Stack>
-              <List disablePadding>
-                {schedule.map((slot, index) => (
-                  <ListItem
-                    key={`${slot.slot}-${index}`}
-                    alignItems="flex-start"
+          <Grid size={{ xs: 12, md: 8 }}>
+            <Grid container direction="column" spacing={3}>
+              <Grid size={{ xs: 12 }}>
+                <Paper sx={{ p: 3 }}>
+                  <Stack
+                    direction="row"
+                    justifyContent="space-between"
+                    alignItems="center"
+                    mb={2}
+                  >
+                    <Typography variant="h6">Courses progress</Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Students who finished all materials
+                    </Typography>
+                  </Stack>
+                  <Box
                     sx={{
-                      border: "1px solid",
-                      borderColor: "divider",
-                      borderRadius: 2,
-                      mb: index === schedule.length - 1 ? 0 : 2,
-                      px: 2,
-                      py: 2,
+                      display: "grid",
+                      gridAutoFlow: "column",
+                      gridAutoColumns: "minmax(240px, 260px)",
+                      gap: 2,
+                      overflowX: "auto",
+                      width: "100%",
+                      pr: 1,
+                      pb: 1,
+                      scrollSnapType: "x mandatory",
+                      "&::-webkit-scrollbar": { height: 8 },
+                      "&::-webkit-scrollbar-track": {
+                        backgroundColor: "rgba(0,0,0,0.08)",
+                        borderRadius: 999,
+                      },
+                      "&::-webkit-scrollbar-thumb": {
+                        backgroundColor: "rgba(25, 118, 210, 0.6)",
+                        borderRadius: 999,
+                      },
                     }}
                   >
-                    <ListItemText
-                      primary={
-                        <Stack
-                          direction="row"
-                          justifyContent="space-between"
-                          alignItems="center"
-                        >
-                          <Typography
-                            variant="subtitle2"
-                            color="text.secondary"
-                          >
-                            {slot.slot} | {slot.time}
-                          </Typography>
-                          <Chip label={slot.course} size="small" />
-                        </Stack>
-                      }
-                      secondary={
-                        <Stack spacing={0.5} mt={1}>
-                          <Typography variant="body2" fontWeight={600}>
-                            {slot.topic}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            Place: {slot.place}
-                          </Typography>
-                        </Stack>
-                      }
-                    />
-                  </ListItem>
-                ))}
-              </List>
-              <Typography variant="body2" color="text.secondary" mt={2}>
-                Your day ends here :) Enjoy your day.
-              </Typography>
-            </Paper>
-          </Grid>
-        </Grid>
-
-        <Grid container spacing={3}>
-          <Grid size={{ xs: 6, md: 8 }}>
-            <Paper sx={{ p: 3 }}>
-              <Stack
-                direction="row"
-                justifyContent="space-between"
-                alignItems="center"
-                mb={2}
-              >
-                <Typography variant="h6">What's due</Typography>
-                <Button variant="text" size="small">
-                  All courses
-                </Button>
-              </Stack>
-              <Table size="small">
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Course | Topic</TableCell>
-                    <TableCell>Due date</TableCell>
-                    <TableCell>Subm. rate</TableCell>
-                    <TableCell>Status</TableCell>
-                    <TableCell align="right">Actions</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {dueAssignments.map((item) => (
-                    <TableRow key={item.course} hover>
-                      <TableCell>
-                        <Typography variant="subtitle2">
-                          {item.course}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {item.unit}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>{item.dueDate}</TableCell>
-                      <TableCell>{item.completionRate}%</TableCell>
-                      <TableCell>
-                        <Chip
-                          label={
-                            item.status === "waiting"
-                              ? "Waiting submissions"
-                              : item.status === "ready"
-                                ? "Ready for grading"
-                                : "Graded successfully"
-                          }
-                          color={statusColorMap[item.status]}
-                          size="small"
+                    {classCompletionStats.map((stat) => (
+                      <CourseProgressCard key={stat.course} {...stat} />
+                    ))}
+                  </Box>
+                </Paper>
+              </Grid>
+              <Grid size={{ xs: 12 }}>
+                <Paper sx={{ p: 3 }}>
+                  <Stack
+                    direction="row"
+                    justifyContent="space-between"
+                    alignItems="center"
+                    mb={2}
+                  >
+                    <Typography variant="h6">What's due</Typography>
+                    <Button variant="text" size="small">
+                      Up coming class material
+                    </Button>
+                  </Stack>
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Class material</TableCell>
+                        <TableCell>Due date</TableCell>
+                        <TableCell>Subm. rate</TableCell>
+                        <TableCell>Status</TableCell>
+                        <TableCell align="right">Actions</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {dueAssignments.map((item) => (
+                        <DueAssignmentRow
+                          key={item.course}
+                          assignment={item}
+                          statusColor={statusColorMap[item.status]}
                         />
-                      </TableCell>
-                      <TableCell align="right">
-                        <IconButton size="small">
-                          <MoreVert fontSize="small" />
-                        </IconButton>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </Paper>
-          </Grid>
-          <Grid size={{ xs: 6, md: 4 }}>
-            <Paper sx={{ p: 3, height: "100%" }}>
-              <Stack
-                direction="row"
-                justifyContent="space-between"
-                alignItems="center"
-                mb={2}
-              >
-                <Typography variant="h6">Latest grades</Typography>
-                <Button variant="text" size="small">
-                  + New
-                </Button>
-              </Stack>
-              <Stack spacing={2}>
-                {gradeSummary.map((grade) => (
-                  <Paper key={grade.title} variant="outlined" sx={{ p: 2 }}>
-                    <Stack
-                      direction="row"
-                      justifyContent="space-between"
-                      alignItems="center"
-                    >
-                      <Box>
-                        <Typography variant="subtitle2">
-                          {grade.title}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          {grade.course} · {grade.category}
-                        </Typography>
-                      </Box>
-                      <Typography variant="h6">{grade.score}</Typography>
-                    </Stack>
-                  </Paper>
-                ))}
-              </Stack>
-            </Paper>
-          </Grid>
-        </Grid>
-
-        <Grid container spacing={3}>
-          <Grid size={{ xs: 6, md: 8 }}>
-            <Paper sx={{ p: 3 }}>
-              <Stack
-                direction="row"
-                justifyContent="space-between"
-                alignItems="center"
-                mb={2}
-              >
-                <Typography variant="h6">Latest uploaded files</Typography>
-                <Button variant="text" size="small">
-                  All courses
-                </Button>
-              </Stack>
-              <List disablePadding>
-                {uploadedFiles.map((file, index) => (
-                  <Fragment key={file.file}>
-                    <ListItem
-                      secondaryAction={
-                        <IconButton edge="end">
-                          <MoreVert />
-                        </IconButton>
-                      }
-                    >
-                      <ListItemText
-                        primary={
-                          <Typography variant="subtitle2">
-                            {file.file}
-                          </Typography>
-                        }
-                        secondary={
-                          <Typography variant="body2" color="text.secondary">
-                            {file.course} · {file.createdAt}
-                          </Typography>
-                        }
+                      ))}
+                    </TableBody>
+                  </Table>
+                </Paper>
+              </Grid>
+              <Grid size={{ xs: 12 }}>
+                <Paper sx={{ p: 3 }}>
+                  <Stack
+                    direction="row"
+                    justifyContent="space-between"
+                    alignItems="center"
+                    mb={2}
+                  >
+                    <Typography variant="h6">Latest uploaded files</Typography>
+                    <Button variant="text" size="small">
+                      View all files
+                    </Button>
+                  </Stack>
+                  <List disablePadding>
+                    {uploadedFiles.map((file, index) => (
+                      <UploadedFileItem
+                        key={file.file}
+                        file={file}
+                        showDivider={index < uploadedFiles.length - 1}
                       />
-                    </ListItem>
-                    {index < uploadedFiles.length - 1 && (
-                      <Divider component="li" />
-                    )}
-                  </Fragment>
-                ))}
-              </List>
-            </Paper>
+                    ))}
+                  </List>
+                </Paper>
+              </Grid>
+            </Grid>
           </Grid>
-          <Grid size={{ xs: 6, md: 4 }}>
-            <Paper sx={{ p: 3 }}>
-              <Stack
-                direction="row"
-                justifyContent="space-between"
-                alignItems="center"
-                mb={2}
-              >
-                <Typography variant="h6">Announcements</Typography>
-                <Button variant="contained" size="small">
-                  + New
-                </Button>
-              </Stack>
-              <Stack spacing={2}>
-                {announcements.map((item) => (
-                  <Paper key={item.title} variant="outlined" sx={{ p: 2 }}>
-                    <Typography variant="subtitle2">{item.title}</Typography>
-                    <Typography variant="body2" color="text.secondary" mb={1}>
-                      {item.detail}
-                    </Typography>
+          <Grid size={{ xs: 12, md: 4 }}>
+            <Grid container direction="column" spacing={3}>
+              <Grid size={{ xs: 12 }}>
+                <Paper sx={{ p: 3 }}>
+                  <Stack
+                    direction="row"
+                    justifyContent="space-between"
+                    alignItems="center"
+                    mb={2}
+                  >
+                    <Typography variant="h6">Quick actions</Typography>
                     <Typography variant="caption" color="text.secondary">
-                      {item.timestamp}
+                      {quickActions.length} items
                     </Typography>
-                  </Paper>
-                ))}
-              </Stack>
-            </Paper>
+                  </Stack>
+                  <Stack spacing={2}>
+                    {quickActions.map((action) => (
+                      <Paper
+                        key={action.title}
+                        variant="outlined"
+                        sx={{
+                          p: 2,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          gap: 2,
+                          flexWrap: "wrap",
+                        }}
+                      >
+                        <Box>
+                          <Typography variant="subtitle2" fontWeight={600}>
+                            {action.title}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            {action.description}
+                          </Typography>
+                        </Box>
+                        <Button variant="contained" size="small">
+                          {action.actionLabel}
+                        </Button>
+                      </Paper>
+                    ))}
+                  </Stack>
+                </Paper>
+              </Grid>
+              <Grid size={{ xs: 12 }}>
+                <Paper sx={{ p: 3 }}>
+                  <Stack
+                    direction="row"
+                    justifyContent="space-between"
+                    alignItems="center"
+                    mb={2}
+                  >
+                    <Typography variant="h6">Announcements</Typography>
+                  </Stack>
+                  <Stack spacing={2}>
+                    {announcements.map((item) => (
+                      <AnnouncementCard key={item.title} announcement={item} />
+                    ))}
+                  </Stack>
+                </Paper>
+              </Grid>
+            </Grid>
           </Grid>
         </Grid>
       </Stack>

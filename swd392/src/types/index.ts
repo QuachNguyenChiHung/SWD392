@@ -74,3 +74,47 @@ export interface Question {
   has2DVisualization?: boolean;
 }
 
+// Dashboard helper types
+export interface ClassCompletionStat {
+  course: string;
+  completed: number;
+  enrolled: number;
+}
+
+export interface ScheduleSlot {
+  slot: string;
+  time: string;
+  course: string;
+  topic: string;
+  place: string;
+}
+
+export type DueAssignmentStatus = 'waiting' | 'ready' | 'graded';
+
+export interface DueAssignment {
+  course: string;
+  unit: string;
+  dueDate: string;
+  completionRate: number;
+  status: DueAssignmentStatus;
+}
+
+export interface UploadedFileRecord {
+  file: string;
+  course: string;
+  createdAt: string;
+}
+
+export interface GradeSummary {
+  title: string;
+  course: string;
+  category: string;
+  score: string;
+}
+
+export interface Announcement {
+  title: string;
+  detail: string;
+  timestamp: string;
+}
+
