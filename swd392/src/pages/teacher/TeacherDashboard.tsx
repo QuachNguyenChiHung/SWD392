@@ -16,12 +16,12 @@ import CourseProgressCard from "../../components/dashboard/CourseProgressCard";
 import DueAssignmentRow from "../../components/dashboard/DueAssignmentRow";
 import UploadedFileItem from "../../components/dashboard/UploadedFileItem";
 import AnnouncementCard from "../../components/dashboard/AnnouncementCard";
+import type { Announcement } from "../../types";
 import type {
-  Announcement,
   ClassCompletionStat,
-  DueAssignment,
   UploadedFileRecord,
-} from "../../types";
+  DueAssignment,
+} from "../../types/teacherType";
 
 const TeacherDashboard = () => {
   const classCompletionStats: ClassCompletionStat[] = [
@@ -52,25 +52,37 @@ const TeacherDashboard = () => {
 
   const dueAssignments: DueAssignment[] = [
     {
-      course: "Math 101",
-      unit: "Unit 2: Add and subtract numbers",
-      dueDate: "23 Dec 2017",
-      completionRate: 69,
-      status: "waiting",
+      quiz_id: 101,
+      material_id: 501,
+      title: "Reaction rates quiz",
+      keyword: "rates",
+      type: "quiz",
+      available_date: new Date("2026-02-12"),
+      max_attempt_number: 3,
+      end_date: new Date("2026-02-20"),
+      status: true,
     },
     {
-      course: "Math 102",
-      unit: "Unit 2: Motion and forces",
-      dueDate: "20 Dec 2017",
-      completionRate: 98,
-      status: "ready",
+      quiz_id: 102,
+      material_id: 502,
+      title: "Stoichiometry check-in",
+      keyword: "mole",
+      type: "quiz",
+      available_date: new Date("2026-02-14"),
+      max_attempt_number: 2,
+      end_date: new Date("2026-02-22"),
+      status: false,
     },
     {
-      course: "Math 104",
-      unit: "Linear equations",
-      dueDate: "13 Dec 2017",
-      completionRate: 100,
-      status: "graded",
+      quiz_id: 103,
+      material_id: 503,
+      title: "Lab safety essentials",
+      keyword: null,
+      type: "quiz",
+      available_date: new Date("2026-02-15"),
+      max_attempt_number: null,
+      end_date: new Date("2026-02-25"),
+      status: true,
     },
   ];
 
@@ -79,16 +91,25 @@ const TeacherDashboard = () => {
       file: "ClassPresentation.PDF",
       course: "Math 101 | Unit 2",
       createdAt: "12 Dec 2017",
+      file_id: 201,
+      file_name: "ClassPresentation.PDF",
+      file_path: "/files/math101/class-presentation.pdf",
     },
     {
       file: "Slideshow 22Dec.PPT",
       course: "Math 102 | Unit 2",
       createdAt: "09 Dec 2017",
+      file_id: 202,
+      file_name: "Slideshow 22Dec.PPT",
+      file_path: "/files/math102/slideshow-22dec.ppt",
     },
     {
       file: "Solving Sheet.XLS",
       course: "Math 104 | Linear equations",
       createdAt: "08 Dec 2017",
+      file_id: 203,
+      file_name: "Solving Sheet.XLS",
+      file_path: "/files/math104/solving-sheet.xls",
     },
   ];
 
@@ -104,15 +125,6 @@ const TeacherDashboard = () => {
       timestamp: "1h ago",
     },
   ];
-
-  const statusColorMap: Record<
-    DueAssignment["status"],
-    "warning" | "success" | "default"
-  > = {
-    waiting: "warning",
-    ready: "default",
-    graded: "success",
-  };
 
   return (
     <Box>
@@ -147,18 +159,7 @@ const TeacherDashboard = () => {
                       gap: 2,
                       overflowX: "auto",
                       width: "100%",
-                      pr: 1,
                       pb: 1,
-                      scrollSnapType: "x mandatory",
-                      "&::-webkit-scrollbar": { height: 8 },
-                      "&::-webkit-scrollbar-track": {
-                        backgroundColor: "rgba(0,0,0,0.08)",
-                        borderRadius: 999,
-                      },
-                      "&::-webkit-scrollbar-thumb": {
-                        backgroundColor: "rgba(25, 118, 210, 0.6)",
-                        borderRadius: 999,
-                      },
                     }}
                   >
                     {classCompletionStats.map((stat) => (
@@ -183,9 +184,9 @@ const TeacherDashboard = () => {
                   <Table size="small">
                     <TableHead>
                       <TableRow>
-                        <TableCell>Class material</TableCell>
-                        <TableCell>Due date</TableCell>
-                        <TableCell>Subm. rate</TableCell>
+                        <TableCell>Quiz</TableCell>
+                        <TableCell>Available</TableCell>
+                        <TableCell>End date</TableCell>
                         <TableCell>Status</TableCell>
                         <TableCell align="right">Actions</TableCell>
                       </TableRow>
@@ -193,9 +194,8 @@ const TeacherDashboard = () => {
                     <TableBody>
                       {dueAssignments.map((item) => (
                         <DueAssignmentRow
-                          key={item.course}
+                          key={item.quiz_id}
                           assignment={item}
-                          statusColor={statusColorMap[item.status]}
                         />
                       ))}
                     </TableBody>

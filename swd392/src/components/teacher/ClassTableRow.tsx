@@ -10,34 +10,33 @@ import {
 } from "@mui/material";
 import { Link as RouterLink } from "react-router-dom";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
-
-export type ClassTableRowProps = {
-  title: string;
-  courseCode: string;
-  studentCount: number;
-  createdAt: string;
-  classKey: string;
-  classId: string;
-};
+import type { Class } from "../../types/teacherType";
 
 const maskKey = (key: string) => "•".repeat(Math.max(4, key.length));
 
+const formatDate = (value: Date | string) => {
+  const date = value instanceof Date ? value : new Date(value);
+  return Number.isNaN(date.getTime()) ? "-" : date.toLocaleDateString();
+};
+
 const ClassTableRow = ({
-  title,
-  courseCode,
+  class_name,
+  course_id,
+  course_name,
   studentCount,
-  createdAt,
-  classKey,
-  classId,
-}: ClassTableRowProps) => {
+  date_create,
+  keypass,
+  class_id,
+}: Class & { studentCount: number }) => {
   const [showKey, setShowKey] = useState(false);
+  const createdAt = formatDate(date_create);
 
   return (
     <TableRow hover>
       <TableCell>
-        <Typography variant="subtitle2">{title}</Typography>
+        <Typography variant="subtitle2">{class_name}</Typography>
         <Typography variant="body2" color="text.secondary">
-          {courseCode}
+          {course_name || course_id}
         </Typography>
       </TableCell>
       <TableCell>{studentCount}</TableCell>
@@ -45,7 +44,7 @@ const ClassTableRow = ({
       <TableCell>
         <Stack direction="row" spacing={1} alignItems="center">
           <Typography variant="body2" sx={{ fontFamily: "monospace" }}>
-            {showKey ? classKey : maskKey(classKey)}
+            {showKey ? keypass : maskKey(keypass)}
           </Typography>
           <Tooltip title={showKey ? "Hide class key" : "Show class key"}>
             <IconButton
@@ -67,7 +66,7 @@ const ClassTableRow = ({
           <Button
             size="small"
             component={RouterLink}
-            to={`/teacher/class/${classId}`}
+            to={`/teacher/class/${class_id}`}
           >
             Xem chi tiết
           </Button>

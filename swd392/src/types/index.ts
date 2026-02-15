@@ -52,15 +52,15 @@ export interface Lesson {
 
 // Quiz interface
 export interface Quiz {
-  id: string;
-  classId: string;
+  quiz_id: number;
+  material_id: number;
   title: string;
-  questions: Question[];
-  maxAttempts?: number;
-  availableFrom?: Date;
-  availableUntil?: Date;
-  createdAt: Date;
-  updatedAt: Date;
+  keyword: string | null;
+  type: string;
+  available_date: Date | null;
+  max_attempt_number: number | null;
+  end_date: Date | null;
+  status: boolean;
 }
 
 // Question interface
@@ -75,11 +75,7 @@ export interface Question {
 }
 
 // Dashboard helper types
-export interface ClassCompletionStat {
-  course: string;
-  completed: number;
-  enrolled: number;
-}
+
 
 export interface ScheduleSlot {
   slot: string;
@@ -89,14 +85,16 @@ export interface ScheduleSlot {
   place: string;
 }
 
-export type DueAssignmentStatus = 'waiting' | 'ready' | 'graded';
-
 export interface DueAssignment {
-  course: string;
-  unit: string;
-  dueDate: string;
-  completionRate: number;
-  status: DueAssignmentStatus;
+  quiz_id: number;
+  material_id: number;
+  title: string;
+  keyword: string | null;
+  type: string;
+  available_date: Date | null;
+  max_attempt_number: number | null;
+  end_date: Date | null;
+  status: boolean;
 }
 
 export interface UploadedFileRecord {
