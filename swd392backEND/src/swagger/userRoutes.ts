@@ -17,17 +17,13 @@
  *           format: email
  *           description: User email
  *           maxLength: 255
- *         name:
- *           type: string
- *           description: Full name
- *           maxLength: 255
  *         role:
  *           type: string
  *           enum: [student, teacher, admin, moderator]
  *           description: User role
  *         status:
  *           type: string
- *           enum: [active, inactive, banned]
+ *           enum: [active, banned]
  *           description: User status
  *         date_create:
  *           type: string
@@ -64,7 +60,7 @@
  *           description: User email
  *         password:
  *           type: string
- *           description: User password
+ *           description: User password (min 10 chars, must include uppercase, number, special char)
  *         username:
  *           type: string
  *           description: Username
@@ -72,7 +68,7 @@
  *           type: string
  *           enum: [student, teacher, admin, moderator]
  *           default: student
- *           description: User role
+ *           description: User role (defaults to student)
  *     UpdateUserRequest:
  *       type: object
  *       properties:
@@ -81,7 +77,7 @@
  *           description: Username
  *         password:
  *           type: string
- *           description: New password (min 10 chars, must include uppercase, number, special char)
+ *           description: New password
  *         role:
  *           type: string
  *           enum: [student, teacher, admin, moderator]
@@ -98,32 +94,191 @@
  *           description: Username
  *         password:
  *           type: string
- *           description: New password (min 10 chars, must include uppercase, number, special char)
+ *           description: New password
  *     LoginResponse:
  *       type: object
  *       properties:
  *         token:
  *           type: string
  *           description: JWT authentication token
+ *         user:
+ *           $ref: '#/components/schemas/User'
  *     ErrorResponse:
+ *       type: object
+ *       properties:
+ *         error:
+ *           type: string
+ *           description: Error message
+ *     SuccessResponse:
  *       type: object
  *       properties:
  *         message:
  *           type: string
- *           description: Error message
+ *           description: Success message
  *   securitySchemes:
  *     BearerAuth:
  *       type: http
  *       scheme: bearer
  *       bearerFormat: JWT
- */
-
-/**
- * @openapi
+ * 
+ * /api/register:
+ *   post:
+ *     tags:
+ *       - Authentication
+ *     summary: Register a new user
+ *     description: Register a new user account
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/RegisterRequest'
+ *     responses:
+ *       201:
+ *         description: User registered successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/User'
+ *       400:
+ *         description: Bad request - validation errors or email already exists
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ * 
+ * /api/login:
+ *   post:
+ *     tags:
+ *       - Authentication
+ *     summary: Login user
+ *     description: Authenticate user and return JWT token
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/LoginRequest'
+ *     responses:
+ *       200:
+ *         description: Login successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/LoginResponse'
+ *       400:
+ *         description: Invalid credentials
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ * 
+ * /api/logout:
+ *   post:
+ *     tags:
+ *       - Authentication
+ *     summary: Logout user
+ *     description: Logout current user (clears authentication cookie)
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Logout successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SuccessResponse'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ * 
+ * /api/me:
+ *   get:
+ *     tags:
+ *       - Users
+ *     summary: Get current user info
+ *     description: Get information about the currently authenticated user
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: User information
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/User'
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *   patch:
+ *     tags:
+ *       - Users
+ *     summary: Update own profile
+ *     description: Update current user's own profile information
+ *     security:
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/UpdateSelfRequest'
+ *     responses:
+ *       200:
+ *         description: Profile updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/User'
+ *       400:
+ *         description: Bad request - validation errors
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ * 
  * /api/users:
  *   get:
- *     summary: Get all users with pagination
- *     tags: [Users]
+ *     tags:
+ *       - Users
+ *     summary: Get all users
+ *     description: Get all users (Admin only, with pagination)
  *     security:
  *       - BearerAuth: []
  *     parameters:
@@ -143,6 +298,18 @@
  *               type: array
  *               items:
  *                 $ref: '#/components/schemas/User'
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       403:
+ *         description: Forbidden - Admin access required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       500:
  *         description: Internal server error
  *         content:
@@ -150,8 +317,10 @@
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *   post:
- *     summary: Create a new user
- *     tags: [Users]
+ *     tags:
+ *       - Users
+ *     summary: Create new user
+ *     description: Create a new user (Admin only)
  *     security:
  *       - BearerAuth: []
  *     requestBody:
@@ -168,7 +337,19 @@
  *             schema:
  *               $ref: '#/components/schemas/User'
  *       400:
- *         description: Email already exists or validation error
+ *         description: Bad request - validation errors or email already exists
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       403:
+ *         description: Forbidden - Admin access required
  *         content:
  *           application/json:
  *             schema:
@@ -179,14 +360,13 @@
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
- */
-
-/**
- * @openapi
+ * 
  * /api/users/{id}:
  *   get:
+ *     tags:
+ *       - Users
  *     summary: Get user by ID
- *     tags: [Users]
+ *     description: Get a specific user by their ID (Admin only)
  *     security:
  *       - BearerAuth: []
  *     parameters:
@@ -198,11 +378,23 @@
  *         description: User ID
  *     responses:
  *       200:
- *         description: User found
+ *         description: User information
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/User'
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       403:
+ *         description: Forbidden - Admin access required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       404:
  *         description: User not found
  *         content:
@@ -216,8 +408,10 @@
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *   patch:
- *     summary: Update user by ID
- *     tags: [Users]
+ *     tags:
+ *       - Users
+ *     summary: Update user
+ *     description: Update a user's information (Admin only)
  *     security:
  *       - BearerAuth: []
  *     parameters:
@@ -240,6 +434,24 @@
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/User'
+ *       400:
+ *         description: Bad request - validation errors
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       403:
+ *         description: Forbidden - Admin access required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       404:
  *         description: User not found
  *         content:
@@ -252,45 +464,13 @@
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
- *   delete:
- *     summary: Delete user by ID
- *     tags: [Users]
- *     security:
- *       - BearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *         description: User ID
- *     responses:
- *       200:
- *         description: User deleted successfully
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/User'
- *       404:
- *         description: User not found
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *       500:
- *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- */
-
-/**
- * @openapi
+ * 
  * /api/users/{id}/status:
  *   patch:
- *     summary: Toggle user status (active/inactive/banned)
- *     tags: [Users]
+ *     tags:
+ *       - Users
+ *     summary: Toggle user status
+ *     description: Toggle user status between active and banned (Admin only)
  *     security:
  *       - BearerAuth: []
  *     parameters:
@@ -307,145 +487,14 @@
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/User'
- *       404:
- *         description: User not found
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *       500:
- *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- */
-
-/**
- * @openapi
- * /api/register:
- *   post:
- *     summary: Register a new student user
- *     tags: [Authentication]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/RegisterRequest'
- *     responses:
- *       201:
- *         description: User registered successfully
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/User'
- *       400:
- *         description: Email already exists or validation error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *       500:
- *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- */
-
-/**
- * @openapi
- * /api/login:
- *   post:
- *     summary: User login
- *     tags: [Authentication]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/LoginRequest'
- *     responses:
- *       200:
- *         description: Login successful
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/LoginResponse'
- *         headers:
- *           Set-Cookie:
- *             description: Authorization cookie with Bearer token
- *             schema:
- *               type: string
- *               example: Authorization=Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...; Path=/; HttpOnly; SameSite=Lax
  *       401:
- *         description: Invalid credentials
+ *         description: Unauthorized
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
- *       500:
- *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- */
-
-/**
- * @openapi
- * /api/me:
- *   get:
- *     summary: Verify token and get current user info
- *     tags: [Authentication]
- *     security:
- *       - BearerAuth: []
- *     responses:
- *       200:
- *         description: Token is valid
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/User'
- *       401:
- *         description: Invalid or expired token
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *       500:
- *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- */
-
-/**
- * @openapi
- * /api/me:
- *   patch:
- *     summary: Update current user's own profile
- *     description: Allows the authenticated user to update their own profile. Role and status fields are ignored.
- *     tags: [Authentication]
- *     security:
- *       - BearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/UpdateSelfRequest'
- *     responses:
- *       200:
- *         description: Profile updated successfully
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/User'
- *       401:
- *         description: Invalid or expired token
+ *       403:
+ *         description: Forbidden - Admin access required
  *         content:
  *           application/json:
  *             schema:
@@ -462,42 +511,13 @@
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
- */
-
-/**
- * @openapi
- * /api/logout:
- *   post:
- *     summary: Logout current user
- *     description: Clears the Authorization cookie. The token remains valid until expiry but the client can no longer send it.
- *     tags: [Authentication]
- *     security:
- *       - BearerAuth: []
- *     responses:
- *       200:
- *         description: Logged out successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: Logged out successfully
- *       500:
- *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- */
-
-/**
- * @openapi
+ * 
  * /api/users/search:
  *   get:
+ *     tags:
+ *       - Users
  *     summary: Search users by keyword
- *     tags: [Users]
+ *     description: Search users by name or email keyword (Admin only)
  *     security:
  *       - BearerAuth: []
  *     parameters:
@@ -506,7 +526,15 @@
  *         required: true
  *         schema:
  *           type: string
- *         description: Search keyword
+ *         description: Search keyword for name or email
+ *       - in: query
+ *         name: page
+ *         required: false
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *         description: Page number for pagination (returns 12 results per page)
  *     responses:
  *       200:
  *         description: Search results
@@ -516,6 +544,24 @@
  *               type: array
  *               items:
  *                 $ref: '#/components/schemas/User'
+ *       400:
+ *         description: Bad request - keyword is required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       403:
+ *         description: Forbidden - Admin access required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       500:
  *         description: Internal server error
  *         content:

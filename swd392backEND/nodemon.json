@@ -3,5 +3,5 @@
         "src"
     ],
     "ext": "ts",
-    "exec": "npm run build && npm run start"
+    "exec": "npx ts-node src/index.ts"
 }

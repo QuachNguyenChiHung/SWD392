@@ -5,7 +5,7 @@ const ProgressClassMaterialSchema: Schema = new Schema(
     {
         enroll_id: { type: Schema.Types.ObjectId, ref: 'Enroll', required: true },
         classmaterial_id: { type: Schema.Types.ObjectId, ref: 'ClassMaterial', default: null },
-        completion_status: { type: String, required: true, maxlength: 50 },
+        completion_status: { type: String, enum: ["in_progress", "completed"], default: "in_progress" },
         date_completed: { type: Date, default: null },
     },
     { timestamps: false }

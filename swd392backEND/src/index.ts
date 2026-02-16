@@ -11,6 +11,9 @@ import cookieParser from 'cookie-parser';
 import swaggerUi from 'swagger-ui-express';
 import swaggerJSDoc from 'swagger-jsdoc';
 import UserRoute from './route/UserRoute.ts';
+import CourseRoute from './route/CourseRoute.ts';
+import EnrollRoute from './route/EnrollRoute.ts';
+import TopicRoute from './route/TopicRoute.ts';
 
 const spec = swaggerJSDoc({
     definition: { openapi: '3.0.0', info: { title: 'API', version: '1.0.0' } },
@@ -35,16 +38,23 @@ console.log(process.env.MONGO_URI);
 (
     async () => {
         try {
-            const mongoUri = process.env.MONGO_URI || 'mongodb://localhost:27017/'
+            const mongoUri = process.env.MONGO_URI || 'mongodb://localhost:27017/swd392';
             await mongoose.connect(mongoUri);
             console.log('Connected to MongoDB');
             app.use('/cloudinary-demo', CloudinaryUploadDemoRoute);
             app.use('/api', UserRoute);
-
+            app.use('/api', CourseRoute);
+            app.use('/api', EnrollRoute);
+            app.use('/api', TopicRoute);
             // Error handler must be after routes
             app.use((err: any, req: Request, res: Response, next: NextFunction) => {
                 console.error(err.stack);
-                res.status(500).json({ message: err.message || 'Something broke!' });
+                try {
+                    res.status(500).json({ message: JSON.parse(err.message.message || { "message": 'Something broke!' }) });
+                } catch (error) {
+                    res.status(500).json({ "message": 'Something broke!' });
+                }
+
             });
 
             app.listen(PORT, () => {

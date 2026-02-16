@@ -6,7 +6,8 @@ class VerifyRole {
     async verifyAdmin(req: Request, res: Response, next: NextFunction) {
         try {
             const token = req.signedCookies.Authorization;
-            const verified = UserGetFromTokenSchema.parse(UserService.verifyToken(token as string));
+            const user = await UserService.getUserByToken(token as string);
+            const verified = UserGetFromTokenSchema.parse(user);
             if (verified.role === 'admin') {
                 return next();
             }
@@ -18,7 +19,8 @@ class VerifyRole {
     async verifyTeacher(req: Request, res: Response, next: NextFunction) {
         try {
             const token = req.signedCookies.Authorization;
-            const verified = UserGetFromTokenSchema.parse(UserService.verifyToken(token as string));
+            const user = await UserService.getUserByToken(token as string);
+            const verified = UserGetFromTokenSchema.parse(user);
             if (verified.role === 'teacher') {
                 return next();
             }
@@ -30,7 +32,8 @@ class VerifyRole {
     async verifyModerator(req: Request, res: Response, next: NextFunction) {
         try {
             const token = req.signedCookies.Authorization;
-            const verified = UserGetFromTokenSchema.parse(UserService.verifyToken(token as string));
+            const user = await UserService.getUserByToken(token as string);
+            const verified = UserGetFromTokenSchema.parse(user);
             if (verified.role === 'moderator') {
                 return next();
             }
@@ -42,7 +45,8 @@ class VerifyRole {
     async verifyStudent(req: Request, res: Response, next: NextFunction) {
         try {
             const token = req.signedCookies?.Authorization;
-            const verified = UserGetFromTokenSchema.parse(UserService.verifyToken(token as string));
+            const user = await UserService.getUserByToken(token as string);
+            const verified = UserGetFromTokenSchema.parse(user);
             if (verified.role === 'student') {
                 return next();
             }

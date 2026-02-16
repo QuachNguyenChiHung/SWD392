@@ -9,8 +9,8 @@ const ClassSchema: Schema = new Schema(
         class_name: { type: String, required: true, maxlength: 255 },
         img_cover_link: { type: String, maxlength: 500 },
         keywords: { type: String, maxlength: 500 },
-        date_create: { type: Date, default: Date.now },
-        status: { type: Boolean, default: true },
+        date_create: { type: Date, default: Date.now() },
+        status: { type: String, default: "active", enum: ["active", "inactive"] },
     },
     { timestamps: false }
 );

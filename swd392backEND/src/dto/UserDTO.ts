@@ -5,11 +5,7 @@ const UserGetFromTokenSchema = z.object({
     email: z.email(),
     username: z.string(),
     status: z.enum(['active', 'banned']),
-    date_create: z.string(),
-    iat: z.number(),
-    exp: z.number(),
-    __v: z.number(),
-    _id: z.string(),
+    date_create: z.date()
 });
 
 const UserUpdateSchema = z.object({

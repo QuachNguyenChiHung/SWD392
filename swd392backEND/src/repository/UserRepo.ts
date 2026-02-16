@@ -6,7 +6,7 @@ import type { UserUpdateDTO} from "../dto/UserDTO.ts";
 
 class UserRepo {
     async getAllUsers(page: number) {
-        const limit = 10;
+        const limit = 12;
         const skip = (page - 1) * limit;
         return await User.find().skip(skip).limit(limit);
     }
@@ -35,13 +35,15 @@ class UserRepo {
     async findByMail(email: string) {
         return await User.findOne({ email: email });
     }
-    async findByKeyWord(keyword: string) {
+    async findByKeyWord(keyword: string, page: number) {
+        const limit = 12;
+        const skip = (page - 1) * limit;
         return await User.find({
             $or: [
                 { name: { $regex: keyword, $options: 'i' } },
                 { email: { $regex: keyword, $options: 'i' } }
             ]
-        });
+        }).skip(skip).limit(limit);
     }
 }
 export default new UserRepo();

@@ -4,4 +4,5 @@ export interface ITopic extends Document {
     course_id: Types.ObjectId;
     title: string;
     description?: string;
+    content_json?: any;
 }

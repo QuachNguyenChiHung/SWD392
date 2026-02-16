@@ -5,7 +5,6 @@ const QuizSchema: Schema = new Schema(
     {
         material_id: { type: Schema.Types.ObjectId, ref: 'ClassMaterial', required: true, unique: true },
         title: { type: String, required: true, maxlength: 255 },
-        keyword: { type: String, maxlength: 500 },
         type: { type: String, required: true, maxlength: 50 },
         available_date: { type: Date, default: null },
         max_attempt_number: { type: Number, default: null },

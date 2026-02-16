@@ -7,9 +7,8 @@ route.get('/users', verifyRole.verifyAdmin, UserController.getAllUsers);
 route.get('/users/:id', verifyRole.verifyAdmin, UserController.getUserById);
 route.post('/users', verifyRole.verifyAdmin, UserController.createUser);
 route.patch('/users/:id', verifyRole.verifyAdmin, UserController.updateUser);
-route.delete('/users/:id', verifyRole.verifyAdmin, UserController.deleteUser);
 
-// User status management
+// User status toggle route, only for admin to use, prevent user from updating their own status by themselves
 route.patch('/users/:id/status', verifyRole.verifyAdmin, UserController.toggleStatus);
 
 // Authentication routes

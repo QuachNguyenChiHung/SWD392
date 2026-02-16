@@ -3,7 +3,7 @@ import UserService from "../services/UserService.ts";
 import zod from "zod";
 import { tr } from "zod/locales";
 import { loginSchema, registerSchema } from "../dto/AuthDTO.ts";
-import { UserUpdateSchema, type UserGetFromTokenDTO } from "../dto/UserDTO.ts";
+import { UserGetFromTokenSchema, UserUpdateSchema, type UserGetFromTokenDTO } from "../dto/UserDTO.ts";
 
 class UserController {
     async getAllUsers(req: Request, res: Response, next: NextFunction) {
@@ -53,11 +53,11 @@ class UserController {
             const updateBody = UserUpdateSchema.parse(rest);
 
             const token = req.signedCookies.Authorization;
-            const verified = UserService.verifyToken(token as string) as UserGetFromTokenDTO;
+            const verified = await UserService.getUserByToken(token as string);
             if (!verified) {
                 return res.status(401).json({ message: "Invalid or expired token" });
             }
-            const updated = await UserService.updateUser(verified._id, updateBody);
+            const updated = await UserService.updateUser(verified._id.toString(), updateBody);
             if (!updated) {
                 return res.status(404).json({ message: "User not found" });
             }
@@ -66,17 +66,17 @@ class UserController {
             next(error);
         }
     }
-    async deleteUser(req: Request, res: Response, next: NextFunction) {
-        try {
-            const deleted = await UserService.deleteUser(req.params.id as string);
-            if (!deleted) {
-                return res.status(404).json({ message: "User not found" });
-            }
-            return res.status(200).json(deleted);
-        } catch (error: any) {
-            next(error);
-        }
-    }
+    // async deleteUser(req: Request, res: Response, next: NextFunction) {
+    //     try {
+    //         const deleted = await UserService.deleteUser(req.params.id as string);
+    //         if (!deleted) {
+    //             return res.status(404).json({ message: "User not found" });
+    //         }
+    //         return res.status(200).json(deleted);
+    //     } catch (error: any) {
+    //         next(error);
+    //     }
+    // }
     async toggleStatus(req: Request, res: Response, next: NextFunction) {
         try {
             const toggled = await UserService.toggleStatus(req.params.id as string);
@@ -106,7 +106,7 @@ class UserController {
             if (!p) {
                 return res.status(401).json({ message: "Password or email is incorrect" });
             }
-            const token = await UserService.generateToken(p);
+            const token = await UserService.generateToken({ "id_": p._id });
             res.cookie('Authorization', `Bearer ${token}`,
                 { expires: new Date(Date.now() + 3600000), httpOnly: true, sameSite: 'lax', signed: true });
 
@@ -120,7 +120,8 @@ class UserController {
             // Authorization: Bearer <token>
             //Signed cookies
             const token = req.signedCookies.Authorization;
-            const verified = UserService.verifyToken(token as string) as UserGetFromTokenDTO;
+            const verified = UserGetFromTokenSchema.parse(await UserService.getUserByToken(token as string));
+            console.log(verified);
             if (!verified) {
                 return res.status(401).json({ message: "Invalid or expired token" });
             }
@@ -140,7 +141,8 @@ class UserController {
     }
     async findByKeyWord(req: Request, res: Response, next: NextFunction) {
         try {
-            const results = await UserService.findByKeyWord(req.query.q as string);
+            const page = parseInt(req.query.page as string) || 1;
+            const results = await UserService.findByKeyWord(req.query.q as string, page);
             return res.status(200).json(results);
         } catch (error: any) {
             next(error);
