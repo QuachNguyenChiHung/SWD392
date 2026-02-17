@@ -1,6 +1,8 @@
 import { Box, Typography, Stack, Paper, Grid, Tabs, Tab } from "@mui/material";
-import { type Topic } from "../../types/teacherType";
+import type { Topic, Student, Class } from "../../types/teacherType";
 import ClassMaterial from "./teacherClassDetailTabs/classMaterial";
+import StudentList from "./teacherClassDetailTabs/studentList";
+import { useState } from "react";
 
 const mockTopics: Topic[] = [
   {
@@ -97,7 +99,63 @@ const mockTopics: Topic[] = [
   },
 ];
 
+const mockStudents: Student[] = [
+  {
+    student_id: "ST001",
+    student_name: "Alice Johnson",
+    email: "alice.johnson@email.com",
+    enrolled_date: new Date("2025-09-15"),
+    status: "active",
+  },
+  {
+    student_id: "ST002",
+    student_name: "Bob Smith",
+    email: "bob.smith@email.com",
+    enrolled_date: new Date("2025-09-16"),
+    status: "active",
+  },
+  {
+    student_id: "ST003",
+    student_name: "Charlie Brown",
+    email: "charlie.brown@email.com",
+    enrolled_date: new Date("2025-09-17"),
+    status: "active",
+  },
+  {
+    student_id: "ST004",
+    student_name: "Diana Prince",
+    email: "diana.prince@email.com",
+    enrolled_date: new Date("2025-09-18"),
+    status: "inactive",
+  },
+  {
+    student_id: "ST005",
+    student_name: "Edward Norton",
+    email: "edward.norton@email.com",
+    enrolled_date: new Date("2025-09-19"),
+    status: "active",
+  },
+];
+
+const mockClassData: Class = {
+  class_id: "CLS-CHM9A-2025",
+  class_name: "Chemistry 9A",
+  keypass: "CHM9A2025",
+  course_id: "CHM-9-2022",
+  teacher_id: "TCH001",
+  img_cover_link: "/images/chemistry-cover.jpg",
+  keywords: "chemistry, grade9, reactions, stoichiometry",
+  date_create: new Date("2025-09-12"),
+  status: "active",
+  course_name: "Chemistry 9 - 2022",
+};
+
 const TeacherClassDetail = () => {
+  const [tabValue, setTabValue] = useState(0);
+
+  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    setTabValue(newValue);
+  };
   return (
     <Box>
       <Typography variant="h4" gutterBottom fontWeight="bold">
@@ -109,18 +167,26 @@ const TeacherClassDetail = () => {
       </Typography>
 
       <Grid container spacing={3}>
-        <Tabs>
-          <Tab label="Topics & Materials" />
-          <Tab label="Students" />
-          <Tab label="Analytics" />
-        </Tabs>
+        <Grid size={{ xs: 12 }}>
+          <Paper sx={{ mb: 3 }}>
+            <Tabs value={tabValue} onChange={handleTabChange}>
+              <Tab label="Topics & Materials" />
+              <Tab label="Students" />
+            </Tabs>
+          </Paper>
+        </Grid>
+
         <Grid size={{ xs: 12, md: 8 }}>
           <Stack spacing={3}>
-            <ClassMaterial topics={mockTopics} />
+            {tabValue === 0 && <ClassMaterial topics={mockTopics} />}
+            {tabValue === 1 && (
+              <StudentList students={mockStudents} classData={mockClassData} />
+            )}
           </Stack>
         </Grid>
+
         <Grid size={{ xs: 12, md: 4 }}>
-          <Paper sx={{ p: 3 }}>
+          <Paper sx={{ p: 3, mb: 3 }}>
             <Typography variant="h6" gutterBottom>
               Class overview
             </Typography>

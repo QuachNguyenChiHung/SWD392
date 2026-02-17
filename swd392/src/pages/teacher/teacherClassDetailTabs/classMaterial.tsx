@@ -32,15 +32,18 @@ export default function ClassMaterial({ topics }: ClassMaterialProps) {
     <>
       {topics.map((topic) => (
         <Paper key={topic.title} sx={{ p: 3 }}>
-          <Stack
-            direction={{ xs: "column", sm: "row" }}
-            justifyContent="space-between"
-            alignItems={{ xs: "stretch", sm: "center", md: "start" }}
-            gap={2}
-            mb={2}
-          >
-            <Box>
+          <Stack spacing={2} mb={2}>
+            <Stack
+              direction="row"
+              justifyContent="space-between"
+              alignItems="center"
+            >
               <Typography variant="h6">{topic.title}</Typography>
+              <Button variant="contained" size="small" startIcon={<Add />}>
+                Add class material
+              </Button>
+            </Stack>
+            <Box>
               <Typography variant="body2" color="text.secondary">
                 {topic.description}
               </Typography>
@@ -48,9 +51,6 @@ export default function ClassMaterial({ topics }: ClassMaterialProps) {
                 {topic.class} · {topic.belongToCourse}
               </Typography>
             </Box>
-            <Button variant="contained" size="small" startIcon={<Add />}>
-              Add class material
-            </Button>
           </Stack>
 
           <Stack spacing={1}>
