@@ -9,10 +9,15 @@ import {
   TableHead,
   TableRow,
   Paper,
+  Modal,
+  TextField,
+  Autocomplete,
 } from "@mui/material";
 import { Add } from "@mui/icons-material";
 import ClassTableRow from "../../components/teacher/ClassTableRow";
 import type { Class } from "../../types/teacherType";
+import { useState } from "react";
+import style from "@mui/system/style";
 
 const TeacherClasses = () => {
   const classes: (Class & { studentCount: number })[] = [
@@ -56,7 +61,12 @@ const TeacherClasses = () => {
       studentCount: 25,
     },
   ];
-
+  const classOption = [
+    { label: "didi oi", id: "6767676767", desc: "didi oi desc" },
+    { label: "history of epstein files", id: "69100", desc: "history of epstein files desc" },
+  ];
+  const [modalClassCreation, setModalClassCreation] = useState(false);
+  const [selectedCourse, setSelectedCourse] = useState<any>(null);//mốt thay any thành course type(Hùng)
   return (
     <Box>
       <Box
@@ -70,11 +80,43 @@ const TeacherClasses = () => {
         <Typography variant="h4" fontWeight="bold">
           Quản lý lớp học
         </Typography>
-        <Button variant="contained" startIcon={<Add />}>
+        <Button variant="contained" startIcon={<Add />} onClick={() => setModalClassCreation(true)}>
           Tạo lớp học mới
         </Button>
       </Box>
+      <Modal
+        open={modalClassCreation}
+        onClose={() => setModalClassCreation(false)}
+        aria-labelledby="modal-modal-title"
+        aria-describedby="modal-modal-description"
+        autoCorrect="true"
+      >
+        <Box className="modal">
+          <Typography id="modal-modal-title" variant="h6" component="h2">
+            Tạo lớp học mới
+          </Typography>
+          <div className="text-input-container">
+            <TextField id="standard-basic" label="Mật khẩu lớp học" variant="standard" />
+            <TextField id="standard-basic" label="Tên lớp học" variant="standard" required />
+            <Autocomplete style={{ flex: '0 0 100%' }} options={classOption}
+              onChange={(event, value) => {
+                let matchedCourse = classOption.find(course => course.label === value?.label);
+                if (matchedCourse) {
+                  setSelectedCourse(matchedCourse);
+                } else {
+                  setSelectedCourse(null);
+                }
+              }}
+              renderInput={(params) =>
+                <TextField {...params} id="standard-basic" label="Tên khóa học" variant="standard" required />}
+            />
+            <Typography variant="body2" color="text.primary" mt={1}>
+              Mô tả môn học :{selectedCourse ? selectedCourse.desc : "Chọn khóa học để xem mô tả"}
+            </Typography>
+          </div>
 
+        </Box>
+      </Modal>
       <Stack spacing={1} mb={2}>
         <Typography variant="subtitle1" color="text.secondary">
           Theo dõi mã lớp học, sĩ số, ngày khởi tạo và khóa truy cập (ẩn mặc

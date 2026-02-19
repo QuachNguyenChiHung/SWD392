@@ -71,12 +71,6 @@ const navItems: NavItem[] = [
     roles: [UserRole.TEACHER],
   },
   {
-    text: 'Bài giảng',
-    icon: <Science />,
-    path: '/teacher/lessons',
-    roles: [UserRole.TEACHER],
-  },
-  {
     text: 'Kiểm duyệt',
     icon: <Settings />,
     path: '/moderator/dashboard',

@@ -21,7 +21,7 @@ import StudentQuizzes from "../pages/student/StudentQuizzes";
 // Teacher Pages
 import TeacherDashboard from "../pages/teacher/TeacherDashboard";
 import TeacherClasses from "../pages/teacher/TeacherClasses";
-import TeacherLessons from "../pages/teacher/TeacherLessons";
+
 
 // Moderator Pages
 import ModeratorDashboard from "../pages/moderator/ModeratorDashboard";
@@ -33,6 +33,7 @@ import AdminUsers from "../pages/admin/AdminUsers";
 // Protected Route Component
 import ProtectedRoute from "../components/ProtectedRoute";
 import TeacherClassDetail from "../pages/teacher/teacherClassDetail";
+import MaterialDetailPage from "../pages/teacher/MaterialDetailPage";
 
 export const routes: RouteObject[] = [
   {
@@ -127,18 +128,18 @@ export const routes: RouteObject[] = [
             ),
           },
           {
-            path: "lessons",
-            element: (
-              <ProtectedRoute allowedRoles={[UserRole.TEACHER]}>
-                <TeacherLessons />
-              </ProtectedRoute>
-            ),
-          },
-          {
             path: "class/:classId",
             element: (
               <ProtectedRoute allowedRoles={[UserRole.TEACHER]}>
                 <TeacherClassDetail />
+              </ProtectedRoute>
+            ),
+          },
+          {
+            path: "class/:classId/materials/:materialId",
+            element: (
+              <ProtectedRoute allowedRoles={[UserRole.TEACHER]}>
+                <MaterialDetailPage />
               </ProtectedRoute>
             ),
           },

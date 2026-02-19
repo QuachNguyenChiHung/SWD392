@@ -31,7 +31,7 @@ export interface Topic {
   class: string;
   description: string;
   belongToCourse: string;
-  ClassMaterialType: ClassMaterial[];
+  ClassMaterialType: ClassMaterial[] | null;
 }
 
 export type ClassMaterialType = "file" | "slide" | "2d_render" | "quiz";
@@ -54,6 +54,30 @@ export interface FileMaterial {
   file_name: string;
   file_path: string;
 }
+// Question interface
+export interface Question {
+  id: string;
+  content: string;
+  type: 'multiple-choice' | 'true-false' | 'short-answer';
+  options?: string[];
+  correctAnswer: string | string[];
+  explanation?: string;
+  has2DVisualization?: boolean;
+}
+// Quiz interface
+export interface Quiz {
+  quiz_id: number;
+  material_id: number;
+  title: string;
+  keyword: string | null;
+  type: 'interactive' | 'standard';
+  available_date: Date | null;
+  max_attempt_number: number | null;
+  end_date: Date | null;
+  status: boolean;
+  questions?: Question[];
+}
+
 
 export interface Render2DMaterial {
   render_id: number;
@@ -66,17 +90,7 @@ export interface SlideMaterial {
   file_path: string;
 }
 
-export interface Quiz {
-  id: string;
-  classId: string;
-  title: string;
-  //questions: Question[];
-  maxAttempts?: number;
-  availableFrom?: Date;
-  availableUntil?: Date;
-  createdAt: Date;
-  updatedAt: Date;
-}
+
 
 export interface DueAssignment {
   quiz_id: number;

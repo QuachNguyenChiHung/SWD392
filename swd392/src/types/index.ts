@@ -1,10 +1,10 @@
 // User roles
 export const UserRole = {
-  GUEST: 'GUEST',
-  STUDENT: 'STUDENT',
-  TEACHER: 'TEACHER',
-  MODERATOR: 'MODERATOR',
-  ADMIN: 'ADMIN'
+  GUEST: 'guest',
+  STUDENT: 'student',
+  TEACHER: 'teacher',
+  MODERATOR: 'moderator',
+  ADMIN: 'admin'
 } as const;
 
 export type UserRole = typeof UserRole[keyof typeof UserRole];
@@ -50,29 +50,8 @@ export interface Lesson {
   updatedAt: Date;
 }
 
-// Quiz interface
-export interface Quiz {
-  quiz_id: number;
-  material_id: number;
-  title: string;
-  keyword: string | null;
-  type: string;
-  available_date: Date | null;
-  max_attempt_number: number | null;
-  end_date: Date | null;
-  status: boolean;
-}
 
-// Question interface
-export interface Question {
-  id: string;
-  content: string;
-  type: 'multiple-choice' | 'true-false' | 'short-answer' | 'interactive';
-  options?: string[];
-  correctAnswer: string | string[];
-  explanation?: string;
-  has2DVisualization?: boolean;
-}
+
 
 // Dashboard helper types
 
