@@ -46,7 +46,7 @@ class UserService {
 
             let user = await this.getUserById(decoded.id_);
             const { password, status, username, email, date_create, _id, role } = user as IUser;
-            return { password, status, username, email, date_create, _id: _id.toString(), role };
+            return { password, status, username, email, date_create, id: _id.toString(), role };
         } catch (error) {
             return null;
         }

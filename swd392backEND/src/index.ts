@@ -14,6 +14,7 @@ import UserRoute from './route/UserRoute.ts';
 import CourseRoute from './route/CourseRoute.ts';
 import EnrollRoute from './route/EnrollRoute.ts';
 import TopicRoute from './route/TopicRoute.ts';
+import ClassRoute from './route/ClassRoute.ts';
 
 const spec = swaggerJSDoc({
     definition: { openapi: '3.0.0', info: { title: 'API', version: '1.0.0' } },
@@ -37,15 +38,45 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(spec));
 console.log(process.env.MONGO_URI);
 (
     async () => {
+        const localUri = 'mongodb://localhost:27017/swd392';
+        const primaryUri = process.env.MONGO_URI;
+
+        async function tryConnect(uri: string, label: string) {
+            try {
+                console.log(`Attempting MongoDB connection (${label}): ${uri}`);
+                // short server selection timeout to fail fast on unreachable hosts
+                await mongoose.connect(uri, { serverSelectionTimeoutMS: 5000 } as any);
+                console.log(`Connected to MongoDB (${label})`);
+                return true;
+            } catch (err) {
+                console.error(`Failed to connect to MongoDB (${label}):`, err);
+                return false;
+            }
+        }
+
         try {
-            const mongoUri = process.env.MONGO_URI || 'mongodb://localhost:27017/swd392';
-            await mongoose.connect(mongoUri);
-            console.log('Connected to MongoDB');
+            let connected = false;
+            if (primaryUri) {
+                connected = await tryConnect(primaryUri, 'MONGO_URI');
+            } else {
+                console.log('MONGO_URI not set — skipping primary attempt.');
+            }
+
+            if (!connected) {
+                connected = await tryConnect(localUri, 'localhost');
+                if (!connected) {
+                    console.error('Could not connect to MongoDB (primary and localhost). Exiting.');
+                    // kill the process as requested
+                    process.exit(1);
+                }
+            }
+
             app.use('/cloudinary-demo', CloudinaryUploadDemoRoute);
             app.use('/api', UserRoute);
             app.use('/api', CourseRoute);
             app.use('/api', EnrollRoute);
             app.use('/api', TopicRoute);
+            app.use('/api', ClassRoute);
             // Error handler must be after routes
             app.use((err: any, req: Request, res: Response, next: NextFunction) => {
                 console.error(err.stack);
@@ -61,7 +92,7 @@ console.log(process.env.MONGO_URI);
                 console.log(`Server is running on port ${PORT}`);
             });
         } catch (error) {
-            console.error('Error connecting to MongoDB:', error);
+            console.error('Unexpected error during startup:', error);
             process.exit(1);
         }
     }

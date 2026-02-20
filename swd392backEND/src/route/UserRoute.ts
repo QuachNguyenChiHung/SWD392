@@ -2,7 +2,8 @@ import { Router } from "express";
 import UserController from "../controller/UserController.ts";
 import verifyRole from "../ultis/verifyRole.ts";
 const route = Router();
-
+// Search users by keyword functionality
+route.get('/users/search', verifyRole.verifyAdmin, UserController.findByKeyWord);
 route.get('/users', verifyRole.verifyAdmin, UserController.getAllUsers);
 route.get('/users/:id', verifyRole.verifyAdmin, UserController.getUserById);
 route.post('/users', verifyRole.verifyAdmin, UserController.createUser);
@@ -20,8 +21,5 @@ route.get('/me', UserController.getUserInfo);
 route.patch('/me', UserController.updateSelf);
 // Logout route
 route.post('/logout', UserController.removeToken);
-
-// Search users by keyword functionality
-route.get('/users/search', verifyRole.verifyAdmin, UserController.findByKeyWord);
 
 export default route;

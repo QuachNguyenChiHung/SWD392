@@ -115,11 +115,6 @@
  *         message:
  *           type: string
  *           description: Success message
- *   securitySchemes:
- *     BearerAuth:
- *       type: http
- *       scheme: bearer
- *       bearerFormat: JWT
  * 
  * /api/register:
  *   post:
@@ -191,8 +186,6 @@
  *       - Authentication
  *     summary: Logout user
  *     description: Logout current user (clears authentication cookie)
- *     security:
- *       - BearerAuth: []
  *     responses:
  *       200:
  *         description: Logout successful
@@ -213,8 +206,6 @@
  *       - Users
  *     summary: Get current user info
  *     description: Get information about the currently authenticated user
- *     security:
- *       - BearerAuth: []
  *     responses:
  *       200:
  *         description: User information
@@ -239,8 +230,6 @@
  *       - Users
  *     summary: Update own profile
  *     description: Update current user's own profile information
- *     security:
- *       - BearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -279,8 +268,6 @@
  *       - Users
  *     summary: Get all users
  *     description: Get all users (Admin only, with pagination)
- *     security:
- *       - BearerAuth: []
  *     parameters:
  *       - in: query
  *         name: page
@@ -321,8 +308,6 @@
  *       - Users
  *     summary: Create new user
  *     description: Create a new user (Admin only)
- *     security:
- *       - BearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -367,8 +352,6 @@
  *       - Users
  *     summary: Get user by ID
  *     description: Get a specific user by their ID (Admin only)
- *     security:
- *       - BearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -412,8 +395,6 @@
  *       - Users
  *     summary: Update user
  *     description: Update a user's information (Admin only)
- *     security:
- *       - BearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -471,8 +452,6 @@
  *       - Users
  *     summary: Toggle user status
  *     description: Toggle user status between active and banned (Admin only)
- *     security:
- *       - BearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -518,8 +497,6 @@
  *       - Users
  *     summary: Search users by keyword
  *     description: Search users by name or email keyword (Admin only)
- *     security:
- *       - BearerAuth: []
  *     parameters:
  *       - in: query
  *         name: q

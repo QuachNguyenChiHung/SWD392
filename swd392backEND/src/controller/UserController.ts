@@ -57,7 +57,7 @@ class UserController {
             if (!verified) {
                 return res.status(401).json({ message: "Invalid or expired token" });
             }
-            const updated = await UserService.updateUser(verified._id.toString(), updateBody);
+            const updated = await UserService.updateUser(verified.id.toString(), updateBody);
             if (!updated) {
                 return res.status(404).json({ message: "User not found" });
             }

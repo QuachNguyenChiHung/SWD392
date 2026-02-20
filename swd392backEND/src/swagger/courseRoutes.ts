@@ -83,7 +83,7 @@
  *     tags:
  *       - Courses
  *     summary: Create a new course
- *     description: Creates a new course with the provided information
+ *     description: Creates a new course with the provided information (Admin only)
  *     requestBody:
  *       required: true
  *       content:
@@ -103,6 +103,12 @@
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
+ *       403:
+ *         description: Forbidden - Admin access required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       500:
  *         description: Internal server error
  *         content:
@@ -115,7 +121,7 @@
  *     tags:
  *       - Courses
  *     summary: Update a course
- *     description: Updates an existing course by ID
+ *     description: Updates an existing course by ID (Admin only)
  *     parameters:
  *       - in: path
  *         name: id
@@ -142,6 +148,12 @@
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
+ *       403:
+ *         description: Forbidden - Admin access required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       404:
  *         description: Course not found
  *         content:
@@ -158,7 +170,7 @@
  *     tags:
  *       - Courses
  *     summary: Delete a course
- *     description: Deletes a course by ID
+ *     description: Deletes a course by ID (Admin only)
  *     parameters:
  *       - in: path
  *         name: id
@@ -173,6 +185,12 @@
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/SuccessResponse'
+ *       403:
+ *         description: Forbidden - Admin access required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       404:
  *         description: Course not found
  *         content:
@@ -191,7 +209,7 @@
  *     tags:
  *       - Courses
  *     summary: Toggle course status
- *     description: Toggles course status between active and inactive
+ *     description: Toggles course status between active and inactive (Admin only)
  *     parameters:
  *       - in: path
  *         name: id
@@ -206,6 +224,12 @@
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Course'
+ *       403:
+ *         description: Forbidden - Admin access required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       404:
  *         description: Course not found
  *         content:

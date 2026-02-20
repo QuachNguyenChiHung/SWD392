@@ -24,7 +24,7 @@ class CourseService {
             const updatedCourse = await CourseRepo.updateCourse(courseId, updateData);
             return updatedCourse;
         } catch (error) {
-            throw new Error(`Error updating course: ${error}`);
+            return { error: `Error updating course: ${error}` };
         }
     }
 
@@ -34,7 +34,7 @@ class CourseService {
             await TopicService.deleteTopicsByCourse(courseId);
             return await CourseRepo.deleteCourse(courseId);
         } catch (error) {
-            throw new Error(`Error deleting course: ${error}`);
+            return { error: `Error deleting course: ${error}` };
         }
     }
 
@@ -43,7 +43,7 @@ class CourseService {
             const courses = await CourseRepo.getAllCourses(page);
             return courses || [];
         } catch (error) {
-            throw new Error(`Error retrieving courses: ${error}`);
+            return { error: `Error retrieving courses: ${error}` };
         }
     }
 
@@ -82,7 +82,7 @@ class CourseService {
                 inactiveCourses: totalCourses - activeCourses.length
             };
         } catch (error) {
-            throw new Error(`Error retrieving course statistics: ${error}`);
+            return { error: `Error retrieving course statistics: ${error}` };
         }
     }
 }

@@ -9,6 +9,9 @@ class TopicController {
             const validatedData = CreateTopicSchema.parse(req.body);
             const result = await TopicService.createTopic(validatedData);
 
+            if ((result as any).error) {
+                return res.status(400).json(result);
+            }
 
             res.status(201).json(result);
         } catch (error) {
@@ -23,6 +26,11 @@ class TopicController {
             const validatedData = UpdateTopicSchema.parse(req.body);
 
             const result = await TopicService.updateTopic(id as string, validatedData);
+
+            if ((result as any).error) {
+                return res.status(400).json(result);
+            }
+
             if (!result) {
                 return res.status(404).json({ error: "Topic not found" });
             }

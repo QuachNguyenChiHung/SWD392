@@ -60,6 +60,7 @@ async function seed() {
         console.log('Cleared all collections.');
 
         // ─── 1. Users (10) ───
+        //password : 67Hashed_password
         const users = await User.insertMany(
             Array.from({ length: 10 }, (_, i) => ({
                 role: i < 2 ? 'admin' : i < 5 ? 'teacher' : 'student',

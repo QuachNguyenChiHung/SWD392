@@ -24,7 +24,7 @@ class TopicService {
             const newTopic = await TopicRepo.createTopic(topicData);
             return newTopic;
         } catch (error) {
-            throw new Error(`Error creating topic: ${error}`);
+            return { error: `Error creating topic: ${error}` };
         }
     }
 
@@ -54,7 +54,7 @@ class TopicService {
             const updatedTopic = await TopicRepo.updateTopic(topicId, updateData);
             return updatedTopic;
         } catch (error) {
-            throw new Error(`Error updating topic: ${error}`);
+            return { error: `Error updating topic: ${error}` };
         }
     }
 
@@ -103,7 +103,7 @@ class TopicService {
                 topicsCount
             };
         } catch (error) {
-            throw new Error(`Error retrieving topic statistics by course: ${error}`);
+            return { error: `Error retrieving topic statistics by course: ${error}` };
         }
     }
 }

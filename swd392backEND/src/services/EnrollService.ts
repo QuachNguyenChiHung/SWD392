@@ -1,13 +1,13 @@
 import EnrollRepo from "../repository/EnrollRepo.ts";
 import { Class } from "../entities/Class.ts";
+import { Teacher } from "../entities/Teacher.ts";
 import type { CreateEnrollDTO } from "../dto/EnrollDTO.ts";
-import { Types } from "mongoose";
 
 class EnrollService {
     async createEnrollment(enrollData: CreateEnrollDTO) {
         try {
             // Validate keypass with class
-            const classData = await Class.findById(new Types.ObjectId(enrollData.class_id));
+            const classData = await Class.findById(enrollData.class_id);
             if (!classData) {
                 return { error: "Class not found" };
             }
@@ -29,7 +29,7 @@ class EnrollService {
             const newEnroll = await EnrollRepo.createEnroll(enrollData);
             return newEnroll;
         } catch (error) {
-            throw new Error(`Error creating enrollment: ${error}`);
+            return { error: `Error creating enrollment: ${error}` };
         }
     }
 
@@ -37,15 +37,29 @@ class EnrollService {
         return await EnrollRepo.getEnrollsByClassId(classId, page);
     }
 
-    async completeEnrollment(enrollId: string) {
+    async completeEnrollment(enrollId: string, teacherUserId: string) {
         try {
-            const updatedEnroll = await EnrollRepo.updateEnrollStatusById(enrollId, "completed");
-            if (!updatedEnroll) {
+            // Get the enrollment to find the class
+            const enroll = await EnrollRepo.getEnrollById(enrollId);
+            if (!enroll) {
                 return { error: "Enrollment not found" };
             }
+
+            // Get the class and verify the teacher owns it
+            const classData = await Class.findById(enroll.class_id);
+            if (!classData) {
+                return { error: "Class not found" };
+            }
+
+            const teacher = await Teacher.findById(classData.teacher_id);
+            if (!teacher || teacher.user_id.toString() !== teacherUserId) {
+                return { error: "Only the teacher of this class can mark enrollment as completed" };
+            }
+
+            const updatedEnroll = await EnrollRepo.updateEnrollStatusById(enrollId, "completed");
             return updatedEnroll;
         } catch (error) {
-            throw new Error(`Error completing enrollment: ${error}`);
+            return { error: `Error completing enrollment: ${error}` };
         }
     }
 

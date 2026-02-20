@@ -1,7 +1,6 @@
 import type { TopicCreateDTO, TopicUpdateDTO } from "../dto/TopicDTO.ts";
 import { Topic } from "../entities/Topic.ts";
 import type { ITopic } from "../interface/ITopic.ts";
-import { Types } from "mongoose";
 
 class TopicRepo {
     async getAllTopics(page: number) {
@@ -30,7 +29,7 @@ class TopicRepo {
     }
 
     async getTopicsByCourseId(courseId: string) {
-        return await Topic.find({ course_id: new Types.ObjectId(courseId) })
+        return await Topic.find({ course_id: courseId })
             .populate('course_id', 'course_name grade_level');
     }
 
@@ -50,11 +49,11 @@ class TopicRepo {
     }
 
     async deleteTopicsByCourseId(courseId: string) {
-        return await Topic.deleteMany({ course_id: new Types.ObjectId(courseId) });
+        return await Topic.deleteMany({ course_id: courseId });
     }
 
     async getTopicsCountByCourse(courseId: string) {
-        return await Topic.countDocuments({ course_id: new Types.ObjectId(courseId) });
+        return await Topic.countDocuments({ course_id: courseId });
     }
 
     async getTotalTopicsCount() {
@@ -64,7 +63,7 @@ class TopicRepo {
     async getTopicsByCourseIdWithPagination(courseId: string, page: number) {
         const limit = 12;
         const skip = (page - 1) * limit;
-        return await Topic.find({ course_id: new Types.ObjectId(courseId) })
+        return await Topic.find({ course_id: courseId })
             .populate('course_id', 'course_name grade_level')
             .skip(skip)
             .limit(limit);

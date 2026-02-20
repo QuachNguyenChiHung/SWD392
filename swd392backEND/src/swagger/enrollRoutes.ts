@@ -35,19 +35,13 @@
  *           type: string
  *           description: Class keypass for enrollment verification
  *
- * /api/enroll/{u_id}/{class_id}:
+ * /api/enroll/{class_id}:
  *   post:
  *     tags:
  *       - Enrollments
  *     summary: Create student enrollment
- *     description: Enroll a student in a class with keypass verification
+ *     description: Enroll the currently logged-in student in a class with keypass verification (Student only)
  *     parameters:
- *       - in: path
- *         name: u_id
- *         required: true
- *         schema:
- *           type: string
- *         description: Student user ID
  *       - in: path
  *         name: class_id
  *         required: true
@@ -68,26 +62,24 @@
  *             schema:
  *               $ref: '#/components/schemas/Enroll'
  *       400:
- *         description: Bad request - Invalid keypass, student already enrolled, class not found, or invalid data
+ *         description: Bad request - Invalid keypass, student already enrolled, or class not found
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
- *       500:
- *         description: Internal server error
+ *       403:
+ *         description: Forbidden - Students only
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *
- * /api/enroll/{class_id}:
+ * /api/teacher/enroll/{class_id}:
  *   get:
  *     tags:
  *       - Enrollments
  *     summary: Get all enrollments from a class
- *     description: Get all student enrollments from a specific class (teachers only, returns 12 results per page)
- *     security:
- *       - BearerAuth: []
+ *     description: Get all student enrollments from a specific class (Teacher only, returns 12 results per page)
  *     parameters:
  *       - in: path
  *         name: class_id
@@ -118,19 +110,13 @@
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
- *       500:
- *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
  *
  * /api/enroll/{enroll_id}/completed:
  *   patch:
  *     tags:
  *       - Enrollments
  *     summary: Mark enrollment as completed
- *     description: Update enrollment status to completed using enrollment ID
+ *     description: Update enrollment status to completed (Teacher only, must be the teacher of the class)
  *     parameters:
  *       - in: path
  *         name: enroll_id
@@ -145,14 +131,8 @@
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Enroll'
- *       404:
- *         description: Enrollment not found
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *       500:
- *         description: Internal server error
+ *       403:
+ *         description: Forbidden - Only the teacher of this class can mark enrollment as completed
  *         content:
  *           application/json:
  *             schema:

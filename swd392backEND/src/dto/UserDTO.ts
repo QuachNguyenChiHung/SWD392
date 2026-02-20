@@ -1,6 +1,7 @@
 import z from "zod";
 
 const UserGetFromTokenSchema = z.object({
+    id: z.string(),
     role: z.enum(['student', 'teacher', 'admin', 'moderator']),
     email: z.email(),
     username: z.string(),

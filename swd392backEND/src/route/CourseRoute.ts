@@ -19,4 +19,9 @@ router.patch("/courses/:id/toggle-status", verifyRole.verifyAdmin, CourseControl
 // Search courses by keyword
 router.get("/courses/search", CourseController.searchCoursesByKeyword);
 
+// Get course by ID
+router.get("/courses/:id", CourseController.getCourseById);
+// Get all courses with pagination
+router.get("/courses", CourseController.getAllCourses);
+
 export default router;

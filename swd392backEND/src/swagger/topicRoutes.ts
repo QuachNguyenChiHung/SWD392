@@ -54,8 +54,6 @@
  *       - Topics
  *     summary: Create a new topic
  *     description: Create a new topic (Admin only)
- *     security:
- *       - BearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -113,8 +111,6 @@
  *       - Topics
  *     summary: Update topic
  *     description: Update an existing topic (Admin only)
- *     security:
- *       - BearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id

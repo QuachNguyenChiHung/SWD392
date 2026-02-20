@@ -7,7 +7,7 @@ const CourseSchema: Schema = new Schema(
         grade_level: { type: Number, required: true, min: 1, max: 12 },
         change_log: { type: Schema.Types.Mixed, default: null },
         date_create: { type: Date, default: Date.now },
-        status: { type: String, default: "active", enum: ["active", "inactive"] },
+        status: { type: String, default: "active", enum: ["active", "inactive", "archived"] },
     },
     { timestamps: false }
 );

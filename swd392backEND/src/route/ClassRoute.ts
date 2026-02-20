@@ -1,0 +1,15 @@
+import { Router } from "express";
+import ClassController from "../controller/ClassController.ts";
+import verifyRole from "../ultis/verifyRole.ts";
+const route = Router();
+route.get("/class/:id", ClassController.getClassById);
+route.get("/teacher/class", verifyRole.verifyTeacher, ClassController.getClassesByTeacher);
+route.get("/student/class", verifyRole.verifyStudent, ClassController.getClassesByStudent);
+
+route.post("/class", verifyRole.verifyTeacher, ClassController.createClass);
+route.put("/class/:id", verifyRole.verifyTeacher, ClassController.updateClass);
+
+route.post("/teacher/upload-image", verifyRole.verifyTeacher, ClassController.uploadImageCover);
+route.put("/teacher/update-image", verifyRole.verifyTeacher, ClassController.updateImageCover);
+route.delete("/teacher/delete-image", verifyRole.verifyTeacher, ClassController.deleteImageCover);
+export default route;

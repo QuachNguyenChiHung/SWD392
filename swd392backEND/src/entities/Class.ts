@@ -7,10 +7,9 @@ const ClassSchema: Schema = new Schema(
         course_id: { type: Schema.Types.ObjectId, ref: 'Course', default: null },
         teacher_id: { type: Schema.Types.ObjectId, ref: 'Teacher', required: true },
         class_name: { type: String, required: true, maxlength: 255 },
-        img_cover_link: { type: String, maxlength: 500 },
-        keywords: { type: String, maxlength: 500 },
+        img_cover_link: { type: String, default: null },
         date_create: { type: Date, default: Date.now() },
-        status: { type: String, default: "active", enum: ["active", "inactive"] },
+        status: { type: String, default: "active", enum: ["active", "inactive", "archived"] },
     },
     { timestamps: false }
 );
