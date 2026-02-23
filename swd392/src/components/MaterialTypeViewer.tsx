@@ -181,87 +181,108 @@ function QuizViewer({ content, onQuestionsChange }: QuizViewerProps) {
                         variant="outlined"
                         sx={{ mb: 1 }}
                     >
-                        <AccordionSummary expandIcon={<ExpandMore />}>
-                            <Stack
-                                direction="row"
-                                spacing={1.5}
-                                alignItems="center"
-                                width="100%"
-                                pr={1}
+                        <Box sx={{ position: 'relative' }}>
+                            <AccordionSummary
+                                expandIcon={<ExpandMore />}
+                                sx={{
+                                    '& .MuiAccordionSummary-content': {
+                                        margin: 0,
+                                        pr: canEdit ? 8 : 0, // Add padding when edit buttons are present
+                                    },
+                                }}
                             >
-                                <Typography
-                                    variant="body2"
-                                    sx={{
-                                        minWidth: 24,
-                                        height: 24,
-                                        borderRadius: "50%",
-                                        bgcolor: "primary.main",
-                                        color: "primary.contrastText",
-                                        display: "flex",
-                                        alignItems: "center",
-                                        justifyContent: "center",
-                                        fontSize: 12,
-                                        fontWeight: 700,
-                                        flexShrink: 0,
-                                    }}
-                                >
-                                    {index + 1}
-                                </Typography>
-                                <Typography variant="body2" sx={{ flex: 1 }}>
-                                    {q.content}
-                                </Typography>
                                 <Stack
                                     direction="row"
-                                    spacing={0.5}
-                                    flexShrink={0}
+                                    spacing={1.5}
                                     alignItems="center"
+                                    width="100%"
                                 >
-                                    <Chip
-                                        label={TYPE_LABEL[q.type]}
-                                        color={TYPE_COLOR[q.type]}
-                                        size="small"
-                                    />
-                                    {q.has2DVisualization && (
+                                    <Typography
+                                        variant="body2"
+                                        sx={{
+                                            minWidth: 24,
+                                            height: 24,
+                                            borderRadius: "50%",
+                                            bgcolor: "primary.main",
+                                            color: "primary.contrastText",
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                            fontSize: 12,
+                                            fontWeight: 700,
+                                            flexShrink: 0,
+                                        }}
+                                    >
+                                        {index + 1}
+                                    </Typography>
+                                    <Typography variant="body2" sx={{ flex: 1 }}>
+                                        {q.content}
+                                    </Typography>
+                                    <Stack
+                                        direction="row"
+                                        spacing={0.5}
+                                        flexShrink={0}
+                                        alignItems="center"
+                                    >
                                         <Chip
-                                            icon={<ViewInAr sx={{ fontSize: 14 }} />}
-                                            label="2D"
-                                            color="info"
+                                            label={TYPE_LABEL[q.type]}
+                                            color={TYPE_COLOR[q.type]}
                                             size="small"
                                         />
-                                    )}
-                                    {canEdit && (
-                                        <>
-                                            <Tooltip title="Chỉnh sửa câu hỏi">
-                                                <IconButton
-                                                    size="small"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        setModalState({
-                                                            open: true,
-                                                            question: q,
-                                                        });
-                                                    }}
-                                                >
-                                                    <EditOutlined fontSize="small" />
-                                                </IconButton>
-                                            </Tooltip>
-                                            <Tooltip title="Xoá câu hỏi">
-                                                <IconButton
-                                                    size="small"
-                                                    color="error"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleDeleteQuestion(q.id);
-                                                    }}
-                                                >
-                                                    <DeleteOutline fontSize="small" />
-                                                </IconButton>
-                                            </Tooltip>
-                                        </>
-                                    )}
+                                        {q.has2DVisualization && (
+                                            <Chip
+                                                icon={<ViewInAr sx={{ fontSize: 14 }} />}
+                                                label="2D"
+                                                color="info"
+                                                size="small"
+                                            />
+                                        )}
+                                    </Stack>
                                 </Stack>
-                            </Stack>
-                        </AccordionSummary>
+                            </AccordionSummary>
+
+                            {/* Action buttons positioned absolutely outside the AccordionSummary */}
+                            {canEdit && (
+                                <Box
+                                    sx={{
+                                        position: 'absolute',
+                                        right: 32, // Position next to expand icon
+                                        top: '50%',
+                                        transform: 'translateY(-50%)',
+                                        display: 'flex',
+                                        gap: 0.5,
+                                        zIndex: 1,
+                                    }}
+                                >
+                                    <Tooltip title="Chỉnh sửa câu hỏi">
+                                        <IconButton
+                                            size="small"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setModalState({
+                                                    open: true,
+                                                    question: q,
+                                                });
+                                            }}
+                                        >
+                                            <EditOutlined fontSize="small" />
+                                        </IconButton>
+                                    </Tooltip>
+                                    <Tooltip title="Xoá câu hỏi">
+                                        <IconButton
+                                            size="small"
+                                            color="error"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleDeleteQuestion(q.id);
+                                            }}
+                                        >
+                                            <DeleteOutline fontSize="small" />
+                                        </IconButton>
+                                    </Tooltip>
+                                </Box>
+                            )}
+                        </Box>
 
                         <AccordionDetails>
                             <Stack spacing={1.5}>

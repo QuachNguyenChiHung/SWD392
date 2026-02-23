@@ -28,7 +28,8 @@ import {
   uploadedFiles,
   teacherClasses,
   getTopicsByClassId,
-  getAllMaterials
+  getAllMaterials,
+  mockTopicsByClass
 } from "../../../data/teacherMockData";
 
 const TeacherDashboard = () => {
@@ -40,10 +41,14 @@ const TeacherDashboard = () => {
     const allMaterials = getAllMaterials();
     const material = allMaterials.find(material => material.material_id === assignment.material_id);
 
-    if (material && material.type === 'quiz') {
-      navigate('/teacher/display-quiz', {
-        state: { material }
-      });
+    if (material) {
+      // Find which class this material belongs to
+      const classId = findClassIdForMaterial(material.material_id);
+      if (classId) {
+        navigate(`/teacher/class/${classId}/materials/${material.material_id}`, {
+          state: { material }
+        });
+      }
     }
   };
 
@@ -54,15 +59,27 @@ const TeacherDashboard = () => {
     const material = allMaterials.find(material => material.material_id === file.file_id);
 
     if (material) {
-      if (material.type === 'slide') {
-        navigate('/teacher/display-slide', {
+      // Find which class this material belongs to
+      const classId = findClassIdForMaterial(material.material_id);
+      if (classId) {
+        navigate(`/teacher/class/${classId}/materials/${material.material_id}`, {
           state: { material }
         });
-      } else if (material.type === 'file') {
-        // Handle file download or view
-        console.log('Open file:', file);
       }
     }
+  };
+
+  // Helper function to find which class a material belongs to
+  const findClassIdForMaterial = (materialId: number) => {
+    for (const [classId, topics] of Object.entries(mockTopicsByClass || {})) {
+      const hasMateria = topics.some(topic =>
+        topic.ClassMaterialType?.some(material => material.material_id === materialId)
+      );
+      if (hasMateria) {
+        return classId;
+      }
+    }
+    return null;
   };
 
   // Handle navigation to class detail

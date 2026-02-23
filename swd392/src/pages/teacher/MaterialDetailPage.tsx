@@ -131,7 +131,10 @@ export default function MaterialDetailPage() {
         <Box>
             {/* ── Back + actions header ── */}
             <Stack direction="row" justifyContent="space-between" alignItems="center" mb={3}>
-                <Button startIcon={<ArrowBack />} onClick={() => navigate(`/teacher/class/${classId}`)}
+                <Button
+                    startIcon={<ArrowBack />}
+                    onClick={() => navigate(`/teacher/class/${classId}`)}
+                    variant="text"
                 >
                     Quay lại lớp học
                 </Button>
