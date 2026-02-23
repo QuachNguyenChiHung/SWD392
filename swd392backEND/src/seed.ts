@@ -25,37 +25,33 @@ import { Log } from './entities/Log.ts';
 import { ProgressClassMaterial } from './entities/ProgressClassMaterial.ts';
 
 async function seed() {
-    const mongoUri = process.env.MONGO_URI || 'mongodb://localhost:27017/swd392';
+    const mongoUri = 'mongodb://localhost:27017/swd392';
     await mongoose.connect(mongoUri);
     console.log('Connected to MongoDB for seeding...');
-
-    const session = await mongoose.startSession();
-    session.startTransaction();
-    console.log('Transaction started.');
 
     try {
         // ─── Clear existing data ───
         await Promise.all([
-            User.deleteMany({}, { session }),
-            Admin.deleteMany({}, { session }),
-            Teacher.deleteMany({}, { session }),
-            Course.deleteMany({}, { session }),
-            Class.deleteMany({}, { session }),
-            Topic.deleteMany({}, { session }),
-            ClassMaterial.deleteMany({}, { session }),
-            Slide.deleteMany({}, { session }),
-            Quiz.deleteMany({}, { session }),
-            Question.deleteMany({}, { session }),
-            QuizAttempt.deleteMany({}, { session }),
-            Result.deleteMany({}, { session }),
-            Render2D.deleteMany({}, { session }),
-            File.deleteMany({}, { session }),
-            Feedback.deleteMany({}, { session }),
-            Enroll.deleteMany({}, { session }),
-            AiRequest.deleteMany({}, { session }),
-            AiContent.deleteMany({}, { session }),
-            Log.deleteMany({}, { session }),
-            ProgressClassMaterial.deleteMany({}, { session }),
+            User.deleteMany({}),
+            Admin.deleteMany({}),
+            Teacher.deleteMany({}),
+            Course.deleteMany({}),
+            Class.deleteMany({}),
+            Topic.deleteMany({}),
+            ClassMaterial.deleteMany({}),
+            Slide.deleteMany({}),
+            Quiz.deleteMany({}),
+            Question.deleteMany({}),
+            QuizAttempt.deleteMany({}),
+            Result.deleteMany({}),
+            Render2D.deleteMany({}),
+            File.deleteMany({}),
+            Feedback.deleteMany({}),
+            Enroll.deleteMany({}),
+            AiRequest.deleteMany({}),
+            AiContent.deleteMany({}),
+            Log.deleteMany({}),
+            ProgressClassMaterial.deleteMany({}),
         ]);
         console.log('Cleared all collections.');
 
@@ -69,8 +65,7 @@ async function seed() {
                 password: '$2a$12$cAs/1b1rLMGGZwWqM8jZ3OH1fUSpPjkPBJ8IpFUUWA6nnHIGGnYk.',
                 date_create: new Date(),
                 status: 'active',
-            })),
-            { session }
+            }))
         );
         console.log('Seeded 10 Users');
 
@@ -80,8 +75,7 @@ async function seed() {
                 user_id: users[i]._id,
                 authorization_lvl: (i % 3) + 1,
                 date_create: new Date(),
-            })),
-            { session }
+            }))
         );
         console.log('Seeded 10 Admins');
 
@@ -91,8 +85,7 @@ async function seed() {
                 user_id: users[i]._id,
                 credential: `Teaching Certificate #${1000 + i}`,
                 date_create: new Date(),
-            })),
-            { session }
+            }))
         );
         console.log('Seeded 10 Teachers');
 
@@ -104,12 +97,11 @@ async function seed() {
         const courses = await Course.insertMany(
             Array.from({ length: 10 }, (_, i) => ({
                 course_name: courseNames[i],
-                grade_level: `Grade ${(i % 12) + 1}`,
+                grade_level: (i % 12) + 1, // Numbers 1-12 instead of strings
                 change_log: null,
                 date_create: new Date(),
                 status: 'active',
-            })),
-            { session }
+            }))
         );
         console.log('Seeded 10 Courses');
 
@@ -124,8 +116,7 @@ async function seed() {
                 keywords: `${courseNames[i].toLowerCase()}, education, learning`,
                 date_create: new Date(),
                 status: 'active',
-            })),
-            { session }
+            }))
         );
         console.log('Seeded 10 Classes');
 
@@ -140,13 +131,12 @@ async function seed() {
                 course_id: courses[i % courses.length]._id,
                 title: topicTitles[i],
                 description: `Detailed study of ${topicTitles[i].toLowerCase()} for ${courseNames[i % courseNames.length]}`,
-            })),
-            { session }
+            }))
         );
         console.log('Seeded 10 Topics');
 
         // ─── 7. ClassMaterials (10) ───
-        const materialTypes: Array<'file' | 'slide' | '2d_render' | 'quiz'> = ['file', 'slide', '2d_render', 'quiz'];
+        const materialTypes = ['file', 'slide', '2d_render', 'quiz'];
         const classMaterials = await ClassMaterial.insertMany(
             Array.from({ length: 10 }, (_, i) => ({
                 topic_id: topics[i % topics.length]._id,
@@ -159,8 +149,7 @@ async function seed() {
                 content_id: null,
                 is_ai_material: i % 3 === 0,
                 ai_content_id: null,
-            })),
-            { session }
+            }))
         );
         console.log('Seeded 10 ClassMaterials');
 
@@ -170,8 +159,7 @@ async function seed() {
                 material_id: classMaterials[i]._id,
                 slide_name: `Slide Deck ${i + 1}`,
                 file_path: `/uploads/slides/slide_${i + 1}.pdf`,
-            })),
-            { session }
+            }))
         );
         console.log('Seeded 10 Slides');
 
@@ -185,8 +173,7 @@ async function seed() {
                 max_attempt_number: 3,
                 end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
                 status: true,
-            })),
-            { session }
+            }))
         );
         console.log('Seeded 10 Quizzes');
 
@@ -201,8 +188,7 @@ async function seed() {
                     { text: `Option D for Q${i + 1}`, index: 3 },
                 ],
                 correct_index: i % 4,
-            })),
-            { session }
+            }))
         );
         console.log('Seeded 10 Questions');
 
@@ -219,8 +205,7 @@ async function seed() {
                     score: Math.floor(Math.random() * 100),
                     time_taken: Math.floor(Math.random() * 3600),
                 },
-            })),
-            { session }
+            }))
         );
         console.log('Seeded 10 QuizAttempts');
 
@@ -237,8 +222,7 @@ async function seed() {
                 ],
                 options_picked_index: i % 4,
                 isCorrect: i % 2 === 0,
-            })),
-            { session }
+            }))
         );
         console.log('Seeded 10 Results');
 
@@ -255,8 +239,7 @@ async function seed() {
                         { type: 'text', x: 300, y: 300, value: `Scene ${i + 1}`, fontSize: 18 },
                     ],
                 },
-            })),
-            { session }
+            }))
         );
         console.log('Seeded 10 Render2D');
 
@@ -267,8 +250,7 @@ async function seed() {
                 material_id: classMaterials[i]._id,
                 file_name: `document_${i + 1}.${fileExtensions[i]}`,
                 file_path: `/uploads/files/document_${i + 1}.${fileExtensions[i]}`,
-            })),
-            { session }
+            }))
         );
         console.log('Seeded 10 Files');
 
@@ -291,8 +273,7 @@ async function seed() {
                     'Good overview of the topic.',
                 ][i],
                 date: new Date(),
-            })),
-            { session }
+            }))
         );
         console.log('Seeded 10 Feedbacks');
 
@@ -304,8 +285,7 @@ async function seed() {
                 date_join: new Date(),
                 status: 'in_progress',
                 date_end: null,
-            })),
-            { session }
+            }))
         );
         console.log('Seeded 10 Enrolls');
 
@@ -328,8 +308,7 @@ async function seed() {
                 prompt: aiPrompts[i],
                 type: i % 2 === 0 ? 'quiz_generation' : 'content_summary',
                 date: new Date(),
-            })),
-            { session }
+            }))
         );
         console.log('Seeded 10 AiRequests');
 
@@ -345,8 +324,7 @@ async function seed() {
                     tokens_used: 150 + i * 20,
                     confidence: 0.85 + (i % 5) * 0.03,
                 },
-            })),
-            { session }
+            }))
         );
         console.log('Seeded 10 AiContents');
 
@@ -362,8 +340,7 @@ async function seed() {
                 action: logActions[i],
                 action_type: ['create', 'update', 'delete', 'review'][i % 4],
                 status: i % 5 === 0 ? 'failed' : 'success',
-            })),
-            { session }
+            }))
         );
         console.log('Seeded 10 Logs');
 
@@ -374,24 +351,16 @@ async function seed() {
                 classmaterial_id: classMaterials[i % classMaterials.length]._id,
                 completion_status: ['in_progress', 'completed'][i % 2],
                 date_completed: i % 2 === 1 ? new Date() : null,
-            })),
-            { session }
+            }))
         );
         console.log('Seeded 10 ProgressClassMaterials');
 
-        // ─── Commit transaction ───
-        await session.commitTransaction();
-        console.log('\n✅ Transaction committed. Seeding complete! 10 documents inserted per entity (20 entities, 200 documents total).');
+        console.log('\n✅ Seeding complete! 10 documents inserted per entity (20 entities, 200 documents total).');
 
     } catch (error) {
-        // ─── Abort transaction on any failure ───
-        if (session.inTransaction()) {
-            await session.abortTransaction();
-        }
-        console.error('\n❌ Seeding failed — transaction aborted. All changes have been reverted.');
+        console.error('\n❌ Seeding failed.');
         throw error;
     } finally {
-        session.endSession();
         await mongoose.disconnect();
         console.log('Disconnected from MongoDB.');
     }
