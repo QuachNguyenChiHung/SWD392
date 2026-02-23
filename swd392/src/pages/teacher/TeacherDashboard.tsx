@@ -12,119 +12,72 @@ import {
   TableHead,
   TableRow,
 } from "@mui/material";
+import { useNavigate } from "react-router-dom";
 import CourseProgressCard from "../../components/dashboard/CourseProgressCard";
 import DueAssignmentRow from "../../components/dashboard/DueAssignmentRow";
 import UploadedFileItem from "../../components/dashboard/UploadedFileItem";
-import AnnouncementCard from "../../components/dashboard/AnnouncementCard";
-import type { Announcement } from "../../types";
 import type {
   ClassCompletionStat,
   UploadedFileRecord,
   DueAssignment,
 } from "../../types/teacherType";
+import {
+  classCompletionStats,
+  quickActions,
+  dueAssignments,
+  uploadedFiles,
+  teacherClasses,
+  getTopicsByClassId,
+  getAllMaterials
+} from "../../../data/teacherMockData";
 
 const TeacherDashboard = () => {
-  const classCompletionStats: ClassCompletionStat[] = [
-    { course: "Math 101", completed: 26, enrolled: 30 },
-    { course: "Math 102", completed: 18, enrolled: 24 },
-    { course: "Math 103", completed: 14, enrolled: 20 },
-    { course: "Math 104", completed: 10, enrolled: 18 },
-  ];
+  const navigate = useNavigate();
 
-  type QuickAction = {
-    title: string;
-    description: string;
-    actionLabel: string;
+  // Handle navigation to quiz/material preview
+  const handleDueAssignmentClick = (assignment: DueAssignment) => {
+    // Find the material from all classes
+    const allMaterials = getAllMaterials();
+    const material = allMaterials.find(material => material.material_id === assignment.material_id);
+
+    if (material && material.type === 'quiz') {
+      navigate('/teacher/display-quiz', {
+        state: { material }
+      });
+    }
   };
 
-  const quickActions: QuickAction[] = [
-    {
-      title: "Create a new class",
-      description: "Set up a fresh class workspace with materials.",
-      actionLabel: "Create class",
-    },
-    {
-      title: "View all courses",
-      description: "Browse the current course catalog you manage.",
-      actionLabel: "Course list",
-    },
-  ];
+  // Handle navigation to file preview
+  const handleFileClick = (file: UploadedFileRecord) => {
+    // Find the material from all classes
+    const allMaterials = getAllMaterials();
+    const material = allMaterials.find(material => material.material_id === file.file_id);
 
-  const dueAssignments: DueAssignment[] = [
-    {
-      quiz_id: 101,
-      material_id: 501,
-      title: "Reaction rates quiz",
-      keyword: "rates",
-      type: "quiz",
-      available_date: new Date("2026-02-12"),
-      max_attempt_number: 3,
-      end_date: new Date("2026-02-20"),
-      status: true,
-    },
-    {
-      quiz_id: 102,
-      material_id: 502,
-      title: "Stoichiometry check-in",
-      keyword: "mole",
-      type: "quiz",
-      available_date: new Date("2026-02-14"),
-      max_attempt_number: 2,
-      end_date: new Date("2026-02-22"),
-      status: false,
-    },
-    {
-      quiz_id: 103,
-      material_id: 503,
-      title: "Lab safety essentials",
-      keyword: null,
-      type: "quiz",
-      available_date: new Date("2026-02-15"),
-      max_attempt_number: null,
-      end_date: new Date("2026-02-25"),
-      status: true,
-    },
-  ];
+    if (material) {
+      if (material.type === 'slide') {
+        navigate('/teacher/display-slide', {
+          state: { material }
+        });
+      } else if (material.type === 'file') {
+        // Handle file download or view
+        console.log('Open file:', file);
+      }
+    }
+  };
 
-  const uploadedFiles: UploadedFileRecord[] = [
-    {
-      file: "ClassPresentation.PDF",
-      course: "Math 101 | Unit 2",
-      createdAt: "12 Dec 2017",
-      file_id: 201,
-      file_name: "ClassPresentation.PDF",
-      file_path: "/files/math101/class-presentation.pdf",
-    },
-    {
-      file: "Slideshow 22Dec.PPT",
-      course: "Math 102 | Unit 2",
-      createdAt: "09 Dec 2017",
-      file_id: 202,
-      file_name: "Slideshow 22Dec.PPT",
-      file_path: "/files/math102/slideshow-22dec.ppt",
-    },
-    {
-      file: "Solving Sheet.XLS",
-      course: "Math 104 | Linear equations",
-      createdAt: "08 Dec 2017",
-      file_id: 203,
-      file_name: "Solving Sheet.XLS",
-      file_path: "/files/math104/solving-sheet.xls",
-    },
-  ];
-
-  const announcements: Announcement[] = [
-    {
-      title: "Midterm review uploaded",
-      detail: "Check the shared drive for the latest midterm guides.",
-      timestamp: "5m ago",
-    },
-    {
-      title: "Class photo day",
-      detail: "Remember to wear uniforms on Thursday.",
-      timestamp: "1h ago",
-    },
-  ];
+  // Handle navigation to class detail
+  const handleClassProgressClick = (stat: ClassCompletionStat) => {
+    // Find the class by course name
+    const targetClass = teacherClasses.find(cls => cls.course_name === stat.course);
+    if (targetClass) {
+      navigate(`/teacher/class/${targetClass.class_id}`, {
+        state: {
+          classDetail: targetClass,
+          materials: getTopicsByClassId(targetClass.class_id)
+        }
+      });
+    }
+  };
 
   return (
     <Box>
@@ -146,7 +99,7 @@ const TeacherDashboard = () => {
                     alignItems="center"
                     mb={2}
                   >
-                    <Typography variant="h6">Courses progress</Typography>
+                    <Typography variant="h6">Class progress</Typography>
                     <Typography variant="body2" color="text.secondary">
                       Students who finished all materials
                     </Typography>
@@ -163,7 +116,11 @@ const TeacherDashboard = () => {
                     }}
                   >
                     {classCompletionStats.map((stat) => (
-                      <CourseProgressCard key={stat.course} {...stat} />
+                      <CourseProgressCard
+                        key={stat.course}
+                        {...stat}
+                        onClick={() => handleClassProgressClick(stat)}
+                      />
                     ))}
                   </Box>
                 </Paper>
@@ -196,6 +153,7 @@ const TeacherDashboard = () => {
                         <DueAssignmentRow
                           key={item.quiz_id}
                           assignment={item}
+                          onClick={() => handleDueAssignmentClick(item)}
                         />
                       ))}
                     </TableBody>
@@ -221,6 +179,7 @@ const TeacherDashboard = () => {
                         key={file.file}
                         file={file}
                         showDivider={index < uploadedFiles.length - 1}
+                        onClick={() => handleFileClick(file)}
                       />
                     ))}
                   </List>
@@ -269,23 +228,6 @@ const TeacherDashboard = () => {
                           {action.actionLabel}
                         </Button>
                       </Paper>
-                    ))}
-                  </Stack>
-                </Paper>
-              </Grid>
-              <Grid size={{ xs: 12 }}>
-                <Paper sx={{ p: 3 }}>
-                  <Stack
-                    direction="row"
-                    justifyContent="space-between"
-                    alignItems="center"
-                    mb={2}
-                  >
-                    <Typography variant="h6">Announcements</Typography>
-                  </Stack>
-                  <Stack spacing={2}>
-                    {announcements.map((item) => (
-                      <AnnouncementCard key={item.title} announcement={item} />
                     ))}
                   </Stack>
                 </Paper>

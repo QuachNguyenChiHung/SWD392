@@ -12,11 +12,19 @@ import type { UploadedFileRecord } from "../../types";
 type UploadedFileItemProps = {
   file: UploadedFileRecord;
   showDivider: boolean;
+  onClick?: () => void;
 };
 
-const UploadedFileItem = ({ file, showDivider }: UploadedFileItemProps) => (
+const UploadedFileItem = ({ file, showDivider, onClick }: UploadedFileItemProps) => (
   <Fragment>
     <ListItem
+      onClick={onClick}
+      sx={{
+        cursor: onClick ? "pointer" : "default",
+        "&:hover": onClick ? {
+          backgroundColor: "action.hover",
+        } : {},
+      }}
       secondaryAction={
         <IconButton edge="end">
           <MoreVert />

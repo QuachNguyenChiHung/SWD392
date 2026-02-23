@@ -1,12 +1,15 @@
 import { Box, Paper, Typography } from "@mui/material";
-import type { ClassCompletionStat } from "../../types";
+import type { ClassCompletionStat } from "../../types/teacherType";
 
-type CourseProgressCardProps = ClassCompletionStat;
+type CourseProgressCardProps = ClassCompletionStat & {
+  onClick?: () => void;
+};
 
 const CourseProgressCard = ({
   course,
   completed,
   enrolled,
+  onClick,
 }: CourseProgressCardProps) => {
   const completionRate =
     enrolled > 0 ? Math.round((completed / enrolled) * 100) : 0;
@@ -14,10 +17,15 @@ const CourseProgressCard = ({
   return (
     <Paper
       variant="outlined"
+      onClick={onClick}
       sx={{
         p: 2,
         height: "100%",
         scrollSnapAlign: "start",
+        cursor: onClick ? "pointer" : "default",
+        "&:hover": onClick ? {
+          backgroundColor: "action.hover",
+        } : {},
       }}
     >
       <Typography variant="subtitle2" color="text.secondary" gutterBottom>

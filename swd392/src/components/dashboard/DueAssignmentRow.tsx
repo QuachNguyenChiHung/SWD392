@@ -10,6 +10,7 @@ import type { DueAssignment } from "../../types";
 
 type DueAssignmentRowProps = {
   assignment: DueAssignment;
+  onClick?: () => void;
 };
 
 const formatDate = (value: Date | null) =>
@@ -29,11 +30,20 @@ const getQuizStatus = (assignment: DueAssignment) => {
   return { label: "Available", color: "success" } as const;
 };
 
-const DueAssignmentRow = ({ assignment }: DueAssignmentRowProps) => {
+const DueAssignmentRow = ({ assignment, onClick }: DueAssignmentRowProps) => {
   const status = getQuizStatus(assignment);
 
   return (
-    <TableRow hover>
+    <TableRow
+      hover
+      onClick={onClick}
+      sx={{
+        cursor: onClick ? "pointer" : "default",
+        "&:hover": onClick ? {
+          backgroundColor: "action.hover",
+        } : {},
+      }}
+    >
       <TableCell>
         <Typography variant="subtitle2">{assignment.title}</Typography>
         <Typography variant="caption" color="text.secondary">

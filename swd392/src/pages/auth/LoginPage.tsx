@@ -39,7 +39,7 @@ const LoginPage = () => {
       };
       localStorage.setItem('user', JSON.stringify(mockUser));
       await login(email, password);
-      
+
       // Điều hướng dựa trên role
       const roleRoutes: Record<string, string> = {
         [UserRole.STUDENT]: '/student/dashboard',
@@ -65,7 +65,7 @@ const LoginPage = () => {
       <Typography variant="h5" component="h2" gutterBottom textAlign="center">
         Đăng nhập
       </Typography>
-      
+
       {error && (
         <Alert severity="error" sx={{ mb: 2 }}>
           {error}
@@ -96,7 +96,7 @@ const LoginPage = () => {
         value={password}
         onChange={(e) => setPassword(e.target.value)}
       />
-      
+
       <FormControl fullWidth margin="normal">
         <InputLabel id="role-label">Vai trò (TẠM THỜI - CHỈ ĐỂ DEMO)</InputLabel>
         <Select
@@ -113,7 +113,7 @@ const LoginPage = () => {
           <MenuItem value={UserRole.GUEST}>Khách</MenuItem>
         </Select>
       </FormControl>
-      
+
       <Button
         type="submit"
         fullWidth

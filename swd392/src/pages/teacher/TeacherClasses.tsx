@@ -15,58 +15,41 @@ import {
 } from "@mui/material";
 import { Add } from "@mui/icons-material";
 import ClassTableRow from "../../components/teacher/ClassTableRow";
-import type { Class } from "../../types/teacherType";
+import CourseTopicTable from "../../components/CourseTopicTable";
+import type { Class, Course } from "../../types/teacherType";
 import { useState } from "react";
-import style from "@mui/system/style";
+import { teacherClasses, courseOptions } from "../../../data/teacherMockData";
 
 const TeacherClasses = () => {
-  const classes: (Class & { studentCount: number })[] = [
-    {
-      class_id: "ch9a-2025",
-      class_name: "Hóa học 9A",
-      keypass: "CH9A-2025-KEY",
-      course_id: "chem9-2022",
-      course_name: "Chemistry 9 - 2022",
-      teacher_id: "teacher-001",
-      img_cover_link: "/images/chemistry.jpg",
-      keywords: "chemistry, reactions, lab",
-      date_create: new Date("2025-09-12"),
-      status: "active",
-      studentCount: 32,
-    },
-    {
-      class_id: "math11-2023",
-      class_name: "Toán nâng cao 11",
-      keypass: "MATH11-2023-KEY",
-      course_id: "math11-2023",
-      course_name: "Mathematics 11 - 2023",
-      teacher_id: "teacher-001",
-      img_cover_link: "/images/math.jpg",
-      keywords: "mathematics, advanced, calculus",
-      date_create: new Date("2026-01-03"),
-      status: "active",
-      studentCount: 28,
-    },
-    {
-      class_id: "phy10-2024",
-      class_name: "Vật lý chuyên 10",
-      keypass: "PHY10-2024-KEY",
-      course_id: "physics10-2024",
-      course_name: "Physics 10 - 2024",
-      teacher_id: "teacher-001",
-      img_cover_link: "/images/physics.jpg",
-      keywords: "physics, mechanics, forces",
-      date_create: new Date("2025-11-18"),
-      status: "active",
-      studentCount: 25,
-    },
-  ];
-  const classOption = [
-    { label: "didi oi", id: "6767676767", desc: "didi oi desc" },
-    { label: "history of epstein files", id: "69100", desc: "history of epstein files desc" },
-  ];
+  const classes: (Class & { studentCount: number })[] = teacherClasses;
   const [modalClassCreation, setModalClassCreation] = useState(false);
-  const [selectedCourse, setSelectedCourse] = useState<any>(null);//mốt thay any thành course type(Hùng)
+  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
+  const [className, setClassName] = useState("");
+
+  const handleModalClose = () => {
+    setModalClassCreation(false);
+    setSelectedCourse(null);
+    setClassName("");
+  };
+
+  const handleCreateClass = () => {
+    if (!className.trim()) {
+      alert("Vui lòng nhập tên lớp học");
+      return;
+    }
+    if (!selectedCourse) {
+      alert("Vui lòng chọn khóa học");
+      return;
+    }
+
+    // TODO: Implement API call to create class
+    console.log("Creating class:", {
+      name: className,
+      course: selectedCourse
+    });
+
+    handleModalClose();
+  };
   return (
     <Box>
       <Box
@@ -86,35 +69,96 @@ const TeacherClasses = () => {
       </Box>
       <Modal
         open={modalClassCreation}
-        onClose={() => setModalClassCreation(false)}
+        onClose={handleModalClose}
         aria-labelledby="modal-modal-title"
         aria-describedby="modal-modal-description"
-        autoCorrect="true"
       >
-        <Box className="modal">
-          <Typography id="modal-modal-title" variant="h6" component="h2">
+        <Box sx={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: { xs: '95%', sm: '80%', md: 700 },
+          bgcolor: 'background.paper',
+          borderRadius: 2,
+          boxShadow: 24,
+          p: 4,
+          maxHeight: '85vh',
+          overflowY: 'auto'
+        }}>
+          <Typography id="modal-modal-title" variant="h6" component="h2" gutterBottom>
             Tạo lớp học mới
           </Typography>
-          <div className="text-input-container">
-            <TextField id="standard-basic" label="Mật khẩu lớp học" variant="standard" />
-            <TextField id="standard-basic" label="Tên lớp học" variant="standard" required />
-            <Autocomplete style={{ flex: '0 0 100%' }} options={classOption}
-              onChange={(event, value) => {
-                let matchedCourse = classOption.find(course => course.label === value?.label);
-                if (matchedCourse) {
-                  setSelectedCourse(matchedCourse);
-                } else {
-                  setSelectedCourse(null);
-                }
-              }}
-              renderInput={(params) =>
-                <TextField {...params} id="standard-basic" label="Tên khóa học" variant="standard" required />}
-            />
-            <Typography variant="body2" color="text.primary" mt={1}>
-              Mô tả môn học :{selectedCourse ? selectedCourse.desc : "Chọn khóa học để xem mô tả"}
-            </Typography>
-          </div>
 
+          <Stack spacing={3}>
+            <TextField
+              label="Tên lớp học"
+              variant="outlined"
+              required
+              fullWidth
+              value={className}
+              onChange={(e) => setClassName(e.target.value)}
+              placeholder="VD: Hóa học 9A"
+            />
+
+            <Autocomplete
+              fullWidth
+              options={courseOptions}
+              getOptionLabel={(option) => `${option.course_name} (Lớp ${option.grade_level})`}
+              value={selectedCourse}
+              onChange={(event, value) => setSelectedCourse(value)}
+              renderInput={(params) =>
+                <TextField
+                  {...params}
+                  label="Chọn khóa học"
+                  variant="outlined"
+                  required
+                  placeholder="Tìm và chọn khóa học"
+                />
+              }
+              renderOption={(props, option) => (
+                <Box component="li" {...props}>
+                  <Box>
+                    <Typography variant="body1">
+                      {option.course_name}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Lớp {option.grade_level} • {option.topics?.length || 0} chủ đề
+                    </Typography>
+                  </Box>
+                </Box>
+              )}
+            />
+
+            {selectedCourse && (
+              <Box>
+                <Typography variant="body2" color="text.primary" gutterBottom>
+                  <strong>Mô tả khóa học:</strong> {selectedCourse.description || "Chưa có mô tả"}
+                </Typography>
+
+                {selectedCourse.topics && selectedCourse.topics.length > 0 && (
+                  <CourseTopicTable
+                    topics={selectedCourse.topics}
+                    courseName={selectedCourse.course_name}
+                  />
+                )}
+              </Box>
+            )}
+          </Stack>
+
+          <Stack direction="row" spacing={2} justifyContent="end" sx={{ mt: 4 }}>
+            <Button variant="outlined" onClick={handleModalClose}>
+              Hủy
+            </Button>
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={handleCreateClass}
+              disabled={!className.trim() || !selectedCourse}
+            >
+              Tạo lớp học
+            </Button>
+          </Stack>
         </Box>
       </Modal>
       <Stack spacing={1} mb={2}>

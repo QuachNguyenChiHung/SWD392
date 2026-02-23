@@ -109,7 +109,18 @@ const MainLayout = () => {
   };
 
   const handleNavigation = (path: string) => {
-    navigate(path);
+    // Special handling for role-specific dashboard redirects
+    if (path === '/dashboard') {
+      if (user?.role === UserRole.TEACHER) {
+        navigate('/teacher/dashboard');
+      } else if (user?.role === UserRole.STUDENT) {
+        navigate('/student/dashboard');
+      } else {
+        navigate(path);
+      }
+    } else {
+      navigate(path);
+    }
     setMobileOpen(false);
   };
 

@@ -108,6 +108,7 @@ export interface ClassCompletionStat {
   course: string;
   completed: number;
   enrolled: number;
+  class_id: string;
 }
 
 export interface Student {
@@ -122,4 +123,21 @@ export interface StudentList {
   class_id: string;
   class_name: string;
   students: Student[];
+}
+
+export interface Course {
+  course_id: string;
+  course_name: string;
+  grade_level: number;
+  description?: string;
+  date_create: Date;
+  status: "active" | "inactive";
+  topics?: CourseTopicInfo[];
+}
+
+export interface CourseTopicInfo {
+  topic_id: string;
+  title: string;
+  description?: string;
+  order_num: number;
 }
