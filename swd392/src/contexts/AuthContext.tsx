@@ -2,12 +2,13 @@ import { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { UserRole } from '../types';
 import type { User, AuthState } from '../types';
+import { authService } from '../services/auth';
 
 interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   register: (email: string, password: string, name: string) => Promise<void>;
-  updateUser: (user: User) => void;
+  updateUser: (userData: Partial<User>) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -32,14 +33,15 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   });
 
   useEffect(() => {
-    // Check for existing session (localStorage/cookies)
+    // Check for existing session and validate with backend
     const checkAuth = async () => {
       try {
-        // TODO: Implement actual auth check with backend
-        const storedUser = localStorage.getItem('user');
-        if (storedUser) {
+        // Check if user is authenticated locally
+        if (authService.isAuthenticated()) {
+          // Validate token with backend by fetching current user
+          const user = await authService.getCurrentUser();
           setAuthState({
-            user: JSON.parse(storedUser),
+            user,
             isAuthenticated: true,
             isLoading: false,
           });
@@ -52,6 +54,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         }
       } catch (error) {
         console.error('Auth check failed:', error);
+        // Clear invalid tokens/user data
+        authService.clearLocalAuth();
         setAuthState({
           user: null,
           isAuthenticated: false,
@@ -63,47 +67,44 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     checkAuth();
   }, []);
 
-  const login = async (_email: string, _password: string) => {
+  const login = async (email: string, password: string) => {
     try {
-      // TODO: Implement actual login with backend
-      // Đọc user từ localStorage (đã được set bởi LoginPage với role đã chọn)
-      const storedUser = localStorage.getItem('user');
-      if (storedUser) {
-        const user = JSON.parse(storedUser);
-        setAuthState({
-          user,
-          isAuthenticated: true,
-          isLoading: false,
-        });
-      }
+      const response = await authService.login({ email, password });
+
+      setAuthState({
+        user: response.user!,
+        isAuthenticated: true,
+        isLoading: false,
+      });
     } catch (error) {
       console.error('Login failed:', error);
       throw error;
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem('user');
-    setAuthState({
-      user: null,
-      isAuthenticated: false,
-      isLoading: false,
-    });
+  const logout = async () => {
+    try {
+      await authService.logout();
+    } finally {
+      setAuthState({
+        user: null,
+        isAuthenticated: false,
+        isLoading: false,
+      });
+    }
   };
 
-  const register = async (email: string, _password: string, name: string) => {
+  const register = async (email: string, password: string, name: string) => {
     try {
-      // TODO: Implement actual registration with backend
-      const newUser: User = {
-        id: Date.now().toString(),
+      // Backend expects "username" not "name"
+      const response = await authService.register({
         email,
-        name,
-        role: UserRole.STUDENT, // Default role
-      };
+        password,
+        username: name
+      });
 
-      localStorage.setItem('user', JSON.stringify(newUser));
       setAuthState({
-        user: newUser,
+        user: response.user!,
         isAuthenticated: true,
         isLoading: false,
       });
@@ -113,13 +114,17 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
-  const updateUser = (user: User) => {
-    localStorage.setItem('user', JSON.stringify(user));
-    setAuthState({
-      user,
-      isAuthenticated: true,
-      isLoading: false,
-    });
+  const updateUser = async (userData: Partial<User>) => {
+    try {
+      const updatedUser = await authService.updateProfile(userData);
+      setAuthState(prev => ({
+        ...prev,
+        user: updatedUser,
+      }));
+    } catch (error) {
+      console.error('Update user failed:', error);
+      throw error;
+    }
   };
 
   return (

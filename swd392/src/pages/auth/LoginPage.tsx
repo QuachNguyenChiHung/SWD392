@@ -6,10 +6,6 @@ import {
   Typography,
   Link,
   Alert,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
 } from '@mui/material';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
@@ -18,7 +14,6 @@ import { UserRole } from '../../types';
 const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<string>(UserRole.STUDENT);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -30,17 +25,12 @@ const LoginPage = () => {
     setLoading(true);
 
     try {
-      // Mock login với role được chọn (TẠM THỜI - CHỈ ĐỂ DEMO)
-      const mockUser = {
-        id: Date.now().toString(),
-        email,
-        name: 'Demo User',
-        role: role as UserRole,
-      };
-      localStorage.setItem('user', JSON.stringify(mockUser));
       await login(email, password);
 
-      // Điều hướng dựa trên role
+      // Get the logged in user's role from the response
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+      // Navigate based on user role determined by backend
       const roleRoutes: Record<string, string> = {
         [UserRole.STUDENT]: '/student/dashboard',
         [UserRole.TEACHER]: '/teacher/dashboard',
@@ -48,9 +38,10 @@ const LoginPage = () => {
         [UserRole.ADMIN]: '/admin/dashboard',
         [UserRole.GUEST]: '/dashboard',
       };
-      navigate(roleRoutes[role] || '/dashboard');
-    } catch (err) {
-      setError('Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.');
+
+      navigate(roleRoutes[user.role] || '/dashboard');
+    } catch (err: any) {
+      setError(err.message || 'Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.');
     } finally {
       setLoading(false);
     }
@@ -96,23 +87,6 @@ const LoginPage = () => {
         value={password}
         onChange={(e) => setPassword(e.target.value)}
       />
-
-      <FormControl fullWidth margin="normal">
-        <InputLabel id="role-label">Vai trò (TẠM THỜI - CHỈ ĐỂ DEMO)</InputLabel>
-        <Select
-          labelId="role-label"
-          id="role"
-          value={role}
-          label="Vai trò (TẠM THỜI - CHỈ ĐỂ DEMO)"
-          onChange={(e) => setRole(e.target.value)}
-        >
-          <MenuItem value={UserRole.STUDENT}>Học sinh</MenuItem>
-          <MenuItem value={UserRole.TEACHER}>Giáo viên</MenuItem>
-          <MenuItem value={UserRole.MODERATOR}>Kiểm duyệt viên</MenuItem>
-          <MenuItem value={UserRole.ADMIN}>Quản trị viên</MenuItem>
-          <MenuItem value={UserRole.GUEST}>Khách</MenuItem>
-        </Select>
-      </FormControl>
 
       <Button
         type="submit"
