@@ -34,6 +34,7 @@ import AdminUsers from "../pages/admin/AdminUsers";
 import ProtectedRoute from "../components/ProtectedRoute";
 import TeacherClassDetail from "../pages/teacher/teacherClassDetail";
 import MaterialDetailPage from "../pages/teacher/MaterialDetailPage";
+import StudentClassDetail from "../pages/student/StudentClassDetail";
 
 export const routes: RouteObject[] = [
   {
@@ -101,6 +102,14 @@ export const routes: RouteObject[] = [
             element: (
               <ProtectedRoute allowedRoles={[UserRole.STUDENT]}>
                 <StudentQuizzes />
+              </ProtectedRoute>
+            ),
+          },
+          {
+            path: "class/:classId",
+            element: (
+              <ProtectedRoute allowedRoles={[UserRole.STUDENT]}>
+                <StudentClassDetail />
               </ProtectedRoute>
             ),
           },

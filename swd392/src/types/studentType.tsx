@@ -9,3 +9,10 @@ export interface ClassItem {
   date_create: string;
   status: string;
 }
+
+export interface Topic {
+    _id: string;
+    course_id: string;
+    title: string;
+    description: string;
+}

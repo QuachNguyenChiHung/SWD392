@@ -12,6 +12,7 @@ import { Add, ErrorOutline, PlayArrow, Schedule } from '@mui/icons-material';
 import { useEffect, useState } from 'react';
 import { apiService } from '../../services/api';
 import type { ClassItem } from '../../types/studentType';
+import { useNavigate } from 'react-router-dom';
 
 const CLASS_COLORS = ['#6366f1', '#0ea5e9', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6'];
 
@@ -29,6 +30,8 @@ const StudentClasses = () => {
   const [joining, setJoining] = useState(false);
   const [joinError, setJoinError] = useState<string | null>(null);
   const [joinSuccess, setJoinSuccess] = useState(false);
+
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchClasses = async () => {
@@ -178,6 +181,7 @@ const StudentClasses = () => {
 
                 <CardActions sx={{ px: 2, pb: 2 }}>
                   <Button
+                    onClick={() => navigate(`/student/class/${cls._id}`)}
                     fullWidth variant="contained" size="small"
                     startIcon={<PlayArrow />}
                     sx={{
