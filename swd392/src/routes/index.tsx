@@ -1,77 +1,88 @@
-import { Navigate } from 'react-router-dom';
-import type { RouteObject } from 'react-router-dom';
-import { UserRole } from '../types';
+import { Navigate } from "react-router-dom";
+import type { RouteObject } from "react-router-dom";
+import { UserRole } from "../types";
 
 // Layouts
-import MainLayout from '../layouts/MainLayout';
-import AuthLayout from '../layouts/AuthLayout';
+import MainLayout from "../layouts/MainLayout";
+import AuthLayout from "../layouts/AuthLayout";
 
 // Pages
-import LoginPage from '../pages/auth/LoginPage';
-import RegisterPage from '../pages/auth/RegisterPage';
+import LoginPage from "../pages/auth/LoginPage";
+import RegisterPage from "../pages/auth/RegisterPage";
 
 // Guest Pages
-import GuestDashboard from '../pages/guest/GuestDashboard';
+import GuestDashboard from "../pages/guest/GuestDashboard";
 
 // Student Pages
-import StudentDashboard from '../pages/student/StudentDashboard';
-import StudentClasses from '../pages/student/StudentClasses';
-import StudentQuizzes from '../pages/student/StudentQuizzes';
+import StudentDashboard from "../pages/student/StudentDashboard";
+import StudentClasses from "../pages/student/StudentClasses";
+import StudentQuizzes from "../pages/student/StudentQuizzes";
 
 // Teacher Pages
-import TeacherDashboard from '../pages/teacher/TeacherDashboard';
-import TeacherClasses from '../pages/teacher/TeacherClasses';
-import TeacherLessons from '../pages/teacher/TeacherLessons';
+import TeacherDashboard from "../pages/teacher/TeacherDashboard";
+import TeacherClasses from "../pages/teacher/TeacherClasses";
+
 
 // Moderator Pages
-import ModeratorDashboard from '../pages/moderator/ModeratorDashboard';
+import ModeratorDashboard from "../pages/moderator/ModeratorDashboard";
 
 // Admin Pages
-import AdminDashboard from '../pages/admin/AdminDashboard';
-import AdminUsers from '../pages/admin/AdminUsers';
+import AdminDashboard from "../pages/admin/AdminDashboard";
+import AdminUsers from "../pages/admin/AdminUsers";
 
 // Protected Route Component
-import ProtectedRoute from '../components/ProtectedRoute';
+import ProtectedRoute from "../components/ProtectedRoute";
+import TeacherClassDetail from "../pages/teacher/teacherClassDetail";
+import MaterialDetailPage from "../pages/teacher/MaterialDetailPage";
+import StudentClassDetail from "../pages/student/StudentClassDetail";
 
 export const routes: RouteObject[] = [
   {
-    path: '/',
+    path: "/",
     element: <Navigate to="/dashboard" replace />,
   },
   {
-    path: '/auth',
+    path: "/auth",
     element: <AuthLayout />,
     children: [
       {
-        path: 'login',
+        path: "login",
         element: <LoginPage />,
       },
       {
-        path: 'register',
+        path: "register",
         element: <RegisterPage />,
       },
     ],
   },
   {
-    path: '/',
+    path: "/",
     element: <MainLayout />,
     children: [
       // Guest Routes
       {
-        path: 'dashboard',
+        path: "dashboard",
         element: (
-          <ProtectedRoute allowedRoles={[UserRole.GUEST, UserRole.STUDENT, UserRole.TEACHER, UserRole.MODERATOR, UserRole.ADMIN]}>
+          <ProtectedRoute
+            allowedRoles={[
+              UserRole.GUEST,
+              UserRole.STUDENT,
+              UserRole.TEACHER,
+              UserRole.MODERATOR,
+              UserRole.ADMIN,
+            ]}
+          >
             <GuestDashboard />
           </ProtectedRoute>
         ),
       },
-      
+
       // Student Routes
       {
-        path: 'student',
+        path: "student",
         children: [
           {
-            path: 'dashboard',
+            path: "dashboard",
             element: (
               <ProtectedRoute allowedRoles={[UserRole.STUDENT]}>
                 <StudentDashboard />
@@ -79,7 +90,7 @@ export const routes: RouteObject[] = [
             ),
           },
           {
-            path: 'classes',
+            path: "classes",
             element: (
               <ProtectedRoute allowedRoles={[UserRole.STUDENT]}>
                 <StudentClasses />
@@ -87,10 +98,18 @@ export const routes: RouteObject[] = [
             ),
           },
           {
-            path: 'quizzes',
+            path: "quizzes",
             element: (
               <ProtectedRoute allowedRoles={[UserRole.STUDENT]}>
                 <StudentQuizzes />
+              </ProtectedRoute>
+            ),
+          },
+          {
+            path: "class/:classId",
+            element: (
+              <ProtectedRoute allowedRoles={[UserRole.STUDENT]}>
+                <StudentClassDetail />
               </ProtectedRoute>
             ),
           },
@@ -99,10 +118,10 @@ export const routes: RouteObject[] = [
 
       // Teacher Routes
       {
-        path: 'teacher',
+        path: "teacher",
         children: [
           {
-            path: 'dashboard',
+            path: "dashboard",
             element: (
               <ProtectedRoute allowedRoles={[UserRole.TEACHER]}>
                 <TeacherDashboard />
@@ -110,7 +129,7 @@ export const routes: RouteObject[] = [
             ),
           },
           {
-            path: 'classes',
+            path: "classes",
             element: (
               <ProtectedRoute allowedRoles={[UserRole.TEACHER]}>
                 <TeacherClasses />
@@ -118,10 +137,18 @@ export const routes: RouteObject[] = [
             ),
           },
           {
-            path: 'lessons',
+            path: "class/:classId",
             element: (
               <ProtectedRoute allowedRoles={[UserRole.TEACHER]}>
-                <TeacherLessons />
+                <TeacherClassDetail />
+              </ProtectedRoute>
+            ),
+          },
+          {
+            path: "class/:classId/materials/:materialId",
+            element: (
+              <ProtectedRoute allowedRoles={[UserRole.TEACHER]}>
+                <MaterialDetailPage />
               </ProtectedRoute>
             ),
           },
@@ -130,10 +157,10 @@ export const routes: RouteObject[] = [
 
       // Moderator Routes
       {
-        path: 'moderator',
+        path: "moderator",
         children: [
           {
-            path: 'dashboard',
+            path: "dashboard",
             element: (
               <ProtectedRoute allowedRoles={[UserRole.MODERATOR]}>
                 <ModeratorDashboard />
@@ -145,10 +172,10 @@ export const routes: RouteObject[] = [
 
       // Admin Routes
       {
-        path: 'admin',
+        path: "admin",
         children: [
           {
-            path: 'dashboard',
+            path: "dashboard",
             element: (
               <ProtectedRoute allowedRoles={[UserRole.ADMIN]}>
                 <AdminDashboard />
@@ -156,7 +183,7 @@ export const routes: RouteObject[] = [
             ),
           },
           {
-            path: 'users',
+            path: "users",
             element: (
               <ProtectedRoute allowedRoles={[UserRole.ADMIN]}>
                 <AdminUsers />
@@ -168,7 +195,7 @@ export const routes: RouteObject[] = [
     ],
   },
   {
-    path: '*',
+    path: "*",
     element: <Navigate to="/dashboard" replace />,
   },
 ];

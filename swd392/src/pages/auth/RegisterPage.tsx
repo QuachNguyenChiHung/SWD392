@@ -9,6 +9,7 @@ import {
 } from '@mui/material';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { UserRole } from '../../types';
 
 const RegisterPage = () => {
   const [name, setName] = useState('');
@@ -29,8 +30,24 @@ const RegisterPage = () => {
       return;
     }
 
-    if (password.length < 6) {
-      setError('Mật khẩu phải có ít nhất 6 ký tự');
+    if (password.length < 10) {
+      setError('Mật khẩu phải có ít nhất 10 ký tự');
+      return;
+    }
+
+    // Check for uppercase letter, number, and special character
+    if (!/(?=.*[A-Z])/.test(password)) {
+      setError('Mật khẩu phải có ít nhất một chữ hoa');
+      return;
+    }
+
+    if (!/(?=.*\d)/.test(password)) {
+      setError('Mật khẩu phải có ít nhất một số');
+      return;
+    }
+
+    if (!/(?=.*[^A-Za-z0-9])/.test(password)) {
+      setError('Mật khẩu phải có ít nhất một ký tự đặc biệt');
       return;
     }
 
@@ -38,9 +55,22 @@ const RegisterPage = () => {
 
     try {
       await register(email, password, name);
-      navigate('/dashboard');
-    } catch (err) {
-      setError('Đăng ký thất bại. Vui lòng thử lại.');
+
+      // Get the registered user's role to determine redirect
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+      // Navigate based on user role from backend
+      const roleRoutes: Record<string, string> = {
+        [UserRole.STUDENT]: '/student/dashboard',
+        [UserRole.TEACHER]: '/teacher/dashboard',
+        [UserRole.MODERATOR]: '/moderator/dashboard',
+        [UserRole.ADMIN]: '/admin/dashboard',
+        [UserRole.GUEST]: '/dashboard',
+      };
+
+      navigate(roleRoutes[user.role] || '/dashboard');
+    } catch (err: any) {
+      setError(err.message || 'Đăng ký thất bại. Vui lòng thử lại.');
     } finally {
       setLoading(false);
     }

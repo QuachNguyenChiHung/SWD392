@@ -71,12 +71,6 @@ const navItems: NavItem[] = [
     roles: [UserRole.TEACHER],
   },
   {
-    text: 'Bài giảng',
-    icon: <Science />,
-    path: '/teacher/lessons',
-    roles: [UserRole.TEACHER],
-  },
-  {
     text: 'Kiểm duyệt',
     icon: <Settings />,
     path: '/moderator/dashboard',
@@ -115,7 +109,18 @@ const MainLayout = () => {
   };
 
   const handleNavigation = (path: string) => {
-    navigate(path);
+    // Special handling for role-specific dashboard redirects
+    if (path === '/dashboard') {
+      if (user?.role === UserRole.TEACHER) {
+        navigate('/teacher/dashboard');
+      } else if (user?.role === UserRole.STUDENT) {
+        navigate('/student/dashboard');
+      } else {
+        navigate(path);
+      }
+    } else {
+      navigate(path);
+    }
     setMobileOpen(false);
   };
 

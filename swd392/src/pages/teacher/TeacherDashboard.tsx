@@ -1,13 +1,100 @@
-import { Box, Typography, Stack, Paper, Button } from '@mui/material';
-import { School, Assignment, People, AutoAwesome } from '@mui/icons-material';
+import {
+  Box,
+  Typography,
+  Stack,
+  Paper,
+  Button,
+  Grid,
+  List,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
+} from "@mui/material";
+import { useNavigate } from "react-router-dom";
+import CourseProgressCard from "../../components/dashboard/CourseProgressCard";
+import DueAssignmentRow from "../../components/dashboard/DueAssignmentRow";
+import UploadedFileItem from "../../components/dashboard/UploadedFileItem";
+import type {
+  ClassCompletionStat,
+  UploadedFileRecord,
+  DueAssignment,
+} from "../../types/teacherType";
+import {
+  classCompletionStats,
+  quickActions,
+  dueAssignments,
+  uploadedFiles,
+  teacherClasses,
+  getTopicsByClassId,
+  getAllMaterials,
+  mockTopicsByClass
+} from "../../../data/teacherMockData";
 
 const TeacherDashboard = () => {
-  const stats = [
-    { label: 'Lớp học quản lý', value: '3', icon: <School />, color: '#1976d2' },
-    { label: 'Học sinh', value: '87', icon: <People />, color: '#2e7d32' },
-    { label: 'Bài giảng', value: '24', icon: <Assignment />, color: '#ed6c02' },
-    { label: 'AI đã tạo', value: '15', icon: <AutoAwesome />, color: '#9c27b0' },
-  ];
+  const navigate = useNavigate();
+
+  // Handle navigation to quiz/material preview
+  const handleDueAssignmentClick = (assignment: DueAssignment) => {
+    // Find the material from all classes
+    const allMaterials = getAllMaterials();
+    const material = allMaterials.find(material => material.material_id === assignment.material_id);
+
+    if (material) {
+      // Find which class this material belongs to
+      const classId = findClassIdForMaterial(material.material_id);
+      if (classId) {
+        navigate(`/teacher/class/${classId}/materials/${material.material_id}`, {
+          state: { material }
+        });
+      }
+    }
+  };
+
+  // Handle navigation to file preview
+  const handleFileClick = (file: UploadedFileRecord) => {
+    // Find the material from all classes
+    const allMaterials = getAllMaterials();
+    const material = allMaterials.find(material => material.material_id === file.file_id);
+
+    if (material) {
+      // Find which class this material belongs to
+      const classId = findClassIdForMaterial(material.material_id);
+      if (classId) {
+        navigate(`/teacher/class/${classId}/materials/${material.material_id}`, {
+          state: { material }
+        });
+      }
+    }
+  };
+
+  // Helper function to find which class a material belongs to
+  const findClassIdForMaterial = (materialId: number) => {
+    for (const [classId, topics] of Object.entries(mockTopicsByClass || {})) {
+      const hasMateria = topics.some(topic =>
+        topic.ClassMaterialType?.some(material => material.material_id === materialId)
+      );
+      if (hasMateria) {
+        return classId;
+      }
+    }
+    return null;
+  };
+
+  // Handle navigation to class detail
+  const handleClassProgressClick = (stat: ClassCompletionStat) => {
+    // Find the class by course name
+    const targetClass = teacherClasses.find(cls => cls.course_name === stat.course);
+    if (targetClass) {
+      navigate(`/teacher/class/${targetClass.class_id}`, {
+        state: {
+          classDetail: targetClass,
+          materials: getTopicsByClassId(targetClass.class_id)
+        }
+      });
+    }
+  };
 
   return (
     <Box>
@@ -17,57 +104,154 @@ const TeacherDashboard = () => {
       <Typography variant="body1" color="text.secondary" paragraph>
         Quản lý lớp học và tạo nội dung học tập
       </Typography>
-
-      <Stack spacing={3} direction="row" flexWrap="wrap" sx={{ mb: 4 }}>
-        {stats.map((stat, index) => (
-          <Box key={index} sx={{ flex: '1 1 200px', minWidth: 200 }}>
-            <Paper
-              sx={{
-                p: 3,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                backgroundColor: stat.color,
-                color: 'white',
-              }}
-            >
-              <Box sx={{ fontSize: 40, mb: 1 }}>{stat.icon}</Box>
-              <Typography variant="h4" fontWeight="bold">
-                {stat.value}
-              </Typography>
-              <Typography variant="body2">{stat.label}</Typography>
-            </Paper>
-          </Box>
-        ))}
-      </Stack>
-
-      <Stack spacing={3} direction={{ xs: 'column', md: 'row' }}>
-        <Box sx={{ flex: 2 }}>
-          <Paper sx={{ p: 3 }}>
-            <Typography variant="h6" gutterBottom>
-              Hoạt động gần đây
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Không có hoạt động nào gần đây
-            </Typography>
-          </Paper>
-        </Box>
-        <Box sx={{ flex: 1, minWidth: 250 }}>
-          <Paper sx={{ p: 3 }}>
-            <Typography variant="h6" gutterBottom>
-              Hành động nhanh
-            </Typography>
-            <Button fullWidth variant="outlined" sx={{ mb: 1 }}>
-              Tạo lớp học mới
-            </Button>
-            <Button fullWidth variant="outlined" sx={{ mb: 1 }}>
-              Tạo bài giảng với AI
-            </Button>
-            <Button fullWidth variant="outlined">
-              Xem tiến độ học sinh
-            </Button>
-          </Paper>
-        </Box>
+      <Stack spacing={3}>
+        <Grid container spacing={3}>
+          <Grid size={{ xs: 12, md: 8 }}>
+            <Grid container direction="column" spacing={3}>
+              <Grid size={{ xs: 12 }}>
+                <Paper sx={{ p: 3 }}>
+                  <Stack
+                    direction="row"
+                    justifyContent="space-between"
+                    alignItems="center"
+                    mb={2}
+                  >
+                    <Typography variant="h6">Class progress</Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Students who finished all materials
+                    </Typography>
+                  </Stack>
+                  <Box
+                    sx={{
+                      display: "grid",
+                      gridAutoFlow: "column",
+                      gridAutoColumns: "minmax(240px, 260px)",
+                      gap: 2,
+                      overflowX: "auto",
+                      width: "100%",
+                      pb: 1,
+                    }}
+                  >
+                    {classCompletionStats.map((stat) => (
+                      <CourseProgressCard
+                        key={stat.course}
+                        {...stat}
+                        onClick={() => handleClassProgressClick(stat)}
+                      />
+                    ))}
+                  </Box>
+                </Paper>
+              </Grid>
+              <Grid size={{ xs: 12 }}>
+                <Paper sx={{ p: 3 }}>
+                  <Stack
+                    direction="row"
+                    justifyContent="space-between"
+                    alignItems="center"
+                    mb={2}
+                  >
+                    <Typography variant="h6">What's due</Typography>
+                    <Button variant="text" size="small">
+                      Up coming class material
+                    </Button>
+                  </Stack>
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Quiz</TableCell>
+                        <TableCell>Available</TableCell>
+                        <TableCell>End date</TableCell>
+                        <TableCell>Status</TableCell>
+                        <TableCell align="right">Actions</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {dueAssignments.map((item) => (
+                        <DueAssignmentRow
+                          key={item.quiz_id}
+                          assignment={item}
+                          onClick={() => handleDueAssignmentClick(item)}
+                        />
+                      ))}
+                    </TableBody>
+                  </Table>
+                </Paper>
+              </Grid>
+              <Grid size={{ xs: 12 }}>
+                <Paper sx={{ p: 3 }}>
+                  <Stack
+                    direction="row"
+                    justifyContent="space-between"
+                    alignItems="center"
+                    mb={2}
+                  >
+                    <Typography variant="h6">Latest uploaded files</Typography>
+                    <Button variant="text" size="small">
+                      View all files
+                    </Button>
+                  </Stack>
+                  <List disablePadding>
+                    {uploadedFiles.map((file, index) => (
+                      <UploadedFileItem
+                        key={file.file}
+                        file={file}
+                        showDivider={index < uploadedFiles.length - 1}
+                        onClick={() => handleFileClick(file)}
+                      />
+                    ))}
+                  </List>
+                </Paper>
+              </Grid>
+            </Grid>
+          </Grid>
+          <Grid size={{ xs: 12, md: 4 }}>
+            <Grid container direction="column" spacing={3}>
+              <Grid size={{ xs: 12 }}>
+                <Paper sx={{ p: 3 }}>
+                  <Stack
+                    direction="row"
+                    justifyContent="space-between"
+                    alignItems="center"
+                    mb={2}
+                  >
+                    <Typography variant="h6">Quick actions</Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {quickActions.length} items
+                    </Typography>
+                  </Stack>
+                  <Stack spacing={2}>
+                    {quickActions.map((action) => (
+                      <Paper
+                        key={action.title}
+                        variant="outlined"
+                        sx={{
+                          p: 2,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          gap: 2,
+                          flexWrap: "wrap",
+                        }}
+                      >
+                        <Box>
+                          <Typography variant="subtitle2" fontWeight={600}>
+                            {action.title}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            {action.description}
+                          </Typography>
+                        </Box>
+                        <Button variant="contained" size="small">
+                          {action.actionLabel}
+                        </Button>
+                      </Paper>
+                    ))}
+                  </Stack>
+                </Paper>
+              </Grid>
+            </Grid>
+          </Grid>
+        </Grid>
       </Stack>
     </Box>
   );

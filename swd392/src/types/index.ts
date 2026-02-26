@@ -1,10 +1,10 @@
 // User roles
 export const UserRole = {
-  GUEST: 'GUEST',
-  STUDENT: 'STUDENT',
-  TEACHER: 'TEACHER',
-  MODERATOR: 'MODERATOR',
-  ADMIN: 'ADMIN'
+  GUEST: 'guest',
+  STUDENT: 'student',
+  TEACHER: 'teacher',
+  MODERATOR: 'moderator',
+  ADMIN: 'admin'
 } as const;
 
 export type UserRole = typeof UserRole[keyof typeof UserRole];
@@ -27,13 +27,15 @@ export interface AuthState {
 
 // Class interface
 export interface Class {
-  id: string;
-  name: string;
-  code: string;
-  teacherId: string;
-  description?: string;
-  createdAt: Date;
-  updatedAt: Date;
+  class_id: string;
+  class_name: string;
+  keypass: string;
+  course_id: string;
+  teacher_id: string;
+  img_cover_link: string;
+  keywords: string;
+  date_create: Date;
+  status: "active" | "inactive" | "archived";
 }
 
 // Lesson interface
@@ -48,26 +50,48 @@ export interface Lesson {
   updatedAt: Date;
 }
 
-// Quiz interface
-export interface Quiz {
-  id: string;
-  classId: string;
-  title: string;
-  questions: Question[];
-  maxAttempts?: number;
-  availableFrom?: Date;
-  availableUntil?: Date;
-  createdAt: Date;
-  updatedAt: Date;
+
+
+
+// Dashboard helper types
+
+
+export interface ScheduleSlot {
+  slot: string;
+  time: string;
+  course: string;
+  topic: string;
+  place: string;
 }
 
-// Question interface
-export interface Question {
-  id: string;
-  content: string;
-  type: 'multiple-choice' | 'true-false' | 'short-answer' | 'interactive';
-  options?: string[];
-  correctAnswer: string | string[];
-  explanation?: string;
-  has2DVisualization?: boolean;
+export interface DueAssignment {
+  quiz_id: number;
+  material_id: number;
+  title: string;
+  keyword: string | null;
+  type: string;
+  available_date: Date | null;
+  max_attempt_number: number | null;
+  end_date: Date | null;
+  status: boolean;
 }
+
+export interface UploadedFileRecord {
+  file: string;
+  course: string;
+  createdAt: string;
+}
+
+export interface GradeSummary {
+  title: string;
+  course: string;
+  category: string;
+  score: string;
+}
+
+export interface Announcement {
+  title: string;
+  detail: string;
+  timestamp: string;
+}
+
