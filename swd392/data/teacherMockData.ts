@@ -481,7 +481,7 @@ export const mockStudents: Student[] = [
 
 // Mock data for Teacher Dashboard - connected to actual class materials
 export const classCompletionStats: ClassCompletionStat[] = [
-    { course: "Chemistry 9 - 2022", completed: 26, enrolled: 32, class_id: "CLS-CHM9A-2025" },
+    { course: "Chemistry 9 - 2022", completed: 26, enrolled: 32, class_id: "CLS-CHM9A-2025", class_name:"Chem 9A" },
 ];
 
 export type QuickAction = {
