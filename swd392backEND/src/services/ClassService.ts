@@ -2,6 +2,7 @@ import ClassRepo from "../repository/ClassRepo.ts";
 import { Teacher } from "../entities/Teacher.ts";
 import type { CreateClassDTO, UpdateClassDTO } from "../dto/ClassDTO.ts";
 import { User } from "../entities/User.ts";
+import generateRandomString from "../ultis/misc.ts";
 
 class ClassService {
     async getClassById(id: string) {
@@ -26,6 +27,16 @@ class ClassService {
             return { error: "You can only update your own class" };
         }
         return await ClassRepo.updateClass(id, updateData);
+    }
+    async generateKeypass(classId: string) {
+        const keypass=generateRandomString();
+        const teacherClass=await this.getClassById(classId);
+        if(!teacherClass){
+            return { error: "Class not found" };
+        }
+        teacherClass.keypass=keypass;
+        await teacherClass?.save();
+        return keypass;
     }
     async deleteClass(id: string) {
         return await ClassRepo.deleteClass(id);
@@ -63,8 +74,8 @@ class ClassService {
     async clearClassImage(oldUrl: string, teacherUserId: string) {
         const classObj = await ClassRepo.findByImageUrl(oldUrl);
         if (!classObj) return { error: 'No class found with this image' };
-        const teacher = await User.findById(classObj.teacher_id);
-        if (!teacher || teacher._id.toString() !== teacherUserId) return { error: 'You can only modify images of your own class' };
+            const teacher = await User.findById(classObj.teacher_id);
+            if (!teacher || teacher._id.toString() !== teacherUserId) return { error: 'You can only modify images of your own class' };
         return await ClassRepo.updateClass(classObj._id.toString(), { img_cover_link: null });
     }
 }

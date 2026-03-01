@@ -25,7 +25,7 @@ import { Log } from './entities/Log.ts';
 import { ProgressClassMaterial } from './entities/ProgressClassMaterial.ts';
 
 async function seed() {
-    const mongoUri = 'mongodb://localhost:27017/swd392';
+    const mongoUri = process.env.MONGO_URI || 'mongodb://localhost:27017/swd392';
     await mongoose.connect(mongoUri);
     console.log('Connected to MongoDB for seeding...');
 

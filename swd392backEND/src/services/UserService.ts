@@ -25,7 +25,7 @@ class UserService {
     }
     async loginUser(userLogin: loginDTO) {
         const user = await UserRepo.findByMail(userLogin.email);
-        if (user && await bcrypt.compare(userLogin.password, user.password) && user.role === userLogin.role) {
+        if (user && await bcrypt.compare(userLogin.password, user.password)) {
             const { password, ...cleanedUser } = user.toObject();
             return cleanedUser;
         }
