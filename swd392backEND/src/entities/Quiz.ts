@@ -3,7 +3,7 @@ import type { IQuiz } from '../interface/IQuiz.ts';
 
 const QuizSchema: Schema = new Schema(
     {
-        material_id: { type: Schema.Types.ObjectId, ref: 'ClassMaterial', required: true, unique: true },
+    
         title: { type: String, required: true, maxlength: 255 },
         type: { type: String, required: true, maxlength: 50 },
         available_date: { type: Date, default: null },

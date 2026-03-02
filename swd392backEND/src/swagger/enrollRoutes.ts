@@ -99,7 +99,7 @@
  *     summary: Get all enrollments from a class
  *     security:
  *       - cookieAuth: []
- *     description: Get all student enrollments from a specific class (Teacher only, returns 12 results per page)
+ *     description: Get all student enrollments from a specific class (Teacher only - validates Teacher entity, returns 12 results per page)
  *     parameters:
  *       - in: path
  *         name: class_id
@@ -138,7 +138,7 @@
  *     summary: Mark enrollment as completed
  *     security:
  *       - cookieAuth: []
- *     description: Update enrollment status to completed (Teacher only, must be the teacher of the class)
+ *     description: Update enrollment status to completed (Teacher only, must be the teacher of the class). Validates ownership using teacher_id from Teacher entity.
  *     parameters:
  *       - in: path
  *         name: enroll_id

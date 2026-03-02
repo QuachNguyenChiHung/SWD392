@@ -80,7 +80,7 @@
  *     summary: Create a new topic
  *     security:
  *       - cookieAuth: []
- *     description: Create a new topic (Admin only)
+ *     description: Create a new topic (Admin only - requires Admin entity with authorization_lvl: 2)
  *     requestBody:
  *       required: true
  *       content:
@@ -101,7 +101,7 @@
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *       403:
- *         description: Forbidden - Admin only
+ *         description: Forbidden - Admin only (requires authorization_lvl: 2)
  *         content:
  *           application/json:
  *             schema:
@@ -139,7 +139,7 @@
  *     summary: Update topic
  *     security:
  *       - cookieAuth: []
- *     description: Update an existing topic (Admin only)
+ *     description: Update an existing topic (Admin only - requires Admin entity with authorization_lvl: 2)
  *     parameters:
  *       - in: path
  *         name: id
@@ -167,7 +167,7 @@
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *       403:
- *         description: Forbidden - Admin only
+ *         description: Forbidden - Admin only (requires authorization_lvl: 2)
  *         content:
  *           application/json:
  *             schema:

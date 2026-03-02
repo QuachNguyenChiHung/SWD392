@@ -10,7 +10,7 @@ import CloudinaryUploadDemoRoute from './route/CloudinaryUploadDemoRoute.ts';
 import cookieParser from 'cookie-parser';
 import swaggerUi from 'swagger-ui-express';
 import swaggerJSDoc from 'swagger-jsdoc';
-import UserRoute from './route/UserRoute.ts';
+import UserRoute from './route/UserRoute';
 import CourseRoute from './route/CourseRoute.ts';
 import EnrollRoute from './route/EnrollRoute.ts';
 import TopicRoute from './route/TopicRoute.ts';

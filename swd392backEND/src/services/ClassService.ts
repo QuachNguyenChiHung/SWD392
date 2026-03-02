@@ -1,7 +1,5 @@
 import ClassRepo from "../repository/ClassRepo.ts";
-import { Teacher } from "../entities/Teacher.ts";
 import type { CreateClassDTO, UpdateClassDTO } from "../dto/ClassDTO.ts";
-import { User } from "../entities/User.ts";
 import generateRandomString from "../ultis/misc.ts";
 
 class ClassService {
@@ -17,24 +15,23 @@ class ClassService {
     async createClass(classData: CreateClassDTO) {
         return await ClassRepo.createClass(classData);
     }
-    async updateClass(id: string, updateData: UpdateClassDTO, teacherUserId: string) {
+    async updateClass(id: string, updateData: UpdateClassDTO, teacherId: string) {
         const classObj = await ClassRepo.getClassById(id);
         if (!classObj) {
             return null;
         }
-        const teacher = await User.findById(classObj.teacher_id);
-        if (!teacher || teacher._id.toString() !== teacherUserId) {
+        if (classObj.teacher_id.toString() !== teacherId) {
             return { error: "You can only update your own class" };
         }
         return await ClassRepo.updateClass(id, updateData);
     }
     async generateKeypass(classId: string) {
-        const keypass=generateRandomString();
-        const teacherClass=await this.getClassById(classId);
-        if(!teacherClass){
+        const keypass = generateRandomString();
+        const teacherClass = await this.getClassById(classId);
+        if (!teacherClass) {
             return { error: "Class not found" };
         }
-        teacherClass.keypass=keypass;
+        teacherClass.keypass = keypass;
         await teacherClass?.save();
         return keypass;
     }
@@ -53,29 +50,26 @@ class ClassService {
     async searchClassesByNameFromTeacher(teacherId: string, name: string, page: number) {
         return await ClassRepo.searchClassesByNameFromTeacher(teacherId, name, page);
     }
-    async verifyImageOwnership(url: string, teacherUserId: string) {
+    async verifyImageOwnership(url: string, teacherId: string) {
         const classObj = await ClassRepo.findByImageUrl(url);
         if (!classObj) {
             return { error: "No class found with this image" };
         }
-        const teacher = await User.findById(classObj.teacher_id);
-        if (!teacher || teacher._id.toString() !== teacherUserId) {
+        if (classObj.teacher_id.toString() !== teacherId) {
             return { error: "You can only modify images of your own class" };
         }
         return null;
     }
-    async updateClassImage(oldUrl: string, newUrl: string, teacherUserId: string) {
+    async updateClassImage(oldUrl: string, newUrl: string, teacherId: string) {
         const classObj = await ClassRepo.findByImageUrl(oldUrl);
         if (!classObj) return { error: 'No class found with this image' };
-        const teacher = await User.findById(classObj.teacher_id);
-        if (!teacher || teacher._id.toString() !== teacherUserId) return { error: 'You can only modify images of your own class' };
+        if (classObj.teacher_id.toString() !== teacherId) return { error: 'You can only modify images of your own class' };
         return await ClassRepo.updateClass(classObj._id.toString(), { img_cover_link: newUrl });
     }
-    async clearClassImage(oldUrl: string, teacherUserId: string) {
+    async clearClassImage(oldUrl: string, teacherId: string) {
         const classObj = await ClassRepo.findByImageUrl(oldUrl);
         if (!classObj) return { error: 'No class found with this image' };
-            const teacher = await User.findById(classObj.teacher_id);
-            if (!teacher || teacher._id.toString() !== teacherUserId) return { error: 'You can only modify images of your own class' };
+        if (classObj.teacher_id.toString() !== teacherId) return { error: 'You can only modify images of your own class' };
         return await ClassRepo.updateClass(classObj._id.toString(), { img_cover_link: null });
     }
 }

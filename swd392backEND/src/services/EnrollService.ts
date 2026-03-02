@@ -1,6 +1,5 @@
 import EnrollRepo from "../repository/EnrollRepo.ts";
 import { Class } from "../entities/Class.ts";
-import { Teacher } from "../entities/Teacher.ts";
 import type { CreateEnrollDTO } from "../dto/EnrollDTO.ts";
 
 class EnrollService {
@@ -37,7 +36,7 @@ class EnrollService {
         return await EnrollRepo.getEnrollsByClassId(classId, page);
     }
 
-    async completeEnrollment(enrollId: string, teacherUserId: string) {
+    async completeEnrollment(enrollId: string, teacherId: string) {
         try {
             // Get the enrollment to find the class
             const enroll = await EnrollRepo.getEnrollById(enrollId);
@@ -51,8 +50,7 @@ class EnrollService {
                 return { error: "Class not found" };
             }
 
-            const teacher = await Teacher.findById(classData.teacher_id);
-            if (!teacher || teacher.user_id.toString() !== teacherUserId) {
+            if (classData.teacher_id.toString() !== teacherId) {
                 return { error: "Only the teacher of this class can mark enrollment as completed" };
             }
 

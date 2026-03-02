@@ -41,6 +41,42 @@
  *           type: string
  *           format: date-time
  *           description: Account creation date
+ *     Admin:
+ *       type: object
+ *       description: Admin entity for authorization control. User's with role 'admin' or 'moderator' must have a corresponding Admin entity.
+ *       properties:
+ *         _id:
+ *           type: string
+ *           description: Admin entity ID
+ *         user_id:
+ *           type: string
+ *           description: Reference to User ID
+ *         authorization_lvl:
+ *           type: number
+ *           enum: [1, 2]
+ *           description: Authorization level (1 = moderator, 2 = admin)
+ *         date_create:
+ *           type: string
+ *           format: date-time
+ *           description: Admin entity creation date
+ *     Teacher:
+ *       type: object
+ *       description: Teacher entity for teacher-specific operations. Users with role 'teacher' must have a corresponding Teacher entity. The teacher_id used in Class operations comes from this entity's _id.
+ *       properties:
+ *         _id:
+ *           type: string
+ *           description: Teacher entity ID (this is the teacher_id used in Class entity)
+ *         user_id:
+ *           type: string
+ *           description: Reference to User ID
+ *         credential:
+ *           type: string
+ *           maxLength: 500
+ *           description: Teacher credentials
+ *         date_create:
+ *           type: string
+ *           format: date-time
+ *           description: Teacher entity creation date
  *     LoginRequest:
  *       type: object
  *       required:
@@ -296,7 +332,7 @@
  *     tags:
  *       - Users
  *     summary: Get all users
- *     description: Get all users (Admin only, with pagination)
+ *     description: Get all users (Admin only - requires Admin entity with authorization_lvl: 2, with pagination)
  *     security:
  *       - cookieAuth: []
  *     parameters:
@@ -338,7 +374,7 @@
  *     tags:
  *       - Users
  *     summary: Create new user
- *     description: Create a new user (Admin only)
+ *     description: Create a new user (Admin only - requires Admin entity with authorization_lvl: 2)
  *     security:
  *       - cookieAuth: []
  *     requestBody:
@@ -384,7 +420,7 @@
  *     tags:
  *       - Users
  *     summary: Get user by ID
- *     description: Get a specific user by their ID (Admin only)
+ *     description: Get a specific user by their ID (Admin only - requires Admin entity with authorization_lvl: 2)
  *     security:
  *       - cookieAuth: []
  *     parameters:
@@ -429,7 +465,7 @@
  *     tags:
  *       - Users
  *     summary: Update user
- *     description: Update a user's information (Admin only)
+ *     description: Update a user's information (Admin only - requires Admin entity with authorization_lvl: 2)
  *     security:
  *       - cookieAuth: []
  *     parameters:
@@ -488,7 +524,7 @@
  *     tags:
  *       - Users
  *     summary: Toggle user status
- *     description: Toggle user status between active and banned (Admin only)
+ *     description: Toggle user status between active and banned (Admin only - requires Admin entity with authorization_lvl: 2)
  *     security:
  *       - cookieAuth: []
  *     parameters:
@@ -535,7 +571,7 @@
  *     tags:
  *       - Users
  *     summary: Search users by keyword
- *     description: Search users by name or email keyword (Admin only)
+ *     description: Search users by name or email keyword (Admin only - requires Admin entity with authorization_lvl: 2)
  *     security:
  *       - cookieAuth: []
  *     parameters:

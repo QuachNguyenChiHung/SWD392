@@ -45,9 +45,9 @@ class EnrollController {
     async completeEnrollment(req: Request, res: Response, next: NextFunction) {
         try {
             const { enroll_id } = req.params;
-            const teacherUserId = req.user?.id;
+            const teacher_id = req.teacher?._id?.toString();
 
-            const result = await EnrollService.completeEnrollment(enroll_id as string, teacherUserId as string);
+            const result = await EnrollService.completeEnrollment(enroll_id as string, teacher_id as string);
 
             if ((result as any).error) {
                 return res.status(403).json(result);

@@ -93,7 +93,7 @@
  *     summary: Create a new course
  *     security:
  *       - cookieAuth: []
- *     description: Creates a new course with the provided information (Admin only)
+ *     description: Creates a new course with the provided information (Admin only - requires Admin entity with authorization_lvl: 2)
  *     requestBody:
  *       required: true
  *       content:
@@ -164,7 +164,7 @@
  *     summary: Update a course
  *     security:
  *       - cookieAuth: []
- *     description: Updates an existing course by ID (Admin only)
+ *     description: Updates an existing course by ID (Admin only - requires Admin entity with authorization_lvl: 2)
  *     parameters:
  *       - in: path
  *         name: id
@@ -215,7 +215,7 @@
  *     summary: Delete a course
  *     security:
  *       - cookieAuth: []
- *     description: Deletes a course by ID (Admin only)
+ *     description: Deletes a course by ID (Admin only - requires Admin entity with authorization_lvl: 2)
  *     parameters:
  *       - in: path
  *         name: id
@@ -256,7 +256,7 @@
  *     summary: Toggle course status
  *     security:
  *       - cookieAuth: []
- *     description: Toggles course status between active and inactive (Admin only)
+ *     description: Toggles course status between active and inactive (Admin only - requires Admin entity with authorization_lvl: 2)
  *     parameters:
  *       - in: path
  *         name: id

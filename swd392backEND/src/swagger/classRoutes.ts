@@ -144,7 +144,7 @@
  *     summary: Update a class
  *     security:
  *       - cookieAuth: []
- *     description: Update an existing class (Teacher only, must be the owner of the class)
+ *     description: Update an existing class (Teacher only, must be the owner of the class). Validates Teacher entity exists and uses teacher_id from Teacher collection.
  *     parameters:
  *       - in: path
  *         name: id
@@ -191,7 +191,7 @@
  *     summary: Get classes for authenticated teacher
  *     security:
  *       - cookieAuth: []
- *     description: Get paginated classes for the authenticated teacher (Teacher only — uses authenticated user id; returns 12 results per page)
+ *     description: Get paginated classes for the authenticated teacher (Teacher only — validates Teacher entity and uses teacher_id from Teacher collection; returns 12 results per page)
  *     parameters:
  *       - in: query
  *         name: page
@@ -230,7 +230,7 @@
  *     summary: Create a new class
  *     security:
  *       - cookieAuth: []
- *     description: Create a new class (Teacher only)
+ *     description: Create a new class (Teacher only). Uses teacher_id from Teacher entity, not user_id.
  *     requestBody:
  *       required: true
  *       content:
@@ -264,7 +264,7 @@
  *     summary: Generate new keypass for a class
  *     security:
  *       - cookieAuth: []
- *     description: Generate a new keypass for class enrollment (Teacher only, must be the owner of the class)
+ *     description: Generate a new keypass for class enrollment (Teacher only, must be the owner of the class). Validates ownership using teacher_id from Teacher entity.
  *     parameters:
  *       - in: path
  *         name: classId
@@ -305,7 +305,7 @@
  *     summary: Upload class cover image
  *     security:
  *       - cookieAuth: []
- *     description: Upload an image to Cloudinary for class cover (Teacher only)
+ *     description: Upload an image to Cloudinary for class cover (Teacher only). Requires Teacher entity validation.
  *     requestBody:
  *       required: true
  *       content:

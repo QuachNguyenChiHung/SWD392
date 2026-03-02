@@ -1,6 +1,8 @@
 import type { NextFunction, Request, Response } from "express";
 import UserService from "../services/UserService.ts";
 import { UserGetFromTokenSchema } from "../dto/UserDTO.ts";
+import { Admin } from "../entities/Admin.ts";
+import { Teacher } from "../entities/Teacher.ts";
 
 class VerifyRole {
     async verifyAdmin(req: Request, res: Response, next: NextFunction) {// verify if the user is an admin
@@ -8,8 +10,12 @@ class VerifyRole {
             const token = req.signedCookies.Authorization;
             const user = await UserService.getUserByToken(token as string);
             const verified = UserGetFromTokenSchema.parse(user);
-            if (verified.role === 'admin') {
-                req.user = verified; // attach user info to request object for later use
+
+            // Query Admin entity and verify authorization_lvl is 2
+            const admin = await Admin.findOne({ user_id: verified.id });
+            if (admin && admin.authorization_lvl === 2) {
+                req.user = verified;
+                req.admin = admin;
                 return next();
             }
             return res.status(403).json({ message: "Forbidden: Admins only" });
@@ -22,8 +28,12 @@ class VerifyRole {
             const token = req.signedCookies.Authorization;
             const user = await UserService.getUserByToken(token as string);
             const verified = UserGetFromTokenSchema.parse(user);
-            if (verified.role === 'teacher') {
-                req.user = verified; // attach user info to request object for later use
+
+            // Query Teacher entity to get teacher_id
+            const teacher = await Teacher.findOne({ user_id: verified.id });
+            if (teacher && verified.role === 'teacher') {
+                req.user = verified;
+                req.teacher = teacher;
                 return next();
             }
             return res.status(403).json({ message: "Forbidden: Teachers only" });
@@ -36,8 +46,12 @@ class VerifyRole {
             const token = req.signedCookies.Authorization;
             const user = await UserService.getUserByToken(token as string);
             const verified = UserGetFromTokenSchema.parse(user);
-            if (verified.role === 'moderator') {
-                req.user = verified; // attach user info to request object for later use
+
+            // Query Admin entity and verify authorization_lvl is 1
+            const admin = await Admin.findOne({ user_id: verified.id });
+            if (admin && admin.authorization_lvl === 1) {
+                req.user = verified;
+                req.admin = admin;
                 return next();
             }
             return res.status(403).json({ message: "Forbidden: Moderators only" });
