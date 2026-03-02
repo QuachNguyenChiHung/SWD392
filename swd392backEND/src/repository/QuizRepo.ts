@@ -1,6 +1,7 @@
 import { Quiz } from "../entities/Quiz.ts";
 import { Question } from "../entities/Question.ts";
 import { QuizAttempt } from "../entities/QuizAttempt.ts";
+import type { CreateQuizDTO } from "../dto/QuizDTO";
 
 class QuizRepo {
     async getQuizById(id: string) {
@@ -14,7 +15,7 @@ class QuizRepo {
             .skip(skip)
             .limit(limit);
     }
-    async createQuiz(quizData: any) {
+    async createQuiz(quizData: CreateQuizDTO) {
         const newQuiz = new Quiz(quizData);
         return await newQuiz.save();
     }

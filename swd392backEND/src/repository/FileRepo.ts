@@ -1,3 +1,4 @@
+import type { CreateFileDTO } from "../dto/FileDTO";
 import { File } from "../entities/File.ts";
 
 class FileRepo {
@@ -12,7 +13,7 @@ class FileRepo {
             .skip(skip)
             .limit(limit);
     }
-    async createFile(fileData: any) {
+    async createFile(fileData: CreateFileDTO) {
         const newFile = new File(fileData);
         return await newFile.save();
     }

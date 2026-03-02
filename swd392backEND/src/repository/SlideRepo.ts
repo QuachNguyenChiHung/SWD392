@@ -1,3 +1,4 @@
+import type { CreateSlideDTO } from "../dto/SlideDTO";
 import { Slide } from "../entities/Slide.ts";
 
 class SlideRepo {
@@ -12,7 +13,7 @@ class SlideRepo {
             .skip(skip)
             .limit(limit);
     }
-    async createSlide(slideData: any) {
+    async createSlide(slideData: CreateSlideDTO) {
         const newSlide = new Slide(slideData);
         return await newSlide.save();
     }
