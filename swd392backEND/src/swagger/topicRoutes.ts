@@ -18,6 +18,9 @@
  *         description:
  *           type: string
  *           description: Topic description
+ *         content_json:
+ *           type: object
+ *           description: Topic content in JSON format (optional)
  *     CreateTopicRequest:
  *       type: object
  *       required:
@@ -34,6 +37,9 @@
  *         description:
  *           type: string
  *           description: Topic description
+ *         content_json:
+ *           type: object
+ *           description: Topic content in JSON format (optional)
  *     UpdateTopicRequest:
  *       type: object
  *       properties:
@@ -47,12 +53,33 @@
  *         description:
  *           type: string
  *           description: Topic description
+ *         content_json:
+ *           type: object
+ *           description: Topic content in JSON format (optional)
+ *     ErrorResponse:
+ *       type: object
+ *       properties:
+ *         error:
+ *           type: string
+ *           description: Error message
+ *         message:
+ *           type: string
+ *           description: Detailed error message
+ *
+ *   securitySchemes:
+ *     cookieAuth:
+ *       type: apiKey
+ *       in: cookie
+ *       name: Authorization
+ *       description: Signed cookie containing Bearer token
  *
  * /api/topics:
  *   post:
  *     tags:
  *       - Topics
  *     summary: Create a new topic
+ *     security:
+ *       - cookieAuth: []
  *     description: Create a new topic (Admin only)
  *     requestBody:
  *       required: true
@@ -110,6 +137,8 @@
  *     tags:
  *       - Topics
  *     summary: Update topic
+ *     security:
+ *       - cookieAuth: []
  *     description: Update an existing topic (Admin only)
  *     parameters:
  *       - in: path

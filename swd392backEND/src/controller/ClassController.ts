@@ -42,9 +42,22 @@ class ClassController {
     async createClass(req: Request, res: Response, next: NextFunction) {
         try {
             req.body.teacher_id = req.user?.id;
+            req.body.keypass = Date.now();
             const classData = createClassSchema.parse(req.body);
             const newClass = await ClassService.createClass(classData);
             return res.status(201).json(newClass);
+        } catch (error) {
+            next(error);
+        }
+    }
+    async generateKeypass(req: Request, res: Response, next: NextFunction) {
+        try {
+            const { classId } = req.params;
+            const keypass = await ClassService.generateKeypass(classId as string);
+            if ((keypass as any)?.error) {
+                return res.status(404).json(keypass);
+            }
+            return res.status(200).json({ keypass });
         } catch (error) {
             next(error);
         }

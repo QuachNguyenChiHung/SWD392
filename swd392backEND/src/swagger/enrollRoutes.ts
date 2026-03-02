@@ -34,12 +34,30 @@
  *         keypass:
  *           type: string
  *           description: Class keypass for enrollment verification
+ *     ErrorResponse:
+ *       type: object
+ *       properties:
+ *         error:
+ *           type: string
+ *           description: Error message
+ *         message:
+ *           type: string
+ *           description: Detailed error message
+ *
+ *   securitySchemes:
+ *     cookieAuth:
+ *       type: apiKey
+ *       in: cookie
+ *       name: Authorization
+ *       description: Signed cookie containing Bearer token
  *
  * /api/enroll/{class_id}:
  *   post:
  *     tags:
  *       - Enrollments
  *     summary: Create student enrollment
+ *     security:
+ *       - cookieAuth: []
  *     description: Enroll the currently logged-in student in a class with keypass verification (Student only)
  *     parameters:
  *       - in: path
@@ -79,6 +97,8 @@
  *     tags:
  *       - Enrollments
  *     summary: Get all enrollments from a class
+ *     security:
+ *       - cookieAuth: []
  *     description: Get all student enrollments from a specific class (Teacher only, returns 12 results per page)
  *     parameters:
  *       - in: path
@@ -116,6 +136,8 @@
  *     tags:
  *       - Enrollments
  *     summary: Mark enrollment as completed
+ *     security:
+ *       - cookieAuth: []
  *     description: Update enrollment status to completed (Teacher only, must be the teacher of the class)
  *     parameters:
  *       - in: path

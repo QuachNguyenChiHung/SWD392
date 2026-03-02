@@ -32,6 +32,7 @@ class ClassRepo {
         const newClass = new Class(classData);
         return await newClass.save();
     }
+    
     async updateClass(id: string, updateData: any) {
         return await Class.findByIdAndUpdate(id, updateData, { new: true });
     }

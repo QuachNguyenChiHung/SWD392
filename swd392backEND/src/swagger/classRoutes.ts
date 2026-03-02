@@ -10,11 +10,17 @@
  *           description: Class ID
  *         keypass:
  *           type: string
- *           description: Class keypass for enrollment
+ *           description: Class keypass for enrollment (auto-generated timestamp)
  *           maxLength: 100
+ *           example: "1704192000000"
  *         course_id:
  *           type: string
  *           description: Course ID
+ *           example: "507f1f77bcf86cd799439022"
+ *         teacher_id:
+ *           type: string
+ *           description: Teacher ID (owner of the class)
+ *           example: "507f1f77bcf86cd799439015"
  *         class_name:
  *           type: string
  *           description: Class name
@@ -33,24 +39,23 @@
  *     CreateClassRequest:
  *       type: object
  *       required:
- *         - keypass
  *         - course_id
  *         - class_name
  *       properties:
- *         keypass:
- *           type: string
- *           description: Class keypass for enrollment
- *           maxLength: 100
  *         course_id:
  *           type: string
  *           description: Course ID
+ *           example: "507f1f77bcf86cd799439022"
  *         class_name:
  *           type: string
  *           description: Class name
  *           maxLength: 255
+ *           example: "Mathematics 10A"
  *         img_cover_link:
  *           type: string
- *           description: Cover image URL
+ *           description: Cover image URL (optional)
+ *           example: "https://res.cloudinary.com/example/image.jpg"
+ *       description: Note - keypass and teacher_id are auto-generated server-side
  *     UpdateClassRequest:
  *       type: object
  *       properties:
@@ -75,12 +80,37 @@
  *         url:
  *           type: string
  *           description: Uploaded image URL
+ *           example: "https://res.cloudinary.com/example/image.jpg"
+ *     KeypassResponse:
+ *       type: object
+ *       properties:
+ *         keypass:
+ *           type: string
+ *           description: Generated keypass
+ *           example: "1704567890123"
+ *     ErrorResponse:
+ *       type: object
+ *       properties:
+ *         error:
+ *           type: string
+ *           description: Error message
+ *         message:
+ *           type: string
+ *           description: Detailed error message
+ *     SuccessResponse:
+ *       type: object
+ *       properties:
+ *         message:
+ *           type: string
+ *           description: Success message
+ *           example: "Operation completed successfully"
  *
  *   securitySchemes:
- *     bearerAuth:
- *       type: http
- *       scheme: bearer
- *       bearerFormat: JWT
+ *     cookieAuth:
+ *       type: apiKey
+ *       in: cookie
+ *       name: Authorization
+ *       description: Signed cookie containing Bearer token
  *
  * /api/class/{id}:
  *   get:
@@ -113,7 +143,7 @@
  *       - Classes
  *     summary: Update a class
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     description: Update an existing class (Teacher only, must be the owner of the class)
  *     parameters:
  *       - in: path
@@ -160,7 +190,7 @@
  *       - Classes
  *     summary: Get classes for authenticated teacher
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     description: Get paginated classes for the authenticated teacher (Teacher only — uses authenticated user id; returns 12 results per page)
  *     parameters:
  *       - in: query
@@ -199,7 +229,7 @@
  *       - Classes
  *     summary: Create a new class
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     description: Create a new class (Teacher only)
  *     requestBody:
  *       required: true
@@ -227,13 +257,54 @@
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse' 
  *
+ * /api/class/{classId}/generate-keypass:
+ *   post:
+ *     tags:
+ *       - Classes
+ *     summary: Generate new keypass for a class
+ *     security:
+ *       - cookieAuth: []
+ *     description: Generate a new keypass for class enrollment (Teacher only, must be the owner of the class)
+ *     parameters:
+ *       - in: path
+ *         name: classId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Class ID
+ *     responses:
+ *       200:
+ *         description: Keypass generated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/KeypassResponse'
+ *       401:
+ *         description: Unauthorized - Authentication required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       403:
+ *         description: Forbidden - Teachers only, or not the owner of the class
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       404:
+ *         description: Class not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *
  * /api/teacher/upload-image:
  *   post:
  *     tags:
  *       - Classes
  *     summary: Upload class cover image
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     description: Upload an image to Cloudinary for class cover (Teacher only)
  *     requestBody:
  *       required: true
@@ -280,7 +351,7 @@
  *       - Classes
  *     summary: Update class cover image
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     description: Update an existing Cloudinary image (Teacher only, must own the class that uses this image)
  *     requestBody:
  *       required: true
@@ -331,7 +402,7 @@
  *       - Classes
  *     summary: Delete class cover image
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     description: Delete an image from Cloudinary (Teacher only, must own the class that uses this image)
  *     requestBody:
  *       required: true
@@ -371,7 +442,7 @@
  *       - Classes
  *     summary: Get classes for authenticated student
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     description: Get paginated classes for the authenticated student (Student only — uses authenticated user id; returns 12 results per page)
  *     parameters:
  *       - in: query

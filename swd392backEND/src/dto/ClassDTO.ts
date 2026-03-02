@@ -15,7 +15,7 @@ import z from "zod";
 
 // );
 const createClassSchema = z.object({
-    keypass: z.string().max(100),
+    keypass: z.number(),
     course_id: z.string(),
     class_name: z.string().max(255),
     img_cover_link: z.string().optional(),

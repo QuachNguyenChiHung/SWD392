@@ -8,7 +8,7 @@ route.get("/student/class", verifyRole.verifyStudent, ClassController.getClasses
 
 route.post("/class", verifyRole.verifyTeacher, ClassController.createClass);
 route.put("/class/:id", verifyRole.verifyTeacher, ClassController.updateClass);
-
+route.post("/class/:classId/generate-keypass", verifyRole.verifyTeacher, ClassController.generateKeypass);
 route.post("/teacher/upload-image", verifyRole.verifyTeacher, ClassController.uploadImageCover);
 route.put("/teacher/update-image", verifyRole.verifyTeacher, ClassController.updateImageCover);
 route.delete("/teacher/delete-image", verifyRole.verifyTeacher, ClassController.deleteImageCover);

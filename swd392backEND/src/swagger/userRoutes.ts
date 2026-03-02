@@ -1,17 +1,29 @@
 /**
  * @openapi
  * components:
+ *   securitySchemes:
+ *     cookieAuth:
+ *       type: apiKey
+ *       in: cookie
+ *       name: Authorization
+ *       description: Signed cookie containing Bearer token
  *   schemas:
  *     User:
  *       type: object
  *       properties:
- *         _id:
+ *         id:
  *           type: string
  *           description: User ID
+ *           example: "507f1f77bcf86cd799439011"
+ *         _id:
+ *           type: string
+ *           description: MongoDB ObjectId
+ *           example: "507f1f77bcf86cd799439011"
  *         username:
  *           type: string
  *           description: Username
  *           maxLength: 100
+ *           example: "john_doe"
  *         email:
  *           type: string
  *           format: email
@@ -34,7 +46,6 @@
  *       required:
  *         - email
  *         - password
- *         - role
  *       properties:
  *         email:
  *           type: string
@@ -43,10 +54,6 @@
  *         password:
  *           type: string
  *           description: User password
- *         role:
- *           type: string
- *           enum: [student, teacher, admin, moderator]
- *           description: User role
  *     RegisterRequest:
  *       type: object
  *       required:
@@ -58,9 +65,13 @@
  *           type: string
  *           format: email
  *           description: User email
+ *           example: "user@example.com"
  *         password:
  *           type: string
- *           description: User password (min 10 chars, must include uppercase, number, special char)
+ *           minLength: 10
+ *           pattern: '^(?=.*[A-Z])(?=.*\\d)(?=.*[^A-Za-z0-9]).+$'
+ *           description: Password (min 10 chars, must include uppercase, number, special char)
+ *           example: "SecurePass123!"
  *         username:
  *           type: string
  *           description: Username
@@ -101,6 +112,10 @@
  *         token:
  *           type: string
  *           description: JWT authentication token
+ *           example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+ *     GetMeResponse:
+ *       type: object
+ *       properties:
  *         user:
  *           $ref: '#/components/schemas/User'
  *     ErrorResponse:
@@ -153,7 +168,7 @@
  *     tags:
  *       - Authentication
  *     summary: Login user
- *     description: Authenticate user and return JWT token
+ *     description: Authenticate user and return JWT token in response body and Authorization cookie
  *     requestBody:
  *       required: true
  *       content:
@@ -163,17 +178,25 @@
  *     responses:
  *       200:
  *         description: Login successful
+ *         headers:
+ *           Set-Cookie:
+ *             description: Signed Authorization cookie with Bearer token
+ *             schema:
+ *               type: string
+ *               example: "Authorization=Bearer%20token; Path=/; HttpOnly; SameSite=Lax"
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/LoginResponse'
- *       400:
+ *       401:
  *         description: Invalid credentials
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
- *       500:
+ *             example:
+ *               message: "Password or email is incorrect"
+ *       400:
  *         description: Internal server error
  *         content:
  *           application/json:
@@ -186,6 +209,8 @@
  *       - Authentication
  *     summary: Logout user
  *     description: Logout current user (clears authentication cookie)
+ *     security:
+ *       - cookieAuth: []
  *     responses:
  *       200:
  *         description: Logout successful
@@ -206,13 +231,15 @@
  *       - Users
  *     summary: Get current user info
  *     description: Get information about the currently authenticated user
+ *     security:
+ *       - cookieAuth: []
  *     responses:
  *       200:
  *         description: User information
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/User'
+ *               $ref: '#/components/schemas/GetMeResponse'
  *       401:
  *         description: Unauthorized
  *         content:
@@ -229,7 +256,9 @@
  *     tags:
  *       - Users
  *     summary: Update own profile
- *     description: Update current user's own profile information
+ *     description: Update current user's own profile information (cannot update role or status)
+ *     security:
+ *       - cookieAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -268,6 +297,8 @@
  *       - Users
  *     summary: Get all users
  *     description: Get all users (Admin only, with pagination)
+ *     security:
+ *       - cookieAuth: []
  *     parameters:
  *       - in: query
  *         name: page
@@ -308,6 +339,8 @@
  *       - Users
  *     summary: Create new user
  *     description: Create a new user (Admin only)
+ *     security:
+ *       - cookieAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -352,6 +385,8 @@
  *       - Users
  *     summary: Get user by ID
  *     description: Get a specific user by their ID (Admin only)
+ *     security:
+ *       - cookieAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -395,6 +430,8 @@
  *       - Users
  *     summary: Update user
  *     description: Update a user's information (Admin only)
+ *     security:
+ *       - cookieAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -452,6 +489,8 @@
  *       - Users
  *     summary: Toggle user status
  *     description: Toggle user status between active and banned (Admin only)
+ *     security:
+ *       - cookieAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -497,6 +536,8 @@
  *       - Users
  *     summary: Search users by keyword
  *     description: Search users by name or email keyword (Admin only)
+ *     security:
+ *       - cookieAuth: []
  *     parameters:
  *       - in: query
  *         name: q

@@ -15,6 +15,7 @@ import CourseRoute from './route/CourseRoute.ts';
 import EnrollRoute from './route/EnrollRoute.ts';
 import TopicRoute from './route/TopicRoute.ts';
 import ClassRoute from './route/ClassRoute.ts';
+import DashboardRoute from './route/DashboardRoute.ts';
 
 const spec = swaggerJSDoc({
     definition: { openapi: '3.0.0', info: { title: 'API', version: '1.0.0' } },
@@ -77,6 +78,7 @@ console.log(process.env.MONGO_URI);
             app.use('/api', EnrollRoute);
             app.use('/api', TopicRoute);
             app.use('/api', ClassRoute);
+            app.use('/api', DashboardRoute);
             // Error handler must be after routes
             app.use((err: any, req: Request, res: Response, next: NextFunction) => {
                 console.error(err.stack);

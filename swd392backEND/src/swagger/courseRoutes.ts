@@ -77,12 +77,22 @@
  *         message:
  *           type: string
  *           description: Success message
+ *           example: "Operation completed successfully"
+ *
+ *   securitySchemes:
+ *     cookieAuth:
+ *       type: apiKey
+ *       in: cookie
+ *       name: Authorization
+ *       description: Signed cookie containing Bearer token
  * 
  * /api/courses:
  *   post:
  *     tags:
  *       - Courses
  *     summary: Create a new course
+ *     security:
+ *       - cookieAuth: []
  *     description: Creates a new course with the provided information (Admin only)
  *     requestBody:
  *       required: true
@@ -117,10 +127,43 @@
  *               $ref: '#/components/schemas/ErrorResponse'
  * 
  * /api/courses/{id}:
+ *   get:
+ *     tags:
+ *       - Courses
+ *     summary: Get course by ID
+ *     description: Retrieve a specific course by its ID
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Course ID
+ *     responses:
+ *       200:
+ *         description: Course found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Course'
+ *       404:
+ *         description: Course not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *   put:
  *     tags:
  *       - Courses
  *     summary: Update a course
+ *     security:
+ *       - cookieAuth: []
  *     description: Updates an existing course by ID (Admin only)
  *     parameters:
  *       - in: path
@@ -170,6 +213,8 @@
  *     tags:
  *       - Courses
  *     summary: Delete a course
+ *     security:
+ *       - cookieAuth: []
  *     description: Deletes a course by ID (Admin only)
  *     parameters:
  *       - in: path
@@ -209,6 +254,8 @@
  *     tags:
  *       - Courses
  *     summary: Toggle course status
+ *     security:
+ *       - cookieAuth: []
  *     description: Toggles course status between active and inactive (Admin only)
  *     parameters:
  *       - in: path
@@ -279,6 +326,37 @@
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *
+ * /api/courses:
+ *   get:
+ *     tags:
+ *       - Courses
+ *     summary: Get all courses
+ *     description: Retrieve all courses with pagination (returns 12 results per page)
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         required: false
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *         description: Page number for pagination (returns 12 results per page)
+ *     responses:
+ *       200:
+ *         description: List of courses
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Course'
  *       500:
  *         description: Internal server error
  *         content:
