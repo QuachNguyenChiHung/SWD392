@@ -66,6 +66,13 @@ class ApiService {
         });
     }
 
+    async put(endpoint: string, body: any) {
+        return this.request(endpoint, {
+            method: 'PUT',
+            body: JSON.stringify(body),
+        });
+    }
+
     async patch(endpoint: string, body: any) {
         return this.request(endpoint, {
             method: 'PATCH',
