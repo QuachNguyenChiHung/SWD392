@@ -8,85 +8,64 @@
  *         _id:
  *           type: string
  *           description: Topic ID
- *         course_id:
+ *           example: "507f1f77bcf86cd799439011"
+ *         name:
  *           type: string
- *           description: Course ID
- *         title:
- *           type: string
- *           description: Topic title
- *           maxLength: 255
+ *           description: Topic name
+ *           example: "Variables and Data Types"
  *         description:
  *           type: string
  *           description: Topic description
- *         content_json:
- *           type: object
- *           description: Topic content in JSON format (optional)
- *     CreateTopicRequest:
+ *           example: "Learn about variables and basic data types"
+ *         course_id:
+ *           type: string
+ *           description: Course ID this topic belongs to
+ *           example: "507f1f77bcf86cd799439012"
+ *         order:
+ *           type: integer
+ *           description: Topic order in the course
+ *           example: 1
+ *         date_create:
+ *           type: string
+ *           format: date-time
+ *           description: Topic creation date
+ *     TopicInput:
  *       type: object
  *       required:
+ *         - name
+ *         - description
  *         - course_id
- *         - title
  *       properties:
- *         course_id:
+ *         name:
  *           type: string
- *           description: Course ID
- *         title:
- *           type: string
- *           description: Topic title
- *           maxLength: 255
+ *           example: "Variables and Data Types"
  *         description:
  *           type: string
- *           description: Topic description
- *         content_json:
- *           type: object
- *           description: Topic content in JSON format (optional)
- *     UpdateTopicRequest:
- *       type: object
- *       properties:
+ *           example: "Learn about variables and basic data types"
  *         course_id:
  *           type: string
- *           description: Course ID
- *         title:
- *           type: string
- *           description: Topic title
- *           maxLength: 255
- *         description:
- *           type: string
- *           description: Topic description
- *         content_json:
- *           type: object
- *           description: Topic content in JSON format (optional)
- *     ErrorResponse:
- *       type: object
- *       properties:
- *         error:
- *           type: string
- *           description: Error message
- *         message:
- *           type: string
- *           description: Detailed error message
- *
- *   securitySchemes:
- *     cookieAuth:
- *       type: apiKey
- *       in: cookie
- *       name: Authorization
- *       description: Signed cookie containing Bearer token
- *
+ *           example: "507f1f77bcf86cd799439012"
+ *         order:
+ *           type: integer
+ *           example: 1
+ */
+
+/**
+ * @openapi
  * /api/topics:
  *   post:
  *     tags:
  *       - Topics
- *     summary: Create a new topic
+ *     summary: Create new topic
+ *     description: Create a new topic (admin only)
  *     security:
  *       - cookieAuth: []
- *     description: Create a new topic (Admin only - requires Admin entity with authorization_lvl: 2)
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/CreateTopicRequest'
+ *             $ref: '#/components/schemas/TopicInput'
  *     responses:
  *       201:
  *         description: Topic created successfully
@@ -95,24 +74,66 @@
  *             schema:
  *               $ref: '#/components/schemas/Topic'
  *       400:
- *         description: Bad request - Course not found or title already exists
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
+ *         description: Bad request - Validation error
+ *       401:
+ *         description: Unauthorized
  *       403:
- *         description: Forbidden - Admin only (requires authorization_lvl: 2)
+ *         description: Forbidden - Admin access required
+ */
+
+/**
+ * @openapi
+ * /api/topics/search:
+ *   get:
+ *     tags:
+ *       - Topics
+ *     summary: Search topics by keyword
+ *     description: Search topics by keyword in name or description
+ *     parameters:
+ *       - in: query
+ *         name: keyword
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Search keyword
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Results per page
+ *     responses:
+ *       200:
+ *         description: List of topics matching the keyword
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *
+ *               type: object
+ *               properties:
+ *                 topics:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Topic'
+ *                 total:
+ *                   type: integer
+ *       400:
+ *         description: Bad request
+ */
+
+/**
+ * @openapi
  * /api/topics/{id}:
  *   get:
  *     tags:
  *       - Topics
  *     summary: Get topic by ID
- *     description: Retrieve a specific topic by its ID
+ *     description: Retrieve a specific topic by ID
  *     parameters:
  *       - in: path
  *         name: id
@@ -122,24 +143,20 @@
  *         description: Topic ID
  *     responses:
  *       200:
- *         description: Topic found
+ *         description: Topic details
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Topic'
  *       404:
  *         description: Topic not found
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
  *   put:
  *     tags:
  *       - Topics
  *     summary: Update topic
+ *     description: Update topic information (admin only)
  *     security:
  *       - cookieAuth: []
- *     description: Update an existing topic (Admin only - requires Admin entity with authorization_lvl: 2)
  *     parameters:
  *       - in: path
  *         name: id
@@ -152,7 +169,7 @@
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/UpdateTopicRequest'
+ *             $ref: '#/components/schemas/TopicInput'
  *     responses:
  *       200:
  *         description: Topic updated successfully
@@ -161,73 +178,23 @@
  *             schema:
  *               $ref: '#/components/schemas/Topic'
  *       400:
- *         description: Bad request - Course not found or title already exists
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
+ *         description: Bad request
+ *       401:
+ *         description: Unauthorized
  *       403:
- *         description: Forbidden - Admin only (requires authorization_lvl: 2)
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
+ *         description: Forbidden - Admin access required
  *       404:
  *         description: Topic not found
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *
- * /api/topics/search:
- *   get:
- *     tags:
- *       - Topics
- *     summary: Search topics by keyword
- *     description: Search topics by keyword in title or description (returns 12 results per page)
- *     parameters:
- *       - in: query
- *         name: keyword
- *         required: true
- *         schema:
- *           type: string
- *         description: Search keyword for title or description
- *       - in: query
- *         name: page
- *         required: false
- *         schema:
- *           type: integer
- *           minimum: 1
- *           default: 1
- *         description: Page number for pagination (returns 12 results per page)
- *     responses:
- *       200:
- *         description: Search results
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/Topic'
- *       400:
- *         description: Bad request - keyword is required
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *       500:
- *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *
+ */
+
+/**
+ * @openapi
  * /api/topics/course/{course_id}:
  *   get:
  *     tags:
  *       - Topics
  *     summary: Get topics by course
- *     description: Get all topics from a specific course (returns 12 results per page)
+ *     description: Retrieve all topics from a specific course
  *     parameters:
  *       - in: path
  *         name: course_id
@@ -237,25 +204,30 @@
  *         description: Course ID
  *       - in: query
  *         name: page
- *         required: false
  *         schema:
  *           type: integer
- *           minimum: 1
  *           default: 1
- *         description: Page number for pagination (returns 12 results per page)
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Results per page
  *     responses:
  *       200:
- *         description: List of topics
+ *         description: List of topics in the course
  *         content:
  *           application/json:
  *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/Topic'
- *       500:
- *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
+ *               type: object
+ *               properties:
+ *                 topics:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Topic'
+ *                 total:
+ *                   type: integer
+ *       404:
+ *         description: Course not found
  */

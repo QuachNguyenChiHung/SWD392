@@ -11,72 +11,56 @@
  *     User:
  *       type: object
  *       properties:
- *         id:
- *           type: string
- *           description: User ID
- *           example: "507f1f77bcf86cd799439011"
  *         _id:
  *           type: string
- *           description: MongoDB ObjectId
+ *           description: User ID
  *           example: "507f1f77bcf86cd799439011"
  *         username:
  *           type: string
  *           description: Username
- *           maxLength: 100
  *           example: "john_doe"
  *         email:
  *           type: string
  *           format: email
  *           description: User email
- *           maxLength: 255
+ *           example: "john@example.com"
  *         role:
  *           type: string
  *           enum: [student, teacher, admin, moderator]
  *           description: User role
+ *           example: "student"
  *         status:
  *           type: string
  *           enum: [active, banned]
  *           description: User status
+ *           example: "active"
  *         date_create:
  *           type: string
  *           format: date-time
  *           description: Account creation date
- *     Admin:
+ *     UserInput:
  *       type: object
- *       description: Admin entity for authorization control. User's with role 'admin' or 'moderator' must have a corresponding Admin entity.
+ *       required:
+ *         - username
+ *         - email
+ *         - password
+ *         - role
  *       properties:
- *         _id:
+ *         username:
  *           type: string
- *           description: Admin entity ID
- *         user_id:
+ *           example: "john_doe"
+ *         email:
  *           type: string
- *           description: Reference to User ID
- *         authorization_lvl:
- *           type: number
- *           enum: [1, 2]
- *           description: Authorization level (1 = moderator, 2 = admin)
- *         date_create:
+ *           format: email
+ *           example: "john@example.com"
+ *         password:
  *           type: string
- *           format: date-time
- *           description: Admin entity creation date
- *     Teacher:
- *       type: object
- *       description: Teacher entity for teacher-specific operations. Users with role 'teacher' must have a corresponding Teacher entity. The teacher_id used in Class operations comes from this entity's _id.
- *       properties:
- *         _id:
+ *           format: password
+ *           example: "Password123!"
+ *         role:
  *           type: string
- *           description: Teacher entity ID (this is the teacher_id used in Class entity)
- *         user_id:
- *           type: string
- *           description: Reference to User ID
- *         credential:
- *           type: string
- *           maxLength: 500
- *           description: Teacher credentials
- *         date_create:
- *           type: string
- *           format: date-time
- *           description: Teacher entity creation date
+ *           enum: [student, teacher, admin, moderator]
+ *           example: "student"
  *     LoginRequest:
  *       type: object
  *       required:
@@ -86,92 +70,264 @@
  *         email:
  *           type: string
  *           format: email
- *           description: User email
+ *           example: "john@example.com"
  *         password:
  *           type: string
- *           description: User password
+ *           format: password
+ *           example: "Password123!"
  *     RegisterRequest:
  *       type: object
  *       required:
+ *         - username
  *         - email
  *         - password
- *         - username
  *       properties:
+ *         username:
+ *           type: string
+ *           example: "john_doe"
  *         email:
  *           type: string
  *           format: email
- *           description: User email
- *           example: "user@example.com"
+ *           example: "john@example.com"
  *         password:
  *           type: string
- *           minLength: 10
- *           pattern: '^(?=.*[A-Z])(?=.*\\d)(?=.*[^A-Za-z0-9]).+$'
- *           description: Password (min 10 chars, must include uppercase, number, special char)
- *           example: "SecurePass123!"
- *         username:
+ *           format: password
+ *           example: "Password123!"
+ */
+
+/**
+ * @openapi
+ * /api/users/search:
+ *   get:
+ *     tags:
+ *       - Users
+ *     summary: Search users by keyword
+ *     description: Search users by keyword in username or email (admin only)
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: keyword
+ *         schema:
  *           type: string
- *           description: Username
- *         role:
+ *         required: true
+ *         description: Search keyword
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Results per page
+ *     responses:
+ *       200:
+ *         description: List of users matching the keyword
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 users:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/User'
+ *                 total:
+ *                   type: integer
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - Admin access required
+ */
+
+/**
+ * @openapi
+ * /api/users:
+ *   get:
+ *     tags:
+ *       - Users
+ *     summary: Get all users
+ *     description: Retrieve paginated list of all users (admin only)
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Results per page
+ *     responses:
+ *       200:
+ *         description: List of users
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 users:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/User'
+ *                 total:
+ *                   type: integer
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - Admin access required
+ *   post:
+ *     tags:
+ *       - Users
+ *     summary: Create new user
+ *     description: Create a new user (admin only)
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/UserInput'
+ *     responses:
+ *       201:
+ *         description: User created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/User'
+ *       400:
+ *         description: Bad request - Validation error
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - Admin access required
+ */
+
+/**
+ * @openapi
+ * /api/users/{id}:
+ *   get:
+ *     tags:
+ *       - Users
+ *     summary: Get user by ID
+ *     description: Retrieve a specific user by ID (admin only)
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
  *           type: string
- *           enum: [student, teacher, admin, moderator]
- *           default: student
- *           description: User role (defaults to student)
- *     UpdateUserRequest:
- *       type: object
- *       properties:
- *         username:
+ *         description: User ID
+ *     responses:
+ *       200:
+ *         description: User details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/User'
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - Admin access required
+ *       404:
+ *         description: User not found
+ *   patch:
+ *     tags:
+ *       - Users
+ *     summary: Update user
+ *     description: Update user information (admin only)
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
  *           type: string
- *           description: Username
- *         password:
+ *         description: User ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               username:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *                 format: email
+ *               role:
+ *                 type: string
+ *                 enum: [student, teacher, admin, moderator]
+ *     responses:
+ *       200:
+ *         description: User updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/User'
+ *       400:
+ *         description: Bad request
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - Admin access required
+ *       404:
+ *         description: User not found
+ */
+
+/**
+ * @openapi
+ * /api/users/{id}/status:
+ *   patch:
+ *     tags:
+ *       - Users
+ *     summary: Toggle user status
+ *     description: Toggle user status between active and banned (admin only)
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
  *           type: string
- *           description: New password
- *         role:
- *           type: string
- *           enum: [student, teacher, admin, moderator]
- *           description: User role
- *         status:
- *           type: string
- *           enum: [active, banned]
- *           description: User status
- *     UpdateSelfRequest:
- *       type: object
- *       properties:
- *         username:
- *           type: string
- *           description: Username
- *         password:
- *           type: string
- *           description: New password
- *     LoginResponse:
- *       type: object
- *       properties:
- *         token:
- *           type: string
- *           description: JWT authentication token
- *           example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
- *     GetMeResponse:
- *       type: object
- *       properties:
- *         user:
- *           $ref: '#/components/schemas/User'
- *     ErrorResponse:
- *       type: object
- *       properties:
- *         error:
- *           type: string
- *           description: Error message
- *     SuccessResponse:
- *       type: object
- *       properties:
- *         message:
- *           type: string
- *           description: Success message
- * 
+ *         description: User ID
+ *     responses:
+ *       200:
+ *         description: User status updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/User'
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - Admin access required
+ *       404:
+ *         description: User not found
+ */
+
+/**
+ * @openapi
  * /api/register:
  *   post:
  *     tags:
  *       - Authentication
- *     summary: Register a new user
+ *     summary: Register new user
  *     description: Register a new user account
  *     requestBody:
  *       required: true
@@ -185,26 +341,25 @@
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/User'
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "User registered successfully"
+ *                 user:
+ *                   $ref: '#/components/schemas/User'
  *       400:
- *         description: Bad request - validation errors or email already exists
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *       500:
- *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- * 
+ *         description: Bad request - Validation error or user already exists
+ */
+
+/**
+ * @openapi
  * /api/login:
  *   post:
  *     tags:
  *       - Authentication
- *     summary: Login user
- *     description: Authenticate user and return JWT token in response body and Authorization cookie
+ *     summary: User login
+ *     description: Authenticate user and receive a cookie token
  *     requestBody:
  *       required: true
  *       content:
@@ -214,85 +369,49 @@
  *     responses:
  *       200:
  *         description: Login successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Login successful"
+ *                 user:
+ *                   $ref: '#/components/schemas/User'
  *         headers:
  *           Set-Cookie:
- *             description: Signed Authorization cookie with Bearer token
  *             schema:
  *               type: string
- *               example: "Authorization=Bearer%20token; Path=/; HttpOnly; SameSite=Lax"
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/LoginResponse'
+ *               example: Authorization=token; Path=/; HttpOnly
  *       401:
  *         description: Invalid credentials
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *             example:
- *               message: "Password or email is incorrect"
- *       400:
- *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- * 
- * /api/logout:
- *   post:
- *     tags:
- *       - Authentication
- *     summary: Logout user
- *     description: Logout current user (clears authentication cookie)
- *     security:
- *       - cookieAuth: []
- *     responses:
- *       200:
- *         description: Logout successful
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/SuccessResponse'
- *       500:
- *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- * 
+ */
+
+/**
+ * @openapi
  * /api/me:
  *   get:
  *     tags:
- *       - Users
+ *       - Authentication
  *     summary: Get current user info
- *     description: Get information about the currently authenticated user
+ *     description: Get authenticated user information
  *     security:
  *       - cookieAuth: []
  *     responses:
  *       200:
- *         description: User information
+ *         description: Current user information
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/GetMeResponse'
+ *               $ref: '#/components/schemas/User'
  *       401:
- *         description: Unauthorized
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *       500:
- *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
+ *         description: Unauthorized - Not logged in
  *   patch:
  *     tags:
- *       - Users
+ *       - Authentication
  *     summary: Update own profile
- *     description: Update current user's own profile information (cannot update role or status)
+ *     description: Update current user's profile
  *     security:
  *       - cookieAuth: []
  *     requestBody:
@@ -300,7 +419,13 @@
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/UpdateSelfRequest'
+ *             type: object
+ *             properties:
+ *               username:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *                 format: email
  *     responses:
  *       200:
  *         description: Profile updated successfully
@@ -309,317 +434,30 @@
  *             schema:
  *               $ref: '#/components/schemas/User'
  *       400:
- *         description: Bad request - validation errors
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
+ *         description: Bad request
  *       401:
  *         description: Unauthorized
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *       500:
- *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- * 
- * /api/users:
- *   get:
- *     tags:
- *       - Users
- *     summary: Get all users
- *     description: Get all users (Admin only - requires Admin entity with authorization_lvl: 2, with pagination)
- *     security:
- *       - cookieAuth: []
- *     parameters:
- *       - in: query
- *         name: page
- *         schema:
- *           type: integer
- *           minimum: 1
- *           default: 1
- *         description: Page number for pagination
- *     responses:
- *       200:
- *         description: List of users
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/User'
- *       401:
- *         description: Unauthorized
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *       403:
- *         description: Forbidden - Admin access required
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *       500:
- *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
+ */
+
+/**
+ * @openapi
+ * /api/logout:
  *   post:
  *     tags:
- *       - Users
- *     summary: Create new user
- *     description: Create a new user (Admin only - requires Admin entity with authorization_lvl: 2)
+ *       - Authentication
+ *     summary: Logout user
+ *     description: Clear authentication cookie
  *     security:
  *       - cookieAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/RegisterRequest'
- *     responses:
- *       201:
- *         description: User created successfully
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/User'
- *       400:
- *         description: Bad request - validation errors or email already exists
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *       401:
- *         description: Unauthorized
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *       403:
- *         description: Forbidden - Admin access required
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *       500:
- *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- * 
- * /api/users/{id}:
- *   get:
- *     tags:
- *       - Users
- *     summary: Get user by ID
- *     description: Get a specific user by their ID (Admin only - requires Admin entity with authorization_lvl: 2)
- *     security:
- *       - cookieAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *         description: User ID
  *     responses:
  *       200:
- *         description: User information
+ *         description: Logout successful
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/User'
- *       401:
- *         description: Unauthorized
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *       403:
- *         description: Forbidden - Admin access required
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *       404:
- *         description: User not found
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *       500:
- *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *   patch:
- *     tags:
- *       - Users
- *     summary: Update user
- *     description: Update a user's information (Admin only - requires Admin entity with authorization_lvl: 2)
- *     security:
- *       - cookieAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *         description: User ID
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/UpdateUserRequest'
- *     responses:
- *       200:
- *         description: User updated successfully
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/User'
- *       400:
- *         description: Bad request - validation errors
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *       401:
- *         description: Unauthorized
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *       403:
- *         description: Forbidden - Admin access required
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *       404:
- *         description: User not found
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *       500:
- *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- * 
- * /api/users/{id}/status:
- *   patch:
- *     tags:
- *       - Users
- *     summary: Toggle user status
- *     description: Toggle user status between active and banned (Admin only - requires Admin entity with authorization_lvl: 2)
- *     security:
- *       - cookieAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *         description: User ID
- *     responses:
- *       200:
- *         description: User status toggled successfully
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/User'
- *       401:
- *         description: Unauthorized
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *       403:
- *         description: Forbidden - Admin access required
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *       404:
- *         description: User not found
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *       500:
- *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- * 
- * /api/users/search:
- *   get:
- *     tags:
- *       - Users
- *     summary: Search users by keyword
- *     description: Search users by name or email keyword (Admin only - requires Admin entity with authorization_lvl: 2)
- *     security:
- *       - cookieAuth: []
- *     parameters:
- *       - in: query
- *         name: q
- *         required: true
- *         schema:
- *           type: string
- *         description: Search keyword for name or email
- *       - in: query
- *         name: page
- *         required: false
- *         schema:
- *           type: integer
- *           minimum: 1
- *           default: 1
- *         description: Page number for pagination (returns 12 results per page)
- *     responses:
- *       200:
- *         description: Search results
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/User'
- *       400:
- *         description: Bad request - keyword is required
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *       401:
- *         description: Unauthorized
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *       403:
- *         description: Forbidden - Admin access required
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *       500:
- *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Logout successful"
  */

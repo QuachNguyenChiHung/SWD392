@@ -1,40 +1,17 @@
 /**
  * @openapi
- * components:
- *   schemas:
- *     UploadResponse:
- *       type: object
- *       properties:
- *         url:
- *           type: string
- *           description: URL of the uploaded/updated image
- *     ErrorResponse:
- *       type: object
- *       properties:
- *         error:
- *           type: string
- *           description: Error message
- *     SuccessResponse:
- *       type: object
- *       properties:
- *         message:
- *           type: string
- *           description: Success message
- * 
  * /cloudinary-demo:
  *   post:
  *     tags:
- *       - Image Upload
- *     summary: Upload an image
- *     description: Upload an image file to Cloudinary
+ *       - Cloudinary Demo
+ *     summary: Upload image to Cloudinary
+ *     description: Demo endpoint to upload an image to Cloudinary
  *     requestBody:
  *       required: true
  *       content:
  *         multipart/form-data:
  *           schema:
  *             type: object
- *             required:
- *               - image
  *             properties:
  *               image:
  *                 type: string
@@ -46,41 +23,39 @@
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/UploadResponse'
+ *               type: object
+ *               properties:
+ *                 url:
+ *                   type: string
+ *                   description: URL of the uploaded image
+ *                   example: "https://res.cloudinary.com/demo/image/upload/sample.jpg"
  *       400:
  *         description: No file uploaded
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
  *       500:
- *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- * 
+ *         description: Upload failed
+ */
+
+/**
+ * @openapi
  * /cloudinary-demo/{url}:
  *   put:
  *     tags:
- *       - Image Upload
- *     summary: Update an existing image
- *     description: Replace an existing image with a new one
+ *       - Cloudinary Demo
+ *     summary: Update image on Cloudinary
+ *     description: Demo endpoint to update/replace an existing image on Cloudinary
  *     parameters:
  *       - in: path
  *         name: url
  *         required: true
  *         schema:
  *           type: string
- *         description: Current image URL to update
+ *         description: Current image URL to replace
  *     requestBody:
  *       required: true
  *       content:
  *         multipart/form-data:
  *           schema:
  *             type: object
- *             required:
- *               - image
  *             properties:
  *               image:
  *                 type: string
@@ -92,24 +67,21 @@
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/UploadResponse'
+ *               type: object
+ *               properties:
+ *                 url:
+ *                   type: string
+ *                   description: URL of the new image
+ *                   example: "https://res.cloudinary.com/demo/image/upload/new-sample.jpg"
  *       400:
- *         description: No URL or file provided
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
+ *         description: No URL provided or no file uploaded
  *       500:
- *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
+ *         description: Update failed
  *   delete:
  *     tags:
- *       - Image Upload
- *     summary: Delete an image
- *     description: Delete an image from Cloudinary
+ *       - Cloudinary Demo
+ *     summary: Delete image from Cloudinary
+ *     description: Demo endpoint to delete an image from Cloudinary
  *     parameters:
  *       - in: path
  *         name: url
@@ -123,17 +95,13 @@
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/SuccessResponse'
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Image deleted successfully"
  *       400:
  *         description: No URL provided
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
  *       500:
- *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
+ *         description: Deletion failed
  */

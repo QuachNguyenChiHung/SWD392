@@ -8,98 +8,88 @@
  *         _id:
  *           type: string
  *           description: Course ID
- *         course_name:
+ *           example: "507f1f77bcf86cd799439011"
+ *         name:
  *           type: string
  *           description: Course name
- *           maxLength: 255
- *         grade_level:
- *           type: number
- *           description: Grade level (1-12)
- *           minimum: 1
- *           maximum: 12
- *         change_log:
- *           type: object
- *           description: Change log data
+ *           example: "Introduction to Programming"
+ *         description:
+ *           type: string
+ *           description: Course description
+ *           example: "Learn the basics of programming"
+ *         status:
+ *           type: string
+ *           enum: [active, inactive]
+ *           description: Course status
+ *           example: "active"
  *         date_create:
  *           type: string
  *           format: date-time
  *           description: Course creation date
- *         status:
- *           type: string
- *           enum: [active, inactive]
- *           description: Course status
- *     CourseCreateRequest:
+ *     CourseInput:
  *       type: object
  *       required:
- *         - course_name
- *         - grade_level
+ *         - name
+ *         - description
  *       properties:
- *         course_name:
+ *         name:
  *           type: string
- *           description: Course name
- *           maxLength: 255
- *         grade_level:
- *           type: number
- *           description: Grade level (1-12)
- *           minimum: 1
- *           maximum: 12
- *         change_log:
- *           type: object
- *           description: Optional change log data
- *     CourseUpdateRequest:
- *       type: object
- *       properties:
- *         course_name:
+ *           example: "Introduction to Programming"
+ *         description:
  *           type: string
- *           description: Course name
- *           maxLength: 255
- *         grade_level:
- *           type: number
- *           description: Grade level (1-12)
- *           minimum: 1
- *           maximum: 12
- *         change_log:
- *           type: object
- *           description: Change log data
- *         status:
- *           type: string
- *           enum: [active, inactive]
- *           description: Course status
- *     ErrorResponse:
- *       type: object
- *       properties:
- *         error:
- *           type: string
- *           description: Error message
- *     SuccessResponse:
- *       type: object
- *       properties:
- *         message:
- *           type: string
- *           description: Success message
- *           example: "Operation completed successfully"
- *
- *   securitySchemes:
- *     cookieAuth:
- *       type: apiKey
- *       in: cookie
- *       name: Authorization
- *       description: Signed cookie containing Bearer token
- * 
+ *           example: "Learn the basics of programming"
+ */
+
+/**
+ * @openapi
  * /api/courses:
+ *   get:
+ *     tags:
+ *       - Courses
+ *     summary: Get all courses
+ *     description: Retrieve paginated list of all courses
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Results per page
+ *     responses:
+ *       200:
+ *         description: List of courses
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 courses:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Course'
+ *                 total:
+ *                   type: integer
+ *       400:
+ *         description: Bad request
  *   post:
  *     tags:
  *       - Courses
- *     summary: Create a new course
+ *     summary: Create new course
+ *     description: Create a new course (admin only)
  *     security:
  *       - cookieAuth: []
- *     description: Creates a new course with the provided information (Admin only - requires Admin entity with authorization_lvl: 2)
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/CourseCreateRequest'
+ *             $ref: '#/components/schemas/CourseInput'
  *     responses:
  *       201:
  *         description: Course created successfully
@@ -108,30 +98,66 @@
  *             schema:
  *               $ref: '#/components/schemas/Course'
  *       400:
- *         description: Bad request - validation error or course name already exists
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
+ *         description: Bad request - Validation error
+ *       401:
+ *         description: Unauthorized
  *       403:
  *         description: Forbidden - Admin access required
+ */
+
+/**
+ * @openapi
+ * /api/courses/search:
+ *   get:
+ *     tags:
+ *       - Courses
+ *     summary: Search courses by keyword
+ *     description: Search courses by keyword in name or description
+ *     parameters:
+ *       - in: query
+ *         name: keyword
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Search keyword
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Results per page
+ *     responses:
+ *       200:
+ *         description: List of courses matching the keyword
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *       500:
- *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- * 
+ *               type: object
+ *               properties:
+ *                 courses:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Course'
+ *                 total:
+ *                   type: integer
+ *       400:
+ *         description: Bad request
+ */
+
+/**
+ * @openapi
  * /api/courses/{id}:
  *   get:
  *     tags:
  *       - Courses
  *     summary: Get course by ID
- *     description: Retrieve a specific course by its ID
+ *     description: Retrieve a specific course by ID
  *     parameters:
  *       - in: path
  *         name: id
@@ -141,30 +167,20 @@
  *         description: Course ID
  *     responses:
  *       200:
- *         description: Course found
+ *         description: Course details
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Course'
  *       404:
  *         description: Course not found
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *       500:
- *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
  *   put:
  *     tags:
  *       - Courses
- *     summary: Update a course
+ *     summary: Update course
+ *     description: Update course information (admin only)
  *     security:
  *       - cookieAuth: []
- *     description: Updates an existing course by ID (Admin only - requires Admin entity with authorization_lvl: 2)
  *     parameters:
  *       - in: path
  *         name: id
@@ -177,7 +193,7 @@
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/CourseUpdateRequest'
+ *             $ref: '#/components/schemas/CourseInput'
  *     responses:
  *       200:
  *         description: Course updated successfully
@@ -186,36 +202,20 @@
  *             schema:
  *               $ref: '#/components/schemas/Course'
  *       400:
- *         description: Bad request - validation error or course name already exists
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
+ *         description: Bad request
+ *       401:
+ *         description: Unauthorized
  *       403:
  *         description: Forbidden - Admin access required
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
  *       404:
  *         description: Course not found
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *       500:
- *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
  *   delete:
  *     tags:
  *       - Courses
- *     summary: Delete a course
+ *     summary: Delete course
+ *     description: Delete a course (admin only)
  *     security:
  *       - cookieAuth: []
- *     description: Deletes a course by ID (Admin only - requires Admin entity with authorization_lvl: 2)
  *     parameters:
  *       - in: path
  *         name: id
@@ -229,34 +229,29 @@
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/SuccessResponse'
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Course deleted successfully"
+ *       401:
+ *         description: Unauthorized
  *       403:
  *         description: Forbidden - Admin access required
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
  *       404:
  *         description: Course not found
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *       500:
- *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- * 
+ */
+
+/**
+ * @openapi
  * /api/courses/{id}/toggle-status:
  *   patch:
  *     tags:
  *       - Courses
  *     summary: Toggle course status
+ *     description: Toggle course status between active and inactive (admin only)
  *     security:
  *       - cookieAuth: []
- *     description: Toggles course status between active and inactive (Admin only - requires Admin entity with authorization_lvl: 2)
  *     parameters:
  *       - in: path
  *         name: id
@@ -266,101 +261,15 @@
  *         description: Course ID
  *     responses:
  *       200:
- *         description: Course status toggled successfully
+ *         description: Course status updated successfully
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Course'
+ *       401:
+ *         description: Unauthorized
  *       403:
  *         description: Forbidden - Admin access required
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
  *       404:
  *         description: Course not found
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *       500:
- *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- * 
- * /api/courses/search:
- *   get:
- *     tags:
- *       - Courses
- *     summary: Search courses by keyword
- *     description: Search courses by keyword in course name (returns 12 results per page)
- *     parameters:
- *       - in: query
- *         name: keyword
- *         required: true
- *         schema:
- *           type: string
- *         description: Search keyword for course name
- *       - in: query
- *         name: page
- *         required: false
- *         schema:
- *           type: integer
- *           minimum: 1
- *           default: 1
- *         description: Page number for pagination (returns 12 results per page)
- *     responses:
- *       200:
- *         description: Search results
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/Course'
- *       400:
- *         description: Bad request - keyword is required
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *       500:
- *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *
- * /api/courses:
- *   get:
- *     tags:
- *       - Courses
- *     summary: Get all courses
- *     description: Retrieve all courses with pagination (returns 12 results per page)
- *     parameters:
- *       - in: query
- *         name: page
- *         required: false
- *         schema:
- *           type: integer
- *           minimum: 1
- *           default: 1
- *         description: Page number for pagination (returns 12 results per page)
- *     responses:
- *       200:
- *         description: List of courses
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/Course'
- *       500:
- *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
  */

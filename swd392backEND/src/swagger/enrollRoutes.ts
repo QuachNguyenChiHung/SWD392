@@ -2,104 +2,92 @@
  * @openapi
  * components:
  *   schemas:
- *     Enroll:
+ *     Enrollment:
  *       type: object
  *       properties:
  *         _id:
  *           type: string
  *           description: Enrollment ID
+ *           example: "507f1f77bcf86cd799439011"
+ *         user_id:
+ *           type: string
+ *           description: Student ID
+ *           example: "507f1f77bcf86cd799439012"
  *         class_id:
  *           type: string
  *           description: Class ID
- *         student_id:
- *           type: string
- *           description: Student ID
- *         date_join:
- *           type: string
- *           format: date-time
- *           description: Enrollment date
+ *           example: "507f1f77bcf86cd799439013"
  *         status:
  *           type: string
- *           enum: [in_progress, completed]
+ *           enum: [enrolled, completed, dropped]
  *           description: Enrollment status
- *         date_end:
+ *           example: "enrolled"
+ *         enrollment_date:
  *           type: string
  *           format: date-time
- *           description: Completion date (if completed)
- *     CreateEnrollRequest:
- *       type: object
- *       required:
- *         - keypass
- *       properties:
- *         keypass:
+ *           description: Date of enrollment
+ *         completion_date:
  *           type: string
- *           description: Class keypass for enrollment verification
- *     ErrorResponse:
- *       type: object
- *       properties:
- *         error:
- *           type: string
- *           description: Error message
- *         message:
- *           type: string
- *           description: Detailed error message
- *
- *   securitySchemes:
- *     cookieAuth:
- *       type: apiKey
- *       in: cookie
- *       name: Authorization
- *       description: Signed cookie containing Bearer token
- *
+ *           format: date-time
+ *           description: Date when enrollment was marked as completed
+ *           nullable: true
+ */
+
+/**
+ * @openapi
  * /api/enroll/{class_id}:
  *   post:
  *     tags:
  *       - Enrollments
- *     summary: Create student enrollment
+ *     summary: Enroll in a class
+ *     description: Student enrolls in a class using class ID (student only)
  *     security:
  *       - cookieAuth: []
- *     description: Enroll the currently logged-in student in a class with keypass verification (Student only)
  *     parameters:
  *       - in: path
  *         name: class_id
  *         required: true
  *         schema:
  *           type: string
- *         description: Class ID
+ *         description: Class ID to enroll in
  *     requestBody:
- *       required: true
+ *       required: false
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/CreateEnrollRequest'
+ *             type: object
+ *             properties:
+ *               keypass:
+ *                 type: string
+ *                 description: Class enrollment key (if required)
+ *                 example: "ABC123XYZ"
  *     responses:
  *       201:
- *         description: Enrollment created successfully
+ *         description: Enrollment successful
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Enroll'
+ *               $ref: '#/components/schemas/Enrollment'
  *       400:
- *         description: Bad request - Invalid keypass, student already enrolled, or class not found
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
+ *         description: Bad request - Already enrolled or invalid keypass
+ *       401:
+ *         description: Unauthorized
  *       403:
- *         description: Forbidden - Students only
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *
+ *         description: Forbidden - Student access required
+ *       404:
+ *         description: Class not found
+ */
+
+/**
+ * @openapi
  * /api/teacher/enroll/{class_id}:
  *   get:
  *     tags:
  *       - Enrollments
- *     summary: Get all enrollments from a class
+ *     summary: Get enrollments by class
+ *     description: Get all enrollments for a specific class (teacher only)
  *     security:
  *       - cookieAuth: []
- *     description: Get all student enrollments from a specific class (Teacher only - validates Teacher entity, returns 12 results per page)
  *     parameters:
  *       - in: path
  *         name: class_id
@@ -109,36 +97,54 @@
  *         description: Class ID
  *       - in: query
  *         name: page
- *         required: false
  *         schema:
  *           type: integer
- *           minimum: 1
  *           default: 1
- *         description: Page number for pagination (returns 12 results per page)
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Results per page
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [enrolled, completed, dropped]
+ *         description: Filter by enrollment status
  *     responses:
  *       200:
  *         description: List of enrollments
  *         content:
  *           application/json:
  *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/Enroll'
+ *               type: object
+ *               properties:
+ *                 enrollments:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Enrollment'
+ *                 total:
+ *                   type: integer
+ *       401:
+ *         description: Unauthorized
  *       403:
- *         description: Forbidden - Teachers only
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *
+ *         description: Forbidden - Teacher access required
+ *       404:
+ *         description: Class not found
+ */
+
+/**
+ * @openapi
  * /api/enroll/{enroll_id}/completed:
  *   patch:
  *     tags:
  *       - Enrollments
  *     summary: Mark enrollment as completed
+ *     description: Mark a student's enrollment as completed (teacher only, must be the class teacher)
  *     security:
  *       - cookieAuth: []
- *     description: Update enrollment status to completed (Teacher only, must be the teacher of the class). Validates ownership using teacher_id from Teacher entity.
  *     parameters:
  *       - in: path
  *         name: enroll_id
@@ -152,11 +158,11 @@
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Enroll'
+ *               $ref: '#/components/schemas/Enrollment'
+ *       401:
+ *         description: Unauthorized
  *       403:
- *         description: Forbidden - Only the teacher of this class can mark enrollment as completed
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
+ *         description: Forbidden - Must be the teacher of this class
+ *       404:
+ *         description: Enrollment not found
  */

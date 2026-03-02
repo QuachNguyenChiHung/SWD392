@@ -10,11 +10,12 @@ import CloudinaryUploadDemoRoute from './route/CloudinaryUploadDemoRoute.ts';
 import cookieParser from 'cookie-parser';
 import swaggerUi from 'swagger-ui-express';
 import swaggerJSDoc from 'swagger-jsdoc';
-import UserRoute from './route/UserRoute';
+import UserRoute from './route/UserRoute.ts';
 import CourseRoute from './route/CourseRoute.ts';
 import EnrollRoute from './route/EnrollRoute.ts';
 import TopicRoute from './route/TopicRoute.ts';
 import ClassRoute from './route/ClassRoute.ts';
+import ClassMaterialRoute from './route/ClassMaterialRoute.ts';
 import DashboardRoute from './route/DashboardRoute.ts';
 
 const spec = swaggerJSDoc({
@@ -78,6 +79,7 @@ console.log(process.env.MONGO_URI);
             app.use('/api', EnrollRoute);
             app.use('/api', TopicRoute);
             app.use('/api', ClassRoute);
+            app.use('/api', ClassMaterialRoute);
             app.use('/api', DashboardRoute);
             // Error handler must be after routes
             app.use((err: any, req: Request, res: Response, next: NextFunction) => {
