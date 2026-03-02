@@ -19,15 +19,15 @@ export const mockTopicsByClass: Record<string, Topic[]> = {
             belongToCourse: "Chemistry 9 - 2022",
             ClassMaterialType: [
                 {
-                    material_id: 1,
+                    material_id: "1",
                     type: "file",
                     order_num: 1,
-                    class_assign_id: 9,
+                    class_assign_id: "9",
                     title: "Safety lab guide",
                     dateUpdate: null,
                     dateCreate: new Date("2026-02-10"),
                     content: {
-                        file_id: 1,
+                        file_id: "1",
                         file_name: "sample_data.gif",
                         file_path: "/sample/sample_data.gif",
                     },
@@ -35,15 +35,15 @@ export const mockTopicsByClass: Record<string, Topic[]> = {
                     ai_content_id: null,
                 },
                 {
-                    material_id: 2,
+                    material_id: "2",
                     type: "slide",
                     order_num: 2,
-                    class_assign_id: 9,
+                    class_assign_id: "9",
                     title: "Reaction rates presentation",
                     dateUpdate: null,
                     dateCreate: new Date("2026-02-10"),
                     content: {
-                        slide_id: 2,
+                        slide_id: "2",
                         slide_name: "sample",
                         file_path: "/sample/sample.pptx",
                     },
@@ -51,15 +51,15 @@ export const mockTopicsByClass: Record<string, Topic[]> = {
                     ai_content_id: null,
                 },
                 {
-                    material_id: 3,
+                    material_id: "3",
                     type: "file",
                     order_num: 3,
-                    class_assign_id: 9,
+                    class_assign_id: "9",
                     title: "Practice worksheet",
                     dateUpdate: new Date("2026-02-12"),
                     dateCreate: new Date("2026-02-08"),
                     content: {
-                        file_id: 3,
+                        file_id: "3",
                         file_name: "sample_data.gif",
                         file_path: "/sample/sample_data.gif",
                     },
@@ -75,31 +75,31 @@ export const mockTopicsByClass: Record<string, Topic[]> = {
             belongToCourse: "Chemistry 9 - 2022",
             ClassMaterialType: [
                 {
-                    material_id: 4,
+                    material_id: "4",
                     type: "2d_render",
                     order_num: 1,
-                    class_assign_id: 9,
+                    class_assign_id: "9",
                     title: "Mole ratio visualization",
                     dateUpdate: null,
                     dateCreate: new Date("2026-02-08"),
                     content: {
-                        render_id: 4,
+                        render_id: "4",
                         render_data: '{"placeholder": "2D visualization coming soon"}',
                     },
                     is_ai_material: true,
-                    ai_content_id: 12,
+                    ai_content_id: "12",
                 },
                 {
-                    material_id: 5,
+                    material_id: "5",
                     type: "quiz",
                     order_num: 2,
-                    class_assign_id: 9,
+                    class_assign_id: "9",
                     title: "Interactive stoichiometry quiz",
                     dateUpdate: null,
                     dateCreate: new Date("2026-02-08"),
                     content: {
-                        quiz_id: 5,
-                        material_id: 5,
+                        quiz_id: "5",
+                        material_id: "5",
                         title: "Tính toán hợp thức",
                         keyword: "hợp thức, mol, tỷ lệ",
                         type: "interactive",
@@ -145,15 +145,15 @@ export const mockTopicsByClass: Record<string, Topic[]> = {
                     ai_content_id: null,
                 },
                 {
-                    material_id: 6,
+                    material_id: "6",
                     type: "file",
                     order_num: 3,
-                    class_assign_id: 9,
+                    class_assign_id: "9",
                     title: "Mole concept reference sheet",
                     dateUpdate: null,
                     dateCreate: new Date("2026-02-05"),
                     content: {
-                        file_id: 6,
+                        file_id: "6",
                         file_name: "sample_data.gif",
                         file_path: "/sample/sample_data.gif",
                     },
@@ -169,16 +169,16 @@ export const mockTopicsByClass: Record<string, Topic[]> = {
             belongToCourse: "Chemistry 9 - 2022",
             ClassMaterialType: [
                 {
-                    material_id: 7,
+                    material_id: "7",
                     type: "quiz",
                     order_num: 1,
-                    class_assign_id: 9,
+                    class_assign_id: "9",
                     title: "Lab safety assessment",
                     dateUpdate: null,
                     dateCreate: new Date("2026-02-05"),
                     content: {
-                        quiz_id: 7,
-                        material_id: 7,
+                        quiz_id: "7",
+                        material_id: "7",
                         title: "Quy trình an toàn phòng thí nghiệm",
                         keyword: "an toàn, phòng thí nghiệm, quy trình",
                         type: "standard",
@@ -232,15 +232,15 @@ export const mockTopicsByClass: Record<string, Topic[]> = {
                     ai_content_id: null,
                 },
                 {
-                    material_id: 8,
+                    material_id: "8",
                     type: "slide",
                     order_num: 2,
-                    class_assign_id: 9,
+                    class_assign_id: "9",
                     title: "Lab procedures slideshow",
                     dateUpdate: null,
                     dateCreate: new Date("2026-02-04"),
                     content: {
-                        slide_id: 8,
+                        slide_id: "8",
                         slide_name: "sample",
                         file_path: "/sample/sample.pptx",
                     },
@@ -248,15 +248,15 @@ export const mockTopicsByClass: Record<string, Topic[]> = {
                     ai_content_id: null,
                 },
                 {
-                    material_id: 9,
+                    material_id: "9",
                     type: "file",
                     order_num: 3,
-                    class_assign_id: 9,
+                    class_assign_id: "9",
                     title: "Equipment checklist",
                     dateUpdate: null,
                     dateCreate: new Date("2026-02-03"),
                     content: {
-                        file_id: 9,
+                        file_id: "9",
                         file_name: "sample_data.gif",
                         file_path: "/sample/sample_data.gif",
                     },
@@ -274,15 +274,15 @@ export const mockTopicsByClass: Record<string, Topic[]> = {
             belongToCourse: "Mathematics 11 - 2023",
             ClassMaterialType: [
                 {
-                    material_id: 101,
+                    material_id: "101",
                     type: "slide",
                     order_num: 1,
-                    class_assign_id: 11,
+                    class_assign_id: "11",
                     title: "Giới thiệu về giới hạn",
                     dateUpdate: null,
                     dateCreate: new Date("2026-01-15"),
                     content: {
-                        slide_id: 101,
+                        slide_id: "101",
                         slide_name: "limit_intro",
                         file_path: "/sample/limit_intro.pptx",
                     },
@@ -290,16 +290,16 @@ export const mockTopicsByClass: Record<string, Topic[]> = {
                     ai_content_id: null,
                 },
                 {
-                    material_id: 102,
+                    material_id: "102",
                     type: "quiz",
                     order_num: 2,
-                    class_assign_id: 11,
+                    class_assign_id: "11",
                     title: "Bài kiểm tra giới hạn",
                     dateUpdate: null,
                     dateCreate: new Date("2026-01-16"),
                     content: {
-                        quiz_id: 102,
-                        material_id: 102,
+                        quiz_id: "102",
+                        material_id: "102",
                         title: "Kiểm tra giới hạn cơ bản",
                         keyword: "giới hạn, limit, toán học",
                         type: "interactive",
@@ -330,15 +330,15 @@ export const mockTopicsByClass: Record<string, Topic[]> = {
                     ai_content_id: null,
                 },
                 {
-                    material_id: 103,
+                    material_id: "103",
                     type: "file",
                     order_num: 3,
-                    class_assign_id: 11,
+                    class_assign_id: "11",
                     title: "Bài tập về giới hạn",
                     dateUpdate: null,
                     dateCreate: new Date("2026-01-17"),
                     content: {
-                        file_id: 103,
+                        file_id: "103",
                         file_name: "limit_exercises.pdf",
                         file_path: "/sample/limit_exercises.pdf",
                     },
@@ -354,15 +354,15 @@ export const mockTopicsByClass: Record<string, Topic[]> = {
             belongToCourse: "Mathematics 11 - 2023",
             ClassMaterialType: [
                 {
-                    material_id: 104,
+                    material_id: "104",
                     type: "slide",
                     order_num: 1,
-                    class_assign_id: 11,
+                    class_assign_id: "11",
                     title: "Định nghĩa đạo hàm",
                     dateUpdate: null,
                     dateCreate: new Date("2026-01-20"),
                     content: {
-                        slide_id: 104,
+                        slide_id: "104",
                         slide_name: "derivative_definition",
                         file_path: "/sample/derivative_definition.pptx",
                     },
@@ -370,16 +370,16 @@ export const mockTopicsByClass: Record<string, Topic[]> = {
                     ai_content_id: null,
                 },
                 {
-                    material_id: 105,
+                    material_id: "105",
                     type: "quiz",
                     order_num: 2,
-                    class_assign_id: 11,
+                    class_assign_id: "11",
                     title: "Bài kiểm tra đạo hàm",
                     dateUpdate: null,
                     dateCreate: new Date("2026-01-22"),
                     content: {
-                        quiz_id: 105,
-                        material_id: 105,
+                        quiz_id: "105",
+                        material_id: "105",
                         title: "Kiểm tra tính đạo hàm",
                         keyword: "đạo hàm, derivative, calculus",
                         type: "standard",
@@ -409,19 +409,19 @@ export const mockTopicsByClass: Record<string, Topic[]> = {
                     ai_content_id: null,
                 },
                 {
-                    material_id: 106,
+                    material_id: "106",
                     type: "2d_render",
                     order_num: 3,
-                    class_assign_id: 11,
+                    class_assign_id: "11",
                     title: "Biểu đồ đạo hàm",
                     dateUpdate: null,
                     dateCreate: new Date("2026-01-23"),
                     content: {
-                        render_id: 106,
+                        render_id: "106",
                         render_data: '{"type": "graph", "functions": ["x^2", "2x"], "title": "Hàm số và đạo hàm"}',
                     },
                     is_ai_material: true,
-                    ai_content_id: 20,
+                    ai_content_id: "20",
                 },
             ],
         },
@@ -439,6 +439,44 @@ export const getAllMaterials = () => {
     return Object.values(mockTopicsByClass)
         .flat()
         .flatMap(topic => topic.ClassMaterialType || []);
+};
+
+// Helper function to get random materials by content type
+export const getRandomMaterialsByType = () => {
+    const allMaterials = getAllMaterials();
+    const materialsByType: Record<string, any[]> = {
+        file: [],
+        slide: [],
+        '2d_render': [],
+        quiz: []
+    };
+
+    // Group materials by type
+    allMaterials.forEach(material => {
+        if (materialsByType[material.type]) {
+            materialsByType[material.type].push(material);
+        }
+    });
+
+    // Get one random material for each type
+    const randomMaterials: any[] = [];
+    Object.entries(materialsByType).forEach(([type, materials]) => {
+        if (materials.length > 0) {
+            const randomIndex = Math.floor(Math.random() * materials.length);
+            const randomMaterial = {
+                ...materials[randomIndex],
+                // Mark as AI generated for demo
+                is_ai_material: true,
+                ai_content_id: Math.floor(Math.random() * 1000),
+                // Update dates to current
+                dateCreate: new Date(),
+                dateUpdate: new Date()
+            };
+            randomMaterials.push(randomMaterial);
+        }
+    });
+
+    return randomMaterials;
 };
 
 export const mockStudents: Student[] = [
@@ -481,7 +519,7 @@ export const mockStudents: Student[] = [
 
 // Mock data for Teacher Dashboard - connected to actual class materials
 export const classCompletionStats: ClassCompletionStat[] = [
-    { course: "Chemistry 9 - 2022", completed: 26, enrolled: 32, class_id: "CLS-CHM9A-2025", class_name:"Chem 9A" },
+    { course: "Chemistry 9 - 2022", completed: 26, enrolled: 32, class_id: "CLS-CHM9A-2025", class_name: "Chem 9A" },
 ];
 
 export type QuickAction = {
@@ -506,8 +544,8 @@ export const quickActions: QuickAction[] = [
 // Due assignments referencing actual quiz materials from both classes
 export const dueAssignments: DueAssignment[] = [
     {
-        quiz_id: 5, // Chemistry - Interactive stoichiometry quiz
-        material_id: 5,
+        quiz_id: "5", // Chemistry - Interactive stoichiometry quiz
+        material_id: "5",
         title: "Interactive stoichiometry quiz",
         keyword: "hợp thức, mol, tỷ lệ",
         type: "quiz",
@@ -517,8 +555,8 @@ export const dueAssignments: DueAssignment[] = [
         status: true,
     },
     {
-        quiz_id: 102, // Math - Bài kiểm tra giới hạn
-        material_id: 102,
+        quiz_id: "102", // Math - Bài kiểm tra giới hạn
+        material_id: "102",
         title: "Bài kiểm tra giới hạn",
         keyword: "giới hạn, limit, toán học",
         type: "quiz",
@@ -528,8 +566,8 @@ export const dueAssignments: DueAssignment[] = [
         status: true,
     },
     {
-        quiz_id: 105, // Math - Bài kiểm tra đạo hàm
-        material_id: 105,
+        quiz_id: "105", // Math - Bài kiểm tra đạo hàm
+        material_id: "105",
         title: "Bài kiểm tra đạo hàm",
         keyword: "đạo hàm, derivative, calculus",
         type: "quiz",
@@ -547,7 +585,7 @@ export const uploadedFiles: UploadedFileRecord[] = [
         file: "safety_lab_guide.gif",
         course: "Chemistry 9A | Chemical reactions",
         createdAt: "10 Feb 2026",
-        file_id: 1,
+        file_id: "1",
         file_name: "sample_data.gif",
         file_path: "/sample/sample_data.gif",
     },
@@ -555,7 +593,7 @@ export const uploadedFiles: UploadedFileRecord[] = [
         file: "reaction_rates_presentation.pptx",
         course: "Chemistry 9A | Chemical reactions",
         createdAt: "10 Feb 2026",
-        file_id: 2,
+        file_id: "2",
         file_name: "sample.pptx",
         file_path: "/sample/sample.pptx",
     },
@@ -563,7 +601,7 @@ export const uploadedFiles: UploadedFileRecord[] = [
         file: "mole_concept_reference.gif",
         course: "Chemistry 9A | Stoichiometry",
         createdAt: "05 Feb 2026",
-        file_id: 6,
+        file_id: "6",
         file_name: "sample_data.gif",
         file_path: "/sample/sample_data.gif",
     },
@@ -572,7 +610,7 @@ export const uploadedFiles: UploadedFileRecord[] = [
         file: "limit_intro.pptx",
         course: "Math 11 Advanced | Giới hạn và liên tục",
         createdAt: "15 Jan 2026",
-        file_id: 101,
+        file_id: "101",
         file_name: "limit_intro.pptx",
         file_path: "/sample/limit_intro.pptx",
     },
@@ -580,7 +618,7 @@ export const uploadedFiles: UploadedFileRecord[] = [
         file: "limit_exercises.pdf",
         course: "Math 11 Advanced | Giới hạn và liên tục",
         createdAt: "17 Jan 2026",
-        file_id: 103,
+        file_id: "103",
         file_name: "limit_exercises.pdf",
         file_path: "/sample/limit_exercises.pdf",
     },
@@ -588,7 +626,7 @@ export const uploadedFiles: UploadedFileRecord[] = [
         file: "derivative_definition.pptx",
         course: "Math 11 Advanced | Đạo hàm",
         createdAt: "20 Jan 2026",
-        file_id: 104,
+        file_id: "104",
         file_name: "derivative_definition.pptx",
         file_path: "/sample/derivative_definition.pptx",
     },

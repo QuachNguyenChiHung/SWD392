@@ -119,7 +119,13 @@ export default function ClassMaterial({ topics, classId }: ClassMaterialProps) {
                 <Button variant="contained" size="small" startIcon={<Add />} onClick={() => handleOpenModal(topic.title)}>
                   Thêm tài liệu
                 </Button>
-                <Button variant="contained" startIcon={<AutoAwesome />}>
+                <Button
+                  variant="contained"
+                  startIcon={<AutoAwesome />}
+                  onClick={() => navigate(`/teacher/class/${classId}/ai-generator`, {
+                    state: { topic: topic, classId: classId }
+                  })}
+                >
                   Tạo với AI
                 </Button>
               </div>

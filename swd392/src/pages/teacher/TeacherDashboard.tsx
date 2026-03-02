@@ -70,7 +70,7 @@ const TeacherDashboard = () => {
   };
 
   // Helper function to find which class a material belongs to
-  const findClassIdForMaterial = (materialId: number) => {
+  const findClassIdForMaterial = (materialId: string) => {
     for (const [classId, topics] of Object.entries(mockTopicsByClass || {})) {
       const hasMateria = topics.some(topic =>
         topic.ClassMaterialType?.some(material => material.material_id === materialId)
