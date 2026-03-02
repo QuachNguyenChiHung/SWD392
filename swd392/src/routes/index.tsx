@@ -35,6 +35,8 @@ import ProtectedRoute from "../components/ProtectedRoute";
 import TeacherClassDetail from "../pages/teacher/teacherClassDetail";
 import MaterialDetailPage from "../pages/teacher/MaterialDetailPage";
 import StudentClassDetail from "../pages/student/StudentClassDetail";
+import QuizTakingInterface from "../components/student/quizTakingInterface";
+import { QuizResultView } from "../pages/student/quizResultView";
 
 export const routes: RouteObject[] = [
   {
@@ -110,6 +112,22 @@ export const routes: RouteObject[] = [
             element: (
               <ProtectedRoute allowedRoles={[UserRole.STUDENT]}>
                 <StudentClassDetail />
+              </ProtectedRoute>
+            ),
+          },
+          {
+            path: "take-quiz/:id",
+            element: (
+              <ProtectedRoute allowedRoles={[UserRole.STUDENT]}>
+                <QuizTakingInterface />
+              </ProtectedRoute>
+            ),
+          },
+          {
+            path: "quiz-result/:id",
+            element: (
+              <ProtectedRoute allowedRoles={[UserRole.STUDENT]}>
+                <QuizResultView />
               </ProtectedRoute>
             ),
           },
