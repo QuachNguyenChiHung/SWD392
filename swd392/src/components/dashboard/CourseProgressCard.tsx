@@ -6,7 +6,7 @@ type CourseProgressCardProps = ClassCompletionStat & {
 };
 
 const CourseProgressCard = ({
-  course,
+  class_name,
   completed,
   enrolled,
   onClick,
@@ -23,13 +23,15 @@ const CourseProgressCard = ({
         height: "100%",
         scrollSnapAlign: "start",
         cursor: onClick ? "pointer" : "default",
-        "&:hover": onClick ? {
-          backgroundColor: "action.hover",
-        } : {},
+        "&:hover": onClick
+          ? {
+              backgroundColor: "action.hover",
+            }
+          : {},
       }}
     >
       <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-        {course}
+        {class_name}
       </Typography>
       <Typography variant="h4" fontWeight={700}>
         {completed}
