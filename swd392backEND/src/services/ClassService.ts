@@ -25,6 +25,9 @@ class ClassService {
         }
         return await ClassRepo.updateClass(id, updateData);
     }
+    async getStudentsByClass(classId: string, page: number,keyword: string) {
+        return await ClassRepo.getStudentsByClass(classId, page,keyword);
+     }
     async generateKeypass(classId: string) {
         const keypass = generateRandomString();
         const teacherClass = await this.getClassById(classId);

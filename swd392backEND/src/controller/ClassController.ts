@@ -41,11 +41,23 @@ class ClassController {
     }
     async createClass(req: Request, res: Response, next: NextFunction) {
         try {
-            req.body.teacher_id = req.teacher?._id?.toString();
+            req.body.teacher_id = req.teacher?._id.toString();
             req.body.keypass = Date.now();
             const classData = createClassSchema.parse(req.body);
             const newClass = await ClassService.createClass(classData);
             return res.status(201).json(newClass);
+        } catch (error) {
+            next(error);
+        }
+    }
+    async getStudentsByClass(req: Request, res: Response, next: NextFunction) {
+        try {
+            // GET /api/class/:classId/students?page=1&keyword=temp
+            const classId = req.params.classId as string;
+            const page = parseInt(req.query.page as string) || 1;
+            const keyword = req.query.keyword as string || "";
+            const students = await ClassService.getStudentsByClass(classId, page, keyword);
+            return res.status(200).json(students);
         } catch (error) {
             next(error);
         }
