@@ -1,6 +1,7 @@
 
 import { Class } from "../entities/Class.ts";
 import { Enroll } from "../entities/Enroll.ts";
+import { User } from "../entities/User.ts";
 
 
 class ClassRepo {
@@ -28,11 +29,25 @@ class ClassRepo {
         const enrolledClassesId = await Enroll.find({ student_id: studentId }).distinct('class_id');
         return await Class.find({ _id: { $in: enrolledClassesId } }).skip(skip).limit(limit);
     }
+    async getStudentsByClass(classId: string, page: number, keyword: string) {
+        const limit = 12;
+        const skip = (page - 1) * limit;
+        const enrolledStudentsId = await Enroll.find({ class_id: classId }).distinct('student_id');
+
+        return await User.find({
+            _id: { $in: enrolledStudentsId },
+            $or: [
+                { username: { $regex: keyword, $options: 'i' } },
+                { email: { $regex: keyword, $options: 'i' } }
+            ]
+        })
+            .skip(skip).limit(limit);
+    }
     async createClass(classData: any) {
         const newClass = new Class(classData);
         return await newClass.save();
     }
-    
+
     async updateClass(id: string, updateData: any) {
         return await Class.findByIdAndUpdate(id, updateData, { new: true });
     }

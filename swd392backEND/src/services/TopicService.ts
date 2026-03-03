@@ -67,7 +67,21 @@ class TopicService {
     }
 
     async getTopicsByCourse(courseId: string, page: number = 1) {
-        return await TopicRepo.getTopicsByCourseIdWithPagination(courseId, page);
+        try {
+            // Validate that the course exists
+            const course = await CourseRepo.getCourseById(courseId);
+            if (!course) {
+                return { error: "Course not found" };
+            }
+
+            // Get topics for the course with pagination
+            const topics = await TopicRepo.getTopicsByCourseIdWithPagination(courseId, page);
+
+                const courseObj = { ...course.toObject(), topics };
+                return courseObj;
+        } catch (error) {
+            return { error: `Error retrieving topics by course: ${error}` };
+        }
     }
 
     async searchTopicsByCourseId(courseId: string) {

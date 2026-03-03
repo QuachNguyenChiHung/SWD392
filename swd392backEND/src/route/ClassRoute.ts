@@ -5,7 +5,7 @@ const route = Router();
 route.get("/class/:id", ClassController.getClassById);
 route.get("/teacher/class", verifyRole.verifyTeacher, ClassController.getClassesByTeacher);
 route.get("/student/class", verifyRole.verifyStudent, ClassController.getClassesByStudent);
-
+route.get("/class/:classId/students", verifyRole.verifyTeacher, ClassController.getStudentsByClass);
 route.post("/class", verifyRole.verifyTeacher, ClassController.createClass);
 route.put("/class/:id", verifyRole.verifyTeacher, ClassController.updateClass);
 route.post("/class/:classId/generate-keypass", verifyRole.verifyTeacher, ClassController.generateKeypass);

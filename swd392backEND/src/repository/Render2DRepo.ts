@@ -1,3 +1,4 @@
+import type { CreateRender2DDTO } from "../dto/Render2DDTO";
 import { Render2D } from "../entities/Render2D.ts";
 
 class Render2DRepo {
@@ -12,7 +13,7 @@ class Render2DRepo {
             .skip(skip)
             .limit(limit);
     }
-    async createRender2D(renderData: any) {
+    async createRender2D(renderData: CreateRender2DDTO) {
         const newRender = new Render2D(renderData);
         return await newRender.save();
     }

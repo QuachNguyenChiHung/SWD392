@@ -21,9 +21,9 @@ class ClassController {
 
     async getClassesByTeacher(req: Request, res: Response, next: NextFunction) {
         try {
-            const u_id = req.user?.id;
+            const teacher_id = req.teacher?._id?.toString();
             const page = parseInt(req.query.page as string) || 1;
-            const classes = await ClassService.getClassesByTeacher(u_id as string, page);
+            const classes = await ClassService.getClassesByTeacher(teacher_id as string, page);
             return res.status(200).json(classes);
         } catch (error) {
             next(error);
@@ -41,11 +41,23 @@ class ClassController {
     }
     async createClass(req: Request, res: Response, next: NextFunction) {
         try {
-            req.body.teacher_id = req.user?.id;
+            req.body.teacher_id = req.teacher?._id.toString();
             req.body.keypass = Date.now();
             const classData = createClassSchema.parse(req.body);
             const newClass = await ClassService.createClass(classData);
             return res.status(201).json(newClass);
+        } catch (error) {
+            next(error);
+        }
+    }
+    async getStudentsByClass(req: Request, res: Response, next: NextFunction) {
+        try {
+            // GET /api/class/:classId/students?page=1&keyword=temp
+            const classId = req.params.classId as string;
+            const page = parseInt(req.query.page as string) || 1;
+            const keyword = req.query.keyword as string || "";
+            const students = await ClassService.getStudentsByClass(classId, page, keyword);
+            return res.status(200).json(students);
         } catch (error) {
             next(error);
         }
@@ -81,13 +93,13 @@ class ClassController {
             if (!file) {
                 return res.status(400).json({ message: "No file uploaded" });
             }
-            const ownerCheck = await ClassService.verifyImageOwnership(url, req.user?.id as string);
+            const ownerCheck = await ClassService.verifyImageOwnership(url, req.teacher?._id?.toString() as string);
             if (ownerCheck?.error) {
                 return res.status(403).json(ownerCheck);
             }
             const imageUrl = await updateImage(url, file?.buffer);
             // update class record with new image url
-            const updated = await ClassService.updateClassImage(url, imageUrl, req.user?.id as string);
+            const updated = await ClassService.updateClassImage(url, imageUrl, req.teacher?._id?.toString() as string);
             if ((updated as any)?.error) {
                 return res.status(403).json(updated);
             }
@@ -99,13 +111,13 @@ class ClassController {
     async deleteImageCover(req: Request, res: Response, next: NextFunction) {
         try {
             const { url } = req.body;
-            const ownerCheck = await ClassService.verifyImageOwnership(url, req.user?.id as string);
+            const ownerCheck = await ClassService.verifyImageOwnership(url, req.teacher?._id?.toString() as string);
             if (ownerCheck?.error) {
                 return res.status(403).json(ownerCheck);
             }
             await deleteImage(url);
             // clear image url from class record
-            const cleared = await ClassService.clearClassImage(url, req.user?.id as string);
+            const cleared = await ClassService.clearClassImage(url, req.teacher?._id?.toString() as string);
             if ((cleared as any)?.error) {
                 return res.status(403).json(cleared);
             }
@@ -118,8 +130,8 @@ class ClassController {
         try {
             const { id } = req.params;
             const updateData = updateClassSchema.parse(req.body);
-            const teacherUserId = req.user?.id;
-            const updatedClass = await ClassService.updateClass(id as string, updateData, teacherUserId as string);
+            const teacher_id = req.teacher?._id?.toString();
+            const updatedClass = await ClassService.updateClass(id as string, updateData, teacher_id as string);
             if ((updatedClass as any).error) {
                 return res.status(403).json(updatedClass);
             }

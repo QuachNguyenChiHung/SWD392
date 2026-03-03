@@ -8,35 +8,41 @@
  *         _id:
  *           type: string
  *           description: Class ID
+ *           example: "507f1f77bcf86cd799439011"
  *         keypass:
  *           type: string
- *           description: Class keypass for enrollment (auto-generated timestamp)
+ *           description: Enrollment key for the class
  *           maxLength: 100
- *           example: "1704192000000"
+ *           example: "XkQ3p9mZ"
  *         course_id:
  *           type: string
- *           description: Course ID
- *           example: "507f1f77bcf86cd799439022"
+ *           description: Associated course ID
+ *           example: "507f1f77bcf86cd799439012"
  *         teacher_id:
  *           type: string
- *           description: Teacher ID (owner of the class)
- *           example: "507f1f77bcf86cd799439015"
+ *           description: Teacher entity ID who owns this class
+ *           example: "507f1f77bcf86cd799439013"
  *         class_name:
  *           type: string
  *           description: Class name
  *           maxLength: 255
+ *           example: "CS101 - Spring 2024"
  *         img_cover_link:
  *           type: string
- *           description: Cover image URL
- *         date_create:
- *           type: string
- *           format: date-time
- *           description: Class creation date
+ *           nullable: true
+ *           description: Cloudinary URL of the class cover image
+ *           maxLength: 500
+ *           example: "https://res.cloudinary.com/demo/image/upload/sample.jpg"
  *         status:
  *           type: string
  *           enum: [active, inactive, archived]
  *           description: Class status
- *     CreateClassRequest:
+ *           example: "active"
+ *         date_create:
+ *           type: string
+ *           format: date-time
+ *           description: Class creation date
+ *     ClassInput:
  *       type: object
  *       required:
  *         - course_id
@@ -44,74 +50,39 @@
  *       properties:
  *         course_id:
  *           type: string
- *           description: Course ID
- *           example: "507f1f77bcf86cd799439022"
+ *           description: Course ID to associate with this class
+ *           example: "507f1f77bcf86cd799439012"
  *         class_name:
  *           type: string
- *           description: Class name
  *           maxLength: 255
- *           example: "Mathematics 10A"
+ *           example: "CS101 - Spring 2024"
  *         img_cover_link:
  *           type: string
- *           description: Cover image URL (optional)
- *           example: "https://res.cloudinary.com/example/image.jpg"
- *       description: Note - keypass and teacher_id are auto-generated server-side
- *     UpdateClassRequest:
+ *           description: Optional cover image URL
+ *           example: "https://res.cloudinary.com/demo/image/upload/sample.jpg"
+ *     ClassUpdateInput:
  *       type: object
  *       properties:
- *         keypass:
- *           type: string
- *           description: Class keypass for enrollment
- *           maxLength: 100
  *         class_name:
  *           type: string
- *           description: Class name
  *           maxLength: 255
- *         img_cover_link:
+ *           example: "CS101 - Updated"
+ *         keypass:
  *           type: string
- *           description: Cover image URL
+ *           maxLength: 100
+ *           example: "newKey123"
  *         status:
  *           type: string
  *           enum: [active, inactive, archived]
- *           description: Class status
- *     ImageUploadResponse:
- *       type: object
- *       properties:
- *         url:
+ *           example: "inactive"
+ *         img_cover_link:
  *           type: string
- *           description: Uploaded image URL
- *           example: "https://res.cloudinary.com/example/image.jpg"
- *     KeypassResponse:
- *       type: object
- *       properties:
- *         keypass:
- *           type: string
- *           description: Generated keypass
- *           example: "1704567890123"
- *     ErrorResponse:
- *       type: object
- *       properties:
- *         error:
- *           type: string
- *           description: Error message
- *         message:
- *           type: string
- *           description: Detailed error message
- *     SuccessResponse:
- *       type: object
- *       properties:
- *         message:
- *           type: string
- *           description: Success message
- *           example: "Operation completed successfully"
- *
- *   securitySchemes:
- *     cookieAuth:
- *       type: apiKey
- *       in: cookie
- *       name: Authorization
- *       description: Signed cookie containing Bearer token
- *
+ *           nullable: true
+ *           example: "https://res.cloudinary.com/demo/image/upload/sample.jpg"
+ */
+
+/**
+ * @openapi
  * /api/class/{id}:
  *   get:
  *     tags:
@@ -127,24 +98,20 @@
  *         description: Class ID
  *     responses:
  *       200:
- *         description: Class found
+ *         description: Class details
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Class'
  *       404:
  *         description: Class not found
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
  *   put:
  *     tags:
  *       - Classes
- *     summary: Update a class
+ *     summary: Update class
+ *     description: Update class details. Only the teacher who owns the class can update it.
  *     security:
  *       - cookieAuth: []
- *     description: Update an existing class (Teacher only, must be the owner of the class)
  *     parameters:
  *       - in: path
  *         name: id
@@ -157,7 +124,7 @@
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/UpdateClassRequest'
+ *             $ref: '#/components/schemas/ClassUpdateInput'
  *     responses:
  *       200:
  *         description: Class updated successfully
@@ -165,45 +132,36 @@
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Class'
+ *       400:
+ *         description: Validation error
  *       401:
- *         description: Unauthorized - Authentication required
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
+ *         description: Unauthorized
  *       403:
  *         description: Forbidden - You can only update your own class
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
  *       404:
  *         description: Class not found
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *
+ */
+
+/**
+ * @openapi
  * /api/teacher/class:
  *   get:
  *     tags:
  *       - Classes
- *     summary: Get classes for authenticated teacher
+ *     summary: Get classes by teacher
+ *     description: Retrieve all classes owned by the authenticated teacher
  *     security:
  *       - cookieAuth: []
- *     description: Get paginated classes for the authenticated teacher (Teacher only — uses authenticated user id; returns 12 results per page)
  *     parameters:
  *       - in: query
  *         name: page
- *         required: false
  *         schema:
  *           type: integer
- *           minimum: 1
  *           default: 1
- *         description: Page number for pagination (returns 12 results per page)
+ *         description: Page number
  *     responses:
  *       200:
- *         description: List of classes
+ *         description: Paginated list of classes
  *         content:
  *           application/json:
  *             schema:
@@ -211,32 +169,105 @@
  *               items:
  *                 $ref: '#/components/schemas/Class'
  *       401:
- *         description: Unauthorized - Authentication required
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
+ *         description: Unauthorized
  *       403:
- *         description: Forbidden - Teachers only
+ *         description: Forbidden - Teacher access required
+ */
+
+/**
+ * @openapi
+ * /api/student/class:
+ *   get:
+ *     tags:
+ *       - Classes
+ *     summary: Get classes by student
+ *     description: Retrieve all classes the authenticated student is enrolled in
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number
+ *     responses:
+ *       200:
+ *         description: Paginated list of classes
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/ErrorResponse' 
- *
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Class'
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - Student access required
+ */
+
+/**
+ * @openapi
+ * /api/class/{classId}/students:
+ *   get:
+ *     tags:
+ *       - Classes
+ *     summary: Get students in a class
+ *     description: Retrieve paginated students enrolled in a specific class with optional keyword search (teacher only)
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: classId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Class ID
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number
+ *       - in: query
+ *         name: keyword
+ *         schema:
+ *           type: string
+ *           default: ""
+ *         description: Search keyword to filter students by name or email
+ *     responses:
+ *       200:
+ *         description: Paginated list of enrolled students
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/User'
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - Teacher access required
+ *       404:
+ *         description: Class not found
+ */
+
+/**
+ * @openapi
  * /api/class:
  *   post:
  *     tags:
  *       - Classes
  *     summary: Create a new class
+ *     description: Create a new class. The teacher_id is resolved from the auth cookie and keypass is auto-generated.
  *     security:
  *       - cookieAuth: []
- *     description: Create a new class (Teacher only)
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/CreateClassRequest'
+ *             $ref: '#/components/schemas/ClassInput'
  *     responses:
  *       201:
  *         description: Class created successfully
@@ -244,27 +275,24 @@
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Class'
+ *       400:
+ *         description: Validation error
  *       401:
- *         description: Unauthorized - Authentication required
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
+ *         description: Unauthorized
  *       403:
- *         description: Forbidden - Teachers only
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse' 
- *
+ *         description: Forbidden - Teacher access required
+ */
+
+/**
+ * @openapi
  * /api/class/{classId}/generate-keypass:
  *   post:
  *     tags:
  *       - Classes
- *     summary: Generate new keypass for a class
+ *     summary: Regenerate class keypass
+ *     description: Generate a new random enrollment keypass for the class (teacher only)
  *     security:
  *       - cookieAuth: []
- *     description: Generate a new keypass for class enrollment (Teacher only, must be the owner of the class)
  *     parameters:
  *       - in: path
  *         name: classId
@@ -274,38 +302,33 @@
  *         description: Class ID
  *     responses:
  *       200:
- *         description: Keypass generated successfully
+ *         description: New keypass generated
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/KeypassResponse'
+ *               type: object
+ *               properties:
+ *                 keypass:
+ *                   type: string
+ *                   example: "Xkq9mZ3p"
  *       401:
- *         description: Unauthorized - Authentication required
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
+ *         description: Unauthorized
  *       403:
- *         description: Forbidden - Teachers only, or not the owner of the class
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
+ *         description: Forbidden - Teacher access required
  *       404:
  *         description: Class not found
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *
+ */
+
+/**
+ * @openapi
  * /api/teacher/upload-image:
  *   post:
  *     tags:
  *       - Classes
  *     summary: Upload class cover image
+ *     description: Upload a new cover image to Cloudinary. Returns the uploaded image URL — use it with update-image to attach it to a class.
  *     security:
  *       - cookieAuth: []
- *     description: Upload an image to Cloudinary for class cover (Teacher only)
  *     requestBody:
  *       required: true
  *       content:
@@ -313,9 +336,9 @@
  *           schema:
  *             type: object
  *             required:
- *               - file
+ *               - image
  *             properties:
- *               file:
+ *               image:
  *                 type: string
  *                 format: binary
  *                 description: Image file to upload
@@ -325,34 +348,29 @@
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/ImageUploadResponse'
+ *               type: object
+ *               properties:
+ *                 url:
+ *                   type: string
+ *                   example: "https://res.cloudinary.com/demo/image/upload/sample.jpg"
  *       400:
  *         description: No file uploaded
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
  *       401:
- *         description: Unauthorized - Authentication required
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
+ *         description: Unauthorized
  *       403:
- *         description: Forbidden - Teachers only
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse' 
- *
+ *         description: Forbidden - Teacher access required
+ */
+
+/**
+ * @openapi
  * /api/teacher/update-image:
  *   put:
  *     tags:
  *       - Classes
  *     summary: Update class cover image
+ *     description: Replace an existing cover image on Cloudinary. Verifies the teacher owns the class with that image before replacing.
  *     security:
  *       - cookieAuth: []
- *     description: Update an existing Cloudinary image (Teacher only, must own the class that uses this image)
  *     requestBody:
  *       required: true
  *       content:
@@ -360,50 +378,46 @@
  *           schema:
  *             type: object
  *             required:
- *               - file
+ *               - image
  *               - url
  *             properties:
- *               file:
+ *               image:
  *                 type: string
  *                 format: binary
  *                 description: New image file
  *               url:
  *                 type: string
- *                 description: Existing image URL to replace
+ *                 description: Existing Cloudinary URL to replace
+ *                 example: "https://res.cloudinary.com/demo/image/upload/old.jpg"
  *     responses:
  *       200:
  *         description: Image updated successfully
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/ImageUploadResponse'
+ *               type: object
+ *               properties:
+ *                 url:
+ *                   type: string
+ *                   example: "https://res.cloudinary.com/demo/image/upload/new.jpg"
  *       400:
  *         description: No file uploaded
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
  *       401:
- *         description: Unauthorized - Authentication required
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
+ *         description: Unauthorized
  *       403:
- *         description: Forbidden - Teachers only, or not the owner of the class image
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse' 
- *
+ *         description: Forbidden - You can only modify images of your own class
+ */
+
+/**
+ * @openapi
  * /api/teacher/delete-image:
  *   delete:
  *     tags:
  *       - Classes
  *     summary: Delete class cover image
+ *     description: Delete an existing cover image from Cloudinary and clear it from the class record. Verifies teacher ownership.
  *     security:
  *       - cookieAuth: []
- *     description: Delete an image from Cloudinary (Teacher only, must own the class that uses this image)
  *     requestBody:
  *       required: true
  *       content:
@@ -415,63 +429,21 @@
  *             properties:
  *               url:
  *                 type: string
- *                 description: Image URL to delete
+ *                 description: Cloudinary URL of the image to delete
+ *                 example: "https://res.cloudinary.com/demo/image/upload/sample.jpg"
  *     responses:
  *       200:
  *         description: Image deleted successfully
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/SuccessResponse'
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Image deleted successfully"
  *       401:
- *         description: Unauthorized - Authentication required
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
+ *         description: Unauthorized
  *       403:
- *         description: Forbidden - Teachers only, or not the owner of the class image
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse' 
- *
- * /api/student/class:
- *   get:
- *     tags:
- *       - Classes
- *     summary: Get classes for authenticated student
- *     security:
- *       - cookieAuth: []
- *     description: Get paginated classes for the authenticated student (Student only — uses authenticated user id; returns 12 results per page)
- *     parameters:
- *       - in: query
- *         name: page
- *         required: false
- *         schema:
- *           type: integer
- *           minimum: 1
- *           default: 1
- *         description: Page number for pagination (returns 12 results per page)
- *     responses:
- *       200:
- *         description: List of classes
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/Class'
- *       401:
- *         description: Unauthorized - Authentication required
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *       403:
- *         description: Forbidden - Students only
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
+ *         description: Forbidden - You can only modify images of your own class
  */
