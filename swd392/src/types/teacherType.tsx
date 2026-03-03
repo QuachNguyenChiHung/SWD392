@@ -1,14 +1,28 @@
 export interface Class {
-  class_id: string;
+  _id: string;
   class_name: string;
   keypass: string;
   course_id: string;
   teacher_id: string;
   img_cover_link: string;
-  keywords: string;
   date_create: Date;
   status: "active" | "inactive" | "archived";
   course_name: string;
+  description?: string;
+  image_cover_id?: string;
+  date_update?: Date;
+}
+
+export interface CreateClassData {
+  class_name: string;
+  description?: string;
+  course_id: string;
+}
+
+export interface UpdateClassData {
+  class_name?: string;
+  description?: string;
+  course_id?: string;
 }
 
 export interface ClassCompletionStat {
@@ -27,11 +41,42 @@ export interface UploadedFileRecord {
 }
 
 export interface Topic {
+  topic_id: string;
   title: string;
-  class: string;
-  description: string;
-  belongToCourse: string;
-  ClassMaterialType: ClassMaterial[] | null;
+  description?: string;
+  order_num: number;
+  course_id: string;
+  date_create: Date;
+  status: "active" | "inactive";
+  classMaterials?: ClassMaterial[];
+}
+
+// Topic API operation interfaces
+export interface CreateTopicData {
+  title: string;
+  description?: string;
+  order_num: number;
+  course_id: string;
+}
+
+export interface UpdateTopicData {
+  title?: string;
+  description?: string;
+  order_num?: number;
+  course_id?: string;
+}
+
+export interface TopicSearchParams {
+  q?: string;
+  page?: number;
+  limit?: number;
+}
+
+export interface PaginatedTopicsResponse {
+  topics: Topic[];
+  total: number;
+  page: number;
+  totalPages: number;
 }
 
 export type ClassMaterialType = "file" | "slide" | "2d_render" | "quiz";
@@ -124,7 +169,7 @@ export interface StudentList {
 }
 
 export interface Course {
-  course_id: string;
+  _id: string;
   course_name: string;
   grade_level: number;
   description?: string;
@@ -138,4 +183,30 @@ export interface CourseTopicInfo {
   title: string;
   description?: string;
   order_num: number;
+}
+
+// Course API operation interfaces
+export interface CreateCourseData {
+  course_name: string;
+  grade_level: number;
+  description?: string;
+}
+
+export interface UpdateCourseData {
+  course_name?: string;
+  grade_level?: number;
+  description?: string;
+}
+
+export interface CourseSearchParams {
+  q?: string;
+  page?: number;
+  limit?: number;
+}
+
+export interface PaginatedCoursesResponse {
+  courses: Course[];
+  total: number;
+  page: number;
+  totalPages: number;
 }
