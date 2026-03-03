@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Button,
@@ -23,37 +23,10 @@ type ContentItem = {
   status?: "pending" | "approved" | "rejected";
 };
 
-const initialData: ContentItem[] = [
-  {
-    id: "c1",
-    author: "nguyen.van.a",
-    source: "user",
-    text: "Nội dung thử nghiệm cần duyệt: hướng dẫn làm bài",
-    flagged: false,
-    status: "pending",
-  },
-  {
-    id: "c2",
-    author: "ai.bot",
-    source: "ai",
-    text: "Nội dung do AI tạo - khả năng trùng lặp cao",
-    flagged: true,
-    status: "pending",
-  },
-  {
-    id: "c3",
-    author: "tran.thi.b",
-    source: "user",
-    text: "Bài kiểm tra - có dấu hiệu vi phạm chính sách",
-    flagged: true,
-    status: "pending",
-  },
-];
-
 const ModeratorContentReview: React.FC<{ showOnlyFlagged?: boolean }> = ({
   showOnlyFlagged = false,
 }) => {
-  const [items, setItems] = useState<ContentItem[]>(initialData);
+  const [items, setItems] = useState<ContentItem[]>([]);
 
   const [loadingIds, setLoadingIds] = useState<Record<string, boolean>>({});
   const [snack, setSnack] = useState<{
@@ -64,6 +37,27 @@ const ModeratorContentReview: React.FC<{ showOnlyFlagged?: boolean }> = ({
 
   const setLoading = (id: string, v: boolean) =>
     setLoadingIds((s) => ({ ...s, [id]: v }));
+
+  // Fetch pending contents from the moderation service
+  useEffect(() => {
+    let mounted = true;
+    const fetchItems = async () => {
+      try {
+        const list =
+          await moderationService.getPendingContents(showOnlyFlagged);
+        if (!mounted) return;
+        setItems(list);
+      } catch (err) {
+        console.warn("Failed to load pending contents", err);
+      }
+    };
+
+    fetchItems();
+
+    return () => {
+      mounted = false;
+    };
+  }, [showOnlyFlagged]);
 
   const handleAction = async (id: string, action: "approve" | "reject") => {
     const item = items.find((i) => i.id === id);
@@ -88,13 +82,10 @@ const ModeratorContentReview: React.FC<{ showOnlyFlagged?: boolean }> = ({
         await moderationService.rejectContent(id, reason || undefined);
       }
 
-      setItems((prev) =>
-        prev.map((p) =>
-          p.id === id
-            ? { ...p, status: action === "approve" ? "approved" : "rejected" }
-            : p,
-        ),
-      );
+      // refresh the pending list from the service (approved/rejected items
+      // will no longer be pending)
+      const list = await moderationService.getPendingContents(showOnlyFlagged);
+      setItems(list);
 
       setSnack({
         open: true,
@@ -141,9 +132,8 @@ const ModeratorContentReview: React.FC<{ showOnlyFlagged?: boolean }> = ({
   const handleApproveLocal = async (id: string) => {
     try {
       await moderationService.approveContent(id);
-      setItems((prev) =>
-        prev.map((p) => (p.id === id ? { ...p, status: "approved" } : p)),
-      );
+      const list = await moderationService.getPendingContents(showOnlyFlagged);
+      setItems(list);
       setSnack({
         open: true,
         message: `Đã duyệt nội dung.`,
@@ -162,9 +152,8 @@ const ModeratorContentReview: React.FC<{ showOnlyFlagged?: boolean }> = ({
   const handleRejectLocal = async (id: string, reason?: string) => {
     try {
       await moderationService.rejectContent(id, reason);
-      setItems((prev) =>
-        prev.map((p) => (p.id === id ? { ...p, status: "rejected" } : p)),
-      );
+      const list = await moderationService.getPendingContents(showOnlyFlagged);
+      setItems(list);
       setSnack({
         open: true,
         message: `Đã từ chối nội dung. ${reason ? `(Lý do: ${reason})` : ""}`,

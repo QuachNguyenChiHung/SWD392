@@ -3,6 +3,7 @@ import { useState } from "react";
 import ModeratorContentReview from "./ModeratorContentReview.tsx";
 import ModeratorUserSuspension from "./ModeratorUserSuspension.tsx";
 import ModeratorStatistics from "./ModeratorStatistics.tsx";
+import ModeratorMaterialReview from "./ModeratorMaterialReview";
 
 const ModeratorDashboard = () => {
   const [tabValue, setTabValue] = useState(0);
@@ -27,14 +28,16 @@ const ModeratorDashboard = () => {
         <Tabs value={tabValue} onChange={(_, v) => setTabValue(v)}>
           <Tab label="Nội dung chờ duyệt" />
           <Tab label="Báo cáo vi phạm" />
+          <Tab label="Tài liệu lớp (Materials)" />
           <Tab label="Tài khoản bị đình chỉ" />
           <Tab label="Thống kê" />
         </Tabs>
         <Box sx={{ p: 3 }}>
           {tabValue === 0 && <ModeratorContentReview />}
           {tabValue === 1 && <ModeratorContentReview showOnlyFlagged />}
-          {tabValue === 2 && <ModeratorUserSuspension />}
-          {tabValue === 3 && <ModeratorStatistics />}
+          {tabValue === 2 && <ModeratorMaterialReview />}
+          {tabValue === 3 && <ModeratorUserSuspension />}
+          {tabValue === 4 && <ModeratorStatistics />}
         </Box>
       </Paper>
     </Box>

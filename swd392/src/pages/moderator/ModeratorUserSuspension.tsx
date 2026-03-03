@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Button,
@@ -22,20 +22,28 @@ type UserItem = {
   suspendReason?: string;
 };
 
-const initialUsers: UserItem[] = [
-  { id: "u1", username: "nguyen.van.a", email: "a@example.com" },
-  {
-    id: "u2",
-    username: "tran.thi.b",
-    email: "b@example.com",
-    suspended: true,
-    suspendReason: "Spam nội dung",
-  },
-  { id: "u3", username: "le.van.c", email: "c@example.com" },
-];
-
 const ModeratorUserSuspension: React.FC = () => {
-  const [users, setUsers] = useState<UserItem[]>(initialUsers);
+  const [users, setUsers] = useState<UserItem[]>([]);
+
+  // Load users from moderation service
+  useEffect(() => {
+    let mounted = true;
+    const load = async () => {
+      try {
+        const list = await moderationService.getUsers();
+        if (!mounted) return;
+        setUsers(list);
+      } catch (err) {
+        console.warn("Failed to load users", err);
+      }
+    };
+
+    load();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
   const [reasonInput, setReasonInput] = useState<Record<string, string>>({});
 
   const [loadingIds, setLoadingIds] = useState<Record<string, boolean>>({});
