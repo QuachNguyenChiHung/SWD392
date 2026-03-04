@@ -33,13 +33,9 @@ const updateQuizSchema = z.object({
 //     quiz_id: { type: Schema.Types.ObjectId, ref: 'Quiz', required: true },
 //     options: { type: [Schema.Types.Mixed], required: true },
 //     correct_index: { type: Number, required: true },
+//     type: { type: String, required: true, maxlength: 50, enum: ['multiple_choice', 'true_false'], default: 'multiple_choice' }
 // }
 
-const createQuestionSchema = z.object({
-    quiz_id: z.string(),
-    options: z.array(z.any()).min(2), // At least 2 options
-    correct_index: z.number().int().min(0),
-});
 
 // QuizAttempt Schema Reference:
 // {
@@ -59,12 +55,12 @@ const createQuizAttemptSchema = z.object({
 
 export type CreateQuizDTO = z.infer<typeof createQuizSchema>;
 export type UpdateQuizDTO = z.infer<typeof updateQuizSchema>;
-export type CreateQuestionDTO = z.infer<typeof createQuestionSchema>;
+
 export type CreateQuizAttemptDTO = z.infer<typeof createQuizAttemptSchema>;
 
-export { 
-    createQuizSchema, 
+export {
+    createQuizSchema,
     updateQuizSchema,
-    createQuestionSchema,
-    createQuizAttemptSchema 
+
+    createQuizAttemptSchema
 };

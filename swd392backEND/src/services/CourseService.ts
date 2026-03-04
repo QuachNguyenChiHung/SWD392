@@ -12,39 +12,27 @@ class CourseService {
     }
 
     async updateCourse(courseId: string, updateData: CourseUpdateDTO) {
-        try {
-            // If updating course name, check if it already exists
-            if (updateData.course_name) {
-                const existingCourse = await CourseRepo.findByCourseName(updateData.course_name);
-                if (existingCourse && existingCourse._id.toString() !== courseId) {
-                    return { error: "Course name already exists" };
-                }
+        // If updating course name, check if it already exists
+        if (updateData.course_name) {
+            const existingCourse = await CourseRepo.findByCourseName(updateData.course_name);
+            if (existingCourse && existingCourse._id.toString() !== courseId) {
+                return { error: "Course name already exists" };
             }
-
-            const updatedCourse = await CourseRepo.updateCourse(courseId, updateData);
-            return updatedCourse;
-        } catch (error) {
-            return { error: `Error updating course: ${error}` };
         }
+
+        const updatedCourse = await CourseRepo.updateCourse(courseId, updateData);
+        return updatedCourse;
     }
 
     async deleteCourse(courseId: string) {
-        try {
-            // You might want to add validation here to prevent deletion if course has topics
-            await TopicService.deleteTopicsByCourse(courseId);
-            return await CourseRepo.deleteCourse(courseId);
-        } catch (error) {
-            return { error: `Error deleting course: ${error}` };
-        }
+        // You might want to add validation here to prevent deletion if course has topics
+        await TopicService.deleteTopicsByCourse(courseId);
+        return await CourseRepo.deleteCourse(courseId);
     }
 
     async getAllCourses(page: number = 1) {
-        try {
-            const courses = await CourseRepo.getAllCourses(page);
-            return courses || [];
-        } catch (error) {
-            return { error: `Error retrieving courses: ${error}` };
-        }
+        const courses = await CourseRepo.getAllCourses(page);
+        return courses || [];
     }
 
     async toggleCourseStatus(courseId: string) {
@@ -72,18 +60,14 @@ class CourseService {
     }
 
     async getCoursesStatistics() {
-        try {
-            const totalCourses = await CourseRepo.getTotalCoursesCount();
-            const activeCourses = await CourseRepo.getActiveCourses();
+        const totalCourses = await CourseRepo.getTotalCoursesCount();
+        const activeCourses = await CourseRepo.getActiveCourses();
 
-            return {
-                totalCourses,
-                activeCourses: activeCourses.length,
-                inactiveCourses: totalCourses - activeCourses.length
-            };
-        } catch (error) {
-            return { error: `Error retrieving course statistics: ${error}` };
-        }
+        return {
+            totalCourses,
+            activeCourses: activeCourses.length,
+            inactiveCourses: totalCourses - activeCourses.length
+        };
     }
 }
 

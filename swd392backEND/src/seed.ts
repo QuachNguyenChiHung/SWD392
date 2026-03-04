@@ -59,7 +59,7 @@ async function seed() {
         //password : 67Hashed_password
         const users = await User.insertMany(
             Array.from({ length: 10 }, (_, i) => ({
-                role: i < 2 ? 'admin' : i < 5 ? 'teacher' : 'student',
+                role: i < 2 ? 'admin' : i < 4 ? 'moderator' : i < 7 ? 'teacher' : 'student',
                 username: `user_${i + 1}`,
                 email: `user${i + 1}@example.com`,
                 password: '$2a$12$cAs/1b1rLMGGZwWqM8jZ3OH1fUSpPjkPBJ8IpFUUWA6nnHIGGnYk.',
@@ -69,25 +69,27 @@ async function seed() {
         );
         console.log('Seeded 10 Users');
 
-        // ─── 2. Admins (10) — first 10 users mapped ───
+        // ─── 2. Admins (for admin and moderator users only) ───
+        const adminUsers = users.filter(user => user.role === 'admin' || user.role === 'moderator');
         const admins = await Admin.insertMany(
-            Array.from({ length: 10 }, (_, i) => ({
-                user_id: users[i]._id,
-                authorization_lvl: (i % 3) + 1,
+            adminUsers.map(user => ({
+                user_id: user._id,
+                authorization_lvl: user.role === 'admin' ? 2 : 1, // admin = level 2, moderator = level 1
                 date_create: new Date(),
             }))
         );
-        console.log('Seeded 10 Admins');
+        console.log(`Seeded ${admins.length} Admins`);
 
-        // ─── 3. Teachers (10) ───
+        // ─── 3. Teachers (for teacher users only) ───
+        const teacherUsers = users.filter(user => user.role === 'teacher');
         const teachers = await Teacher.insertMany(
-            Array.from({ length: 10 }, (_, i) => ({
-                user_id: users[i]._id,
-                credential: `Teaching Certificate #${1000 + i}`,
+            teacherUsers.map(user => ({
+                user_id: user._id,
+                credential: null, // null certificate as requested
                 date_create: new Date(),
             }))
         );
-        console.log('Seeded 10 Teachers');
+        console.log(`Seeded ${teachers.length} Teachers`);
 
         // ─── 4. Courses (10) ───
         const courseNames = [
@@ -188,12 +190,13 @@ async function seed() {
                     { text: `Option D for Q${i + 1}`, index: 3 },
                 ],
                 correct_index: i % 4,
+                type: i % 2 === 0 ? 'multiple_choice' : 'true_false',
             }))
         );
         console.log('Seeded 10 Questions');
 
         // ─── 11. QuizAttempts (10) ───
-        const studentUsers = users.filter((_, i) => i >= 5); // users 5-9 are students
+        const studentUsers = users.filter(user => user.role === 'student');
         const quizAttempts = await QuizAttempt.insertMany(
             Array.from({ length: 10 }, (_, i) => ({
                 quiz_id: quizzes[i % quizzes.length]._id,

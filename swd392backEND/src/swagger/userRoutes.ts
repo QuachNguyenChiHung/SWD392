@@ -102,7 +102,7 @@
  *     tags:
  *       - Users
  *     summary: Search users by keyword
- *     description: Search users by keyword in username or email (admin only)
+ *     description: "[Admin] Search users by keyword in username or email."
  *     security:
  *       - cookieAuth: []
  *     parameters:
@@ -151,7 +151,7 @@
  *     tags:
  *       - Users
  *     summary: Get all users
- *     description: Retrieve paginated list of all users (admin only)
+ *     description: "[Admin] Retrieve paginated list of all users."
  *     security:
  *       - cookieAuth: []
  *     parameters:
@@ -189,7 +189,7 @@
  *     tags:
  *       - Users
  *     summary: Create new user
- *     description: Create a new user (admin only)
+ *     description: "[Admin] Create a new user."
  *     security:
  *       - cookieAuth: []
  *     requestBody:
@@ -220,7 +220,7 @@
  *     tags:
  *       - Users
  *     summary: Get user by ID
- *     description: Retrieve a specific user by ID (admin only)
+ *     description: "[Admin] Retrieve a specific user by ID."
  *     security:
  *       - cookieAuth: []
  *     parameters:
@@ -247,7 +247,7 @@
  *     tags:
  *       - Users
  *     summary: Update user
- *     description: Update user information (admin only)
+ *     description: "[Admin] Update user information."
  *     security:
  *       - cookieAuth: []
  *     parameters:
@@ -296,7 +296,7 @@
  *     tags:
  *       - Users
  *     summary: Toggle user status
- *     description: Toggle user status between active and banned (admin only)
+ *     description: "[Admin] Toggle user status between active and banned."
  *     security:
  *       - cookieAuth: []
  *     parameters:
@@ -328,7 +328,7 @@
  *     tags:
  *       - Authentication
  *     summary: Register new user
- *     description: Register a new user account
+ *     description: "[Public] Register a new user account."
  *     requestBody:
  *       required: true
  *       content:
@@ -359,7 +359,7 @@
  *     tags:
  *       - Authentication
  *     summary: User login
- *     description: Authenticate user and receive a cookie token
+ *     description: "[Public] Authenticate user and receive a cookie token."
  *     requestBody:
  *       required: true
  *       content:
@@ -395,7 +395,7 @@
  *     tags:
  *       - Authentication
  *     summary: Get current user info
- *     description: Get authenticated user information
+ *     description: "[Authenticated] Get the currently authenticated user's profile information."
  *     security:
  *       - cookieAuth: []
  *     responses:
@@ -411,7 +411,7 @@
  *     tags:
  *       - Authentication
  *     summary: Update own profile
- *     description: Update current user's profile
+ *     description: "[Authenticated] Update the currently authenticated user's own profile."
  *     security:
  *       - cookieAuth: []
  *     requestBody:
@@ -446,7 +446,7 @@
  *     tags:
  *       - Authentication
  *     summary: Logout user
- *     description: Clear authentication cookie
+ *     description: "[Authenticated] Clear authentication cookie and log out."
  *     security:
  *       - cookieAuth: []
  *     responses:

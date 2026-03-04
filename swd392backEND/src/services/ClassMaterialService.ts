@@ -21,33 +21,27 @@ class ClassMaterialService {
         }
 
         let populatedContent = null;
-        try {
-            switch (material.type) {
-                case 'file':
-                    populatedContent = await FileRepo.getFileById(material.content_id.toString());
-                    break;
-                case 'slide':
-                    populatedContent = await SlideRepo.getSlideById(material.content_id.toString());
-                    break;
-                case 'quiz':
-                    populatedContent = await QuizRepo.getQuizById(material.content_id.toString());
-                    break;
-                case '2d_render':
-                    populatedContent = await Render2DRepo.getRender2DById(material.content_id.toString());
-                    break;
-            }
-            
-            return {
-                success: true,
-                data: {
-                    ...material.toObject(),
-                    content: populatedContent
-                }
-            };
-        } catch (error) {
-            console.error(`Error fetching ${material.type} content:`, error);
-            return { success: true, data: material };
+        switch (material.type) {
+            case 'file':
+                populatedContent = await FileRepo.getFileById(material.content_id.toString());
+                break;
+            case 'slide':
+                populatedContent = await SlideRepo.getSlideById(material.content_id.toString());
+                break;
+            case 'quiz':
+                populatedContent = await QuizRepo.getQuizById(material.content_id.toString());
+                break;
+            case '2d_render':
+                populatedContent = await Render2DRepo.getRender2DById(material.content_id.toString());
+                break;
         }
+
+        return {
+            data: {
+                ...material.toObject(),
+                content: populatedContent
+            }
+        };
     }
 
     async getClassMaterialsByClass(classId: string, page: number = 1) {
@@ -66,152 +60,60 @@ class ClassMaterialService {
         return await ClassMaterialRepo.getClassMaterialsByType(classId, type);
     }
 
-    async createClassMaterialWithContent(class_id: string, topic_id: string, type: string, content_data: any) {
-        try {
-            // Validate content type
-            const validTypes = ['file', 'slide', 'quiz', '2d_render'];
-            if (!validTypes.includes(type)) {
-                return { error: `Invalid content type: ${type}. Must be one of: ${validTypes.join(', ')}` };
-            }
-
-            // Validate content_data
-            if (!content_data || Object.keys(content_data).length === 0) {
-                return { error: "Content data is required" };
-            }
-
-            // Step 1: Create content based on type
-            console.log(`Creating ${type} content with data:`, content_data);
-            
-            let content_id = null;
-            let createdContent = null;
-            
-            switch (type) {
-                case 'file':
-                    createdContent = await FileRepo.createFile(content_data);
-                    break;
-                case 'slide':
-                    createdContent = await SlideRepo.createSlide(content_data);
-                    break;
-                case 'quiz':
-                    createdContent = await QuizRepo.createQuiz(content_data);
-                    break;
-                case '2d_render':
-                    createdContent = await Render2DRepo.createRender2D(content_data);
-                    break;
-                default:
-                    throw new Error(`Unsupported content type: ${type}`);
-            }
-            
-            if (!createdContent) {
-                throw new Error(`Failed to create ${type} content`);
-            }
-            
-            content_id = createdContent._id;
-            
-            // Step 2: Get next order number for this class
-            const order_num = await ClassMaterialRepo.getNextOrderNumber(class_id);
-            
-            // Step 3: Create class material
-            const materialData = {
-                topic_id: topic_id,
-                type: type,
-                order_num: order_num,
-                class_assign_id: class_id,
-                title: content_data.title || `${type} Material`,
-                content_id: content_id,
-                is_ai_material: false
-            };
-            
-            const createdMaterial = await ClassMaterialRepo.createClassMaterial(materialData);
-            return { success: true, data: createdMaterial };
-        } catch (error) {
-            console.error('Error in createClassMaterialWithContent:', error);
-            return { 
-                error: error instanceof Error ? error.message : "Failed to create class material with content"
-            };
+    async toggleClassMaterialStatus(id: string, status: string) {
+        const material = await ClassMaterialRepo.getClassMaterialById(id);
+        if (!material) {
+            return { error: "Class material not found" };
         }
+        if (status !== 'published' && status !== 'draft' && status !== 'reviewed' && status !== 'deleted') {
+            return { error: "Invalid status value" };
+        }
+
+        material.status = status;
+        const updatedMaterial = await material.save();
+        return updatedMaterial;
+    }
+    async toggleClassMaterialFlaggable(id: string, isFlaggable: boolean) {
+        const material = await ClassMaterialRepo.getClassMaterialById(id);
+        if (!material) {
+            return { error: "Class material not found" };
+        }
+        material.isFlaggable = isFlaggable;
+        const updatedMaterial = await material.save();
+        return updatedMaterial;
     }
 
-    async updateClassMaterial(id: string, updateData: UpdateClassMaterialDTO, content_data?: any) {
-        try {
-            const material = await ClassMaterialRepo.getClassMaterialById(id);
-            if (!material) {
-                return { error: "Class material not found" };
-            }
+    // Student flags a reviewed material for re-moderation
+    async flagMaterial(id: string) {
+        const material = await ClassMaterialRepo.getClassMaterialById(id);
+        if (!material) return { error: "Class material not found" };
+        if (material.status !== 'reviewed') return { error: "Only reviewed materials can be flagged" };
+        if (!material.isFlaggable) return { error: "This material has already been verified and cannot be flagged" };
+        if (material.isFlagged) return { error: "Material is already flagged" };
 
-            // If there's content data to update and the material has a content_id
-            if (content_data && material.content_id) {
-                const contentId = material.content_id.toString();
-                
-                switch (material.type) {
-                    case 'file':
-                        await FileRepo.updateFile(contentId, content_data);
-                        break;
-                    case 'slide':
-                        await SlideRepo.updateSlide(contentId, content_data);
-                        break;
-                    case 'quiz':
-                        await QuizRepo.updateQuiz(contentId, content_data);
-                        break;
-                    case '2d_render':
-                        await Render2DRepo.updateRender2D(contentId, content_data);
-                        break;
-                }
-            }
-
-            // Update dateUpdate
-            updateData.dateUpdate = new Date();
-
-            const updatedMaterial = await ClassMaterialRepo.updateClassMaterial(id, updateData);
-            return { success: true, data: updatedMaterial };
-        } catch (error) {
-            console.error('Error in updateClassMaterial:', error);
-            return { 
-                error: error instanceof Error ? error.message : "Failed to update class material"
-            };
-        }
+        material.isFlagged = true;
+        material.status = 'published'; // back to moderator queue
+        const updatedMaterial = await material.save();
+        return { success: true, data: updatedMaterial };
     }
 
-    async deleteClassMaterial(id: string) {
-        try {
-            const material = await ClassMaterialRepo.getClassMaterialById(id);
-            if (!material) {
-                return { error: "Class material not found" };
-            }
+    // Moderator re-verifies after a student flag → fully verified, no more flags
+    async verifyAfterFlag(id: string) {
+        const material = await ClassMaterialRepo.getClassMaterialById(id);
+        if (!material) return { error: "Class material not found" };
+        if (!material.isFlagged) return { error: "Material is not currently flagged" };
 
-            // Delete the associated content if it exists
-            if (material.content_id) {
-                const contentId = material.content_id.toString();
-                
-                try {
-                    switch (material.type) {
-                        case 'file':
-                            await FileRepo.deleteFile(contentId);
-                            break;
-                        case 'slide':
-                            await SlideRepo.deleteSlide(contentId);
-                            break;
-                        case 'quiz':
-                            await QuizRepo.deleteQuiz(contentId);
-                            break;
-                        case '2d_render':
-                            await Render2DRepo.deleteRender2D(contentId);
-                            break;
-                    }
-                } catch (contentError) {
-                    console.warn(`Failed to delete ${material.type} content with ID ${contentId}:`, contentError);
-                    // Continue with material deletion even if content deletion fails
-                }
-            }
+        material.status = 'reviewed';
+        material.isFlagged = false;
+        material.isFlaggable = false;
+        const updatedMaterial = await material.save();
+        return { success: true, data: updatedMaterial };
+    }
 
-            const deletedMaterial = await ClassMaterialRepo.deleteClassMaterial(id);
-            return { success: true, data: deletedMaterial };
-        } catch (error) {
-            console.error('Error in deleteClassMaterial:', error);
-            return { 
-                error: error instanceof Error ? error.message : "Failed to delete class material"
-            };
-        }
+    // Moderator views published materials pending review
+    async getPendingMaterials(page: number = 1) {
+
+        return await ClassMaterialRepo.getPendingMaterials(page);
     }
 
     async getClassMaterialCount(classId: string) {
@@ -249,6 +151,61 @@ class ClassMaterialService {
 
     async getClassMaterialsByTeacher(page: number = 1) {
         return await ClassMaterialRepo.getAllClassMaterials(page);
+    }
+
+    // New methods for class material type-specific operations with content
+    async getClassMaterialsByTypeWithContent(classId: string, type: string, page: number = 1) {
+        const materials = await ClassMaterialRepo.getClassMaterialsByType(classId, type);
+
+        // Populate content for each material
+        const materialsWithContent = await Promise.all(
+            materials.map(async (material) => {
+                if (!material.content_id) {
+                    return material;
+                }
+
+                let populatedContent = null;
+                switch (material.type) {
+                    case 'file':
+                        populatedContent = await FileRepo.getFileById(material.content_id.toString());
+                        break;
+                    case 'slide':
+                        populatedContent = await SlideRepo.getSlideById(material.content_id.toString());
+                        break;
+                    case 'quiz':
+                        populatedContent = await QuizRepo.getQuizById(material.content_id.toString());
+                        break;
+                    case '2d_render':
+                        populatedContent = await Render2DRepo.getRender2DById(material.content_id.toString());
+                        break;
+                }
+
+                return {
+                    ...material.toObject(),
+                    content: populatedContent
+                };
+            })
+        );
+
+        return materialsWithContent;
+    }
+
+    // Simple CRUD methods for class materials (without content management)
+    async createClassMaterial(materialData: any) {
+        // Get next order number if not provided
+        if (!materialData.order_num && materialData.class_assign_id) {
+            materialData.order_num = await ClassMaterialRepo.getNextOrderNumber(materialData.class_assign_id);
+        }
+
+        return await ClassMaterialRepo.createClassMaterial(materialData);
+    }
+
+    async updateClassMaterial(id: string, updateData: UpdateClassMaterialDTO) {
+        return await ClassMaterialRepo.updateClassMaterial(id, updateData);
+    }
+
+    async deleteClassMaterial(id: string) {
+        return await ClassMaterialRepo.deleteClassMaterial(id);
     }
 }
 

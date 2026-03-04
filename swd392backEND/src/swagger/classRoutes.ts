@@ -88,7 +88,7 @@
  *     tags:
  *       - Classes
  *     summary: Get class by ID
- *     description: Retrieve a specific class by its ID
+ *     description: "[Public] Retrieve a specific class by its ID."
  *     parameters:
  *       - in: path
  *         name: id
@@ -109,7 +109,7 @@
  *     tags:
  *       - Classes
  *     summary: Update class
- *     description: Update class details. Only the teacher who owns the class can update it.
+ *     description: "[Teacher] Update class details. Only the teacher who owns this class can update it."
  *     security:
  *       - cookieAuth: []
  *     parameters:
@@ -149,7 +149,7 @@
  *     tags:
  *       - Classes
  *     summary: Get classes by teacher
- *     description: Retrieve all classes owned by the authenticated teacher
+ *     description: "[Teacher] Retrieve all classes owned by the authenticated teacher."
  *     security:
  *       - cookieAuth: []
  *     parameters:
@@ -181,7 +181,7 @@
  *     tags:
  *       - Classes
  *     summary: Get classes by student
- *     description: Retrieve all classes the authenticated student is enrolled in
+ *     description: "[Student] Retrieve all classes the authenticated student is enrolled in."
  *     security:
  *       - cookieAuth: []
  *     parameters:
@@ -213,7 +213,7 @@
  *     tags:
  *       - Classes
  *     summary: Get students in a class
- *     description: Retrieve paginated students enrolled in a specific class with optional keyword search (teacher only)
+ *     description: "[Teacher] Retrieve paginated students enrolled in a specific class with optional keyword search."
  *     security:
  *       - cookieAuth: []
  *     parameters:
@@ -259,7 +259,7 @@
  *     tags:
  *       - Classes
  *     summary: Create a new class
- *     description: Create a new class. The teacher_id is resolved from the auth cookie and keypass is auto-generated.
+ *     description: "[Teacher] Create a new class. The teacher_id is resolved from the auth cookie and keypass is auto-generated."
  *     security:
  *       - cookieAuth: []
  *     requestBody:
@@ -290,7 +290,7 @@
  *     tags:
  *       - Classes
  *     summary: Regenerate class keypass
- *     description: Generate a new random enrollment keypass for the class (teacher only)
+ *     description: "[Teacher] Generate a new random enrollment keypass for the class."
  *     security:
  *       - cookieAuth: []
  *     parameters:
@@ -326,7 +326,7 @@
  *     tags:
  *       - Classes
  *     summary: Upload class cover image
- *     description: Upload a new cover image to Cloudinary. Returns the uploaded image URL — use it with update-image to attach it to a class.
+ *     description: "[Teacher] Upload a new cover image to Cloudinary. Returns the uploaded image URL — use it with update-image to attach it to a class."
  *     security:
  *       - cookieAuth: []
  *     requestBody:
@@ -368,7 +368,7 @@
  *     tags:
  *       - Classes
  *     summary: Update class cover image
- *     description: Replace an existing cover image on Cloudinary. Verifies the teacher owns the class with that image before replacing.
+ *     description: "[Teacher] Replace an existing cover image on Cloudinary. Verifies the teacher owns the class with that image before replacing."
  *     security:
  *       - cookieAuth: []
  *     requestBody:
@@ -415,7 +415,7 @@
  *     tags:
  *       - Classes
  *     summary: Delete class cover image
- *     description: Delete an existing cover image from Cloudinary and clear it from the class record. Verifies teacher ownership.
+ *     description: "[Teacher] Delete an existing cover image from Cloudinary and clear it from the class record. Verifies teacher ownership."
  *     security:
  *       - cookieAuth: []
  *     requestBody:

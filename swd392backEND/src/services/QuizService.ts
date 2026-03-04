@@ -1,5 +1,6 @@
 import QuizRepo from "../repository/QuizRepo.ts";
-import type { CreateQuizDTO, UpdateQuizDTO, CreateQuestionDTO, CreateQuizAttemptDTO } from "../dto/QuizDTO.ts";
+import QuestionRepo from "../repository/QuestionRepo.ts";
+import type { CreateQuizDTO, UpdateQuizDTO, CreateQuizAttemptDTO } from "../dto/QuizDTO.ts";
 
 class QuizService {
     async getQuizById(id: string) {
@@ -28,7 +29,7 @@ class QuizService {
             return { error: "Quiz not found" };
         }
         // Delete all questions for this quiz
-        await QuizRepo.deleteQuestionsByQuizId(id);
+        await QuestionRepo.deleteQuestionsByQuizId(id);
         return await QuizRepo.deleteQuiz(id);
     }
 
@@ -38,34 +39,6 @@ class QuizService {
             return { error: "Quiz not found" };
         }
         return await QuizRepo.toggleQuizStatus(id);
-    }
-
-    async getQuestionsByQuizId(quizId: string) {
-        return await QuizRepo.getQuestionsByQuizId(quizId);
-    }
-
-    async createQuestion(questionData: CreateQuestionDTO) {
-        const quiz = await QuizRepo.getQuizById(questionData.quiz_id);
-        if (!quiz) {
-            return { error: "Quiz not found" };
-        }
-        return await QuizRepo.createQuestion(questionData);
-    }
-
-    async updateQuestion(id: string, updateData: CreateQuestionDTO) {
-        const quiz = await QuizRepo.getQuizById(updateData.quiz_id);
-        if (!quiz) {
-            return { error: "Quiz not found" };
-        }
-        return await QuizRepo.updateQuestion(id, updateData);
-    }
-
-    async deleteQuestion(id: string, quizId: string) {
-        const quiz = await QuizRepo.getQuizById(quizId);
-        if (!quiz) {
-            return { error: "Quiz not found" };
-        }
-        return await QuizRepo.deleteQuestion(id);
     }
 
     async getQuizAttemptsByQuizId(quizId: string, page: number = 1) {

@@ -8,7 +8,7 @@ class ClassMaterialRepo {
         const limit = 12;
         const skip = (page - 1) * limit;
         let query: any = { class_assign_id: classId };
-        
+
         if (teacherId) {
             // For teachers, verify they own the class
             return await ClassMaterial.find(query)
@@ -22,7 +22,7 @@ class ClassMaterialRepo {
                 .limit(limit)
                 .then(materials => materials.filter(material => material.class_assign_id));
         }
-        
+
         // For admins, return all
         return await ClassMaterial.find(query)
             .populate('class_assign_id', 'class_name teacher_id')
@@ -42,24 +42,24 @@ class ClassMaterialRepo {
                 .sort({ order_num: 1 })
                 .then(materials => materials.filter(material => material.class_assign_id));
         }
-        
+
         // For admins, return all
         return await ClassMaterial.find({ topic_id: topicId })
             .populate('class_assign_id', 'class_name teacher_id')
             .sort({ order_num: 1 });
     }
     async getClassMaterialByTopicAndClassId(topicId: string, classId: string) {
-        return await ClassMaterial.find({ 
+        return await ClassMaterial.find({
             topic_id: topicId,
-            class_assign_id: classId 
+            class_assign_id: classId
         }).sort({ order_num: 1 });
     }
     async getClassMaterialsByType(classId: string, type: string, teacherId?: string) {
-        let query: any = { 
-            class_assign_id: classId, 
-            type: type 
+        let query: any = {
+            class_assign_id: classId,
+            type: type
         };
-        
+
         if (teacherId) {
             // For teachers, verify they own the class
             return await ClassMaterial.find(query)
@@ -71,7 +71,7 @@ class ClassMaterialRepo {
                 .sort({ order_num: 1 })
                 .then(materials => materials.filter(material => material.class_assign_id));
         }
-        
+
         // For admins, return all
         return await ClassMaterial.find(query)
             .populate('class_assign_id', 'class_name teacher_id')
@@ -91,7 +91,7 @@ class ClassMaterialRepo {
         return await ClassMaterial.countDocuments({ class_assign_id: classId });
     }
     async updateOrderNumbers(classId: string, materialIds: string[]) {
-        const updatePromises = materialIds.map((id, index) => 
+        const updatePromises = materialIds.map((id, index) =>
             ClassMaterial.findByIdAndUpdate(id, { order_num: index + 1 })
         );
         return await Promise.all(updatePromises);
@@ -131,7 +131,7 @@ class ClassMaterialRepo {
     async getAllClassMaterials(page: number, teacherId?: string) {
         const limit = 12;
         const skip = (page - 1) * limit;
-        
+
         if (teacherId) {
             // For teachers, only return materials from their classes
             return await ClassMaterial.find()
@@ -145,7 +145,7 @@ class ClassMaterialRepo {
                 .limit(limit)
                 .then(materials => materials.filter(material => material.class_assign_id));
         }
-        
+
         // For admins, return all materials
         return await ClassMaterial.find()
             .populate('class_assign_id', 'class_name teacher_id')
@@ -166,19 +166,29 @@ class ClassMaterialRepo {
             .skip(skip)
             .limit(limit);
     }
+    // Returns published materials (first-time or re-flagged) for moderator review
+    async getPendingMaterials(page: number) {
+        const limit = 12;
+        const skip = (page - 1) * limit;
+        return await ClassMaterial.find({ status: 'published' })
+            .populate('class_assign_id', 'class_name teacher_id')
+            .sort({ isFlagged: -1, dateCreate: -1 }) // flagged items first
+            .skip(skip)
+            .limit(limit);
+    }
     async toggleAiMaterial(id: string, aiContentId?: string) {
         const material = await ClassMaterial.findById(id);
         if (material) {
             const updateData: any = {
                 is_ai_material: !material.is_ai_material
             };
-            
+
             if (!material.is_ai_material && aiContentId) {
                 updateData.ai_content_id = aiContentId;
             } else {
                 updateData.ai_content_id = null;
             }
-            
+
             return await ClassMaterial.findByIdAndUpdate(id, updateData, { new: true });
         }
         return null;

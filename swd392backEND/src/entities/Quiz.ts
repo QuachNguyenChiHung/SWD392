@@ -3,9 +3,8 @@ import type { IQuiz } from '../interface/IQuiz.ts';
 
 const QuizSchema: Schema = new Schema(
     {
-    
+
         title: { type: String, required: true, maxlength: 255 },
-        type: { type: String, required: true, maxlength: 50 },
         available_date: { type: Date, default: null },
         max_attempt_number: { type: Number, default: null },
         end_date: { type: Date, default: null },
