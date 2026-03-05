@@ -80,31 +80,11 @@ class ClassMaterialController {
             const { id } = req.params;
             const result = await ClassMaterialService.getClassMaterialById(id as string);
 
-            let material: any = null;
-
-            switch (result.type) {
-                case "file":
-                    material = FileService.getFileById(result.file_id);
-                    break;
-                case "quiz":
-                    material = QuizService.getQuizById(result.quiz_id);
-                    break;
-                case "slide":
-                    material = SlideService.getSlideById(result.slide_id);
-                    break;
-                // case result.type === "2d_render":
-                //     material = TwoDRenderService.getTwoDRenderById(result.render_id);
-                // break;
+            if (!result) {
+                return res.status(404).json({ message: "Class material not found" });
             }
 
-            if (!material) {
-                return res.status(404).json({ message: "Material content not found" });
-            }
-
-            if ((result as any)?.error) {
-                return res.status(404).json({ message: (result as any).error });
-            }
-            return res.status(200).json((result as any).data);
+            return res.status(200).json(result);
         } catch (error) {
             next(error);
         }
