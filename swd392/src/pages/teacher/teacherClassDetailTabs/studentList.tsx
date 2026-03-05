@@ -26,7 +26,7 @@ export default function StudentList({ students, classData }: StudentListProp) {
   const [addStudentList, setAddStudentList] = useState<string[]>([]);
 
   const filteredStudents = studentSearch
-    ? students.filter((s) => s.student_id === studentSearch.student_id)
+    ? students.filter((s) => s._id === studentSearch._id)
     : students;
 
   return (
@@ -65,9 +65,9 @@ export default function StudentList({ students, classData }: StudentListProp) {
               </TableRow>
             ) : (
               filteredStudents.map((s, index) => (
-                <TableRow key={s.student_id}>
+                <TableRow key={s._id}>
                   <TableCell>{index + 1}</TableCell>
-                  <TableCell>{s.student_id}</TableCell>
+                  <TableCell>{s._id}</TableCell>
                   <TableCell>{s.student_name}</TableCell>
                   <TableCell>{s.email}</TableCell>
                   <TableCell>

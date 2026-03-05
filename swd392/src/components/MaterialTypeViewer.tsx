@@ -54,6 +54,10 @@ function QuizViewer({ content, onQuestionsChange }: QuizViewerProps) {
         question: Question | null;
     }>({ open: false, question: null });
 
+    if (!content) {
+        return <Typography color="text.secondary">Đang tải nội dung bài kiểm tra...</Typography>;
+    }
+
     const canEdit = !!onQuestionsChange;
     const questions = content.questions ?? [];
 
@@ -79,14 +83,14 @@ function QuizViewer({ content, onQuestionsChange }: QuizViewerProps) {
 
     const handleSaveQuestion = (saved: Question) => {
         const updated =
-            questions.some((q) => q.id === saved.id)
-                ? questions.map((q) => (q.id === saved.id ? saved : q))
+            questions.some((q) => q._id === saved._id)
+                ? questions.map((q) => (q._id === saved._id ? saved : q))
                 : [...questions, saved];
         onQuestionsChange?.(updated);
     };
 
     const handleDeleteQuestion = (id: string) =>
-        onQuestionsChange?.(questions.filter((q) => q.id !== id));
+        onQuestionsChange?.(questions.filter((q) => q._id !== id));
 
     return (
         <Box>
@@ -176,7 +180,7 @@ function QuizViewer({ content, onQuestionsChange }: QuizViewerProps) {
 
                 {questions.map((q, index) => (
                     <Accordion
-                        key={q.id}
+                        key={q._id}
                         disableGutters
                         variant="outlined"
                         sx={{ mb: 1 }}
@@ -274,7 +278,7 @@ function QuizViewer({ content, onQuestionsChange }: QuizViewerProps) {
                                             color="error"
                                             onClick={(e) => {
                                                 e.stopPropagation();
-                                                handleDeleteQuestion(q.id);
+                                                handleDeleteQuestion(q._id as string);
                                             }}
                                         >
                                             <DeleteOutline fontSize="small" />
@@ -371,24 +375,6 @@ function QuizViewer({ content, onQuestionsChange }: QuizViewerProps) {
                                     </Stack>
                                 )}
 
-                                {q.explanation && (
-                                    <Box
-                                        sx={{
-                                            p: 1.5,
-                                            bgcolor: "info.50",
-                                            border: "1px solid",
-                                            borderColor: "info.light",
-                                            borderRadius: 1,
-                                        }}
-                                    >
-                                        <Typography
-                                            variant="caption"
-                                            color="text.secondary"
-                                        >
-                                            \ud83d\udca1 {q.explanation}
-                                        </Typography>
-                                    </Box>
-                                )}
                             </Stack>
                         </AccordionDetails>
                     </Accordion>

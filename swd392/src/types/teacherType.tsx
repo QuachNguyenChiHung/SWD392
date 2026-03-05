@@ -41,6 +41,7 @@ export interface UploadedFileRecord {
 }
 
 export interface Topic {
+  _id: string;
   topic_id: string;
   title: string;
   description?: string;
@@ -82,7 +83,7 @@ export interface PaginatedTopicsResponse {
 export type ClassMaterialType = "file" | "slide" | "2d_render" | "quiz";
 
 export interface ClassMaterial {
-  material_id: string;
+  _id?: string;
   type: ClassMaterialType;
   order_num: number;
   class_assign_id: string;
@@ -95,23 +96,22 @@ export interface ClassMaterial {
 }
 
 export interface FileMaterial {
-  file_id: string;
+  _id?: string;
   file_name: string;
   file_path: string;
 }
 // Question interface
 export interface Question {
-  id: string;
+  _id?: string;
   content: string;
   type: "multiple-choice" | "true-false" | "short-answer";
   options?: string[];
   correctAnswer: string | string[];
-  explanation?: string;
   has2DVisualization?: boolean;
 }
 // Quiz interface
 export interface Quiz {
-  quiz_id: string;
+  _id: string;
   material_id: string;
   title: string;
   keyword: string | null;
@@ -124,12 +124,12 @@ export interface Quiz {
 }
 
 export interface Render2DMaterial {
-  render_id: string;
+  _id?: string;
   render_data: string;
 }
 
 export interface SlideMaterial {
-  slide_id: string;
+  _id?: string;
   slide_name: string;
   file_path: string;
 }
@@ -155,7 +155,7 @@ export interface ClassCompletionStat {
 }
 
 export interface Student {
-  student_id: string;
+  _id: string;
   student_name: string;
   email: string;
   enrolled_date: Date;
@@ -209,4 +209,46 @@ export interface PaginatedCoursesResponse {
   total: number;
   page: number;
   totalPages: number;
+}
+
+// ClassMaterial DTO interfaces
+export interface CreateClassMaterialDTO {
+  topic_id?: string;
+  type: ClassMaterialType;
+  status?: "published" | "draft" | "reviewed" | "deleted";
+  order_num?: number;
+  class_assign_id: string;
+  title: string;
+  content_id?: string;
+  is_ai_material?: boolean;
+  ai_content_id?: string;
+  isFlagged?: boolean;
+  isFlaggable?: boolean;
+}
+
+export interface UpdateClassMaterialDTO {
+  topic_id?: string;
+  isFlagged?: boolean;
+  isFlaggable?: boolean;
+  type?: ClassMaterialType;
+  status?: "published" | "draft" | "reviewed" | "deleted";
+  order_num?: number;
+  title?: string;
+  content_id?: string;
+  is_ai_material?: boolean;
+  ai_content_id?: string;
+  dateUpdate?: Date;
+}
+
+export interface ReorderMaterialsDTO {
+  class_id: string;
+  material_ids: string[];
+}
+
+export interface ToggleAiMaterialDTO {
+  ai_content_id?: string;
+}
+
+export interface ChangeStatusDTO {
+  status: "published" | "draft" | "reviewed" | "deleted";
 }
