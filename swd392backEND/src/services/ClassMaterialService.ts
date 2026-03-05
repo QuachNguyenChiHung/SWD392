@@ -4,7 +4,38 @@ import type { IClassMaterial } from "../interface/IClassMaterial";
 
 class ClassMaterialService {
     async getClassMaterialById(id: string) {
-        return await ClassMaterialRepo.getClassMaterialById(id);
+        const material = await ClassMaterialRepo.getClassMaterialById(id);
+        if (!material) {
+            return { error: "Class material not found" };
+        }
+
+        if (!material.content_id) {
+            return { success: true, data: material };
+        }
+
+        let populatedContent = null;
+        switch (material.type) {
+            case 'file':
+                populatedContent = await FileRepo.getFileById(material.content_id.toString());
+                break;
+            case 'slide':
+                populatedContent = await SlideRepo.getSlideById(material.content_id.toString());
+                break;
+            case 'quiz':
+                populatedContent = await QuizRepo.getQuizById(material.content_id.toString());
+                break;
+            case '2d_render':
+                populatedContent = await Render2DRepo.getRender2DById(material.content_id.toString());
+                break;
+        }
+
+        return {
+            success: true,
+            data: {
+                ...material.toObject(),
+                content: populatedContent
+            }
+        };
     }
 
     async getClassMaterialsByClass(classId: string, page: number = 1) {
