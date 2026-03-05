@@ -2,7 +2,7 @@ import cloudinary from 'cloudinary';
 import dotenv from 'dotenv';
 import multer from 'multer';
 dotenv.config();
-
+import crypto from 'crypto';
 const { CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET } = process.env;
 cloudinary.v2.config({
     cloud_name: CLOUDINARY_CLOUD_NAME || '',
@@ -72,11 +72,13 @@ async function updateImage(oldUrl: string, newBuffer: Buffer | undefined) {
 }
 
 //upload by buffer(req.file.buffer)
-async function uploadFile(buffer: Buffer | undefined): Promise<string> {
+async function uploadFile(buffer: Buffer | undefined, originalname: string): Promise<string> {
     if (!buffer) throw new Error('No file buffer provided');
     console.log('Uploading file to Cloudinary...');
+    const uniqueID = crypto.randomUUID();
+    const extension = originalname.split('.').pop();
     return new Promise((resolve, reject) => {
-        Cloudinary.uploader.upload_stream({ resource_type: 'raw', folder: 'files' }, (error, result) => {
+        Cloudinary.uploader.upload_stream({ resource_type: 'raw', folder: 'files', public_id: `${uniqueID}.${extension}` }, (error, result) => {
             if (error) {
                 return reject(error);
             }
@@ -101,12 +103,12 @@ async function deleteFile(url: string) {
 }
 
 //update image by delete old one and upload new one
-async function updateFile(oldUrl: string, newBuffer: Buffer | undefined) {
+async function updateFile(oldUrl: string, newBuffer: Buffer | undefined, originalname: string) {
     const deleteResult = await deleteFile(oldUrl);
     if (!deleteResult) {
         throw new Error('Failed to delete old file');
     }
-    return await uploadFile(newBuffer);
+    return await uploadFile(newBuffer, originalname);
 }
 
 export { uploadImage, deleteImage, updateImage, uploadFile, deleteFile, updateFile, imageMulterUpload, filesMulterUpload };

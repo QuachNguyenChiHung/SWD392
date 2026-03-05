@@ -25,7 +25,7 @@ route.post('/file', filesMulterUpload.single('file'), async (req, res, next) => 
             size: req.file.size
         });
 
-        const url = await uploadFile(req.file.buffer);
+        const url = await uploadFile(req.file.buffer, req.file.originalname);
         console.log('File uploaded successfully:', url);
         return res.json({ url, filename: req.file.originalname });
     } catch (error) {
@@ -43,7 +43,7 @@ route.put('/file/:url', filesMulterUpload.single('file'), async (req, res, next)
         if (!req.file) {
             return res.status(400).json({ error: 'No file uploaded' });
         }
-        const newUrl = await updateFile(decodeURIComponent(url as string), req.file.buffer);
+        const newUrl = await updateFile(decodeURIComponent(url as string), req.file.buffer, req.file.originalname);
         return res.json({ url: newUrl, filename: req.file.originalname });
     } catch (error) {
         next(error);
