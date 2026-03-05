@@ -81,11 +81,48 @@
  *           properties:
  *             content:
  *               type: object
- *               description: Populated content document based on material type (File, Slide, Quiz, or Render2D)
+ *               description: |
+ *                 Populated content entity based on material type:
+ *                 - For 'file' type: File entity with filename, url, etc.
+ *                 - For 'quiz' type: Quiz entity with questions array
+ *                 - For 'slide' type: Slide entity with pages array
+ *                 - For '2d_render' type: Render2D entity with render data
  *               nullable: true
- *               example: 
- *                 title: "Introduction Slide"
- *                 pages: []
+ *               oneOf:
+ *                 - type: object
+ *                   description: File entity
+ *                   properties:
+ *                     _id:
+ *                       type: string
+ *                     filename:
+ *                       type: string
+ *                     url:
+ *                       type: string
+ *                 - type: object
+ *                   description: Quiz entity with questions
+ *                   properties:
+ *                     _id:
+ *                       type: string
+ *                     title:
+ *                       type: string
+ *                     questions:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                 - type: object
+ *                   description: Slide entity
+ *                   properties:
+ *                     _id:
+ *                       type: string
+ *                     title:
+ *                       type: string
+ *                     pages:
+ *                       type: array
+ *                 - type: object
+ *                   description: Render2D entity
+ *                   properties:
+ *                     _id:
+ *                       type: string
  *     ClassMaterialInput:
  *       type: object
  *       required:
@@ -570,7 +607,7 @@
  *     tags:
  *       - ClassMaterials
  *     summary: Get material by ID with content
- *     description: "[Public] Retrieve a specific class material by ID including its populated content document."
+ *     description: "[Public] Retrieve a specific class material by ID. Automatically includes populated content based on material type (File entity for 'file' type, Quiz with Questions for 'quiz' type, Slide for 'slide' type, or Render2D for '2d_render' type)."
  *     parameters:
  *       - in: path
  *         name: id
@@ -581,23 +618,77 @@
  *         example: "507f1f77bcf86cd799439011"
  *     responses:
  *       200:
- *         description: Successfully retrieved class material with populated content
+ *         description: Successfully retrieved class material with populated content entity based on type
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/ClassMaterialWithContent'
- *             example:
- *               _id: "507f1f77bcf86cd799439011"
- *               title: "Introduction to Algebra"
- *               type: "slide"
- *               order_num: 1
- *               class_assign_id: "507f1f77bcf86cd799439012"
- *               topic_id: "507f1f77bcf86cd799439013"
- *               content:
- *                 title: "Introduction to Algebra"
- *                 pages: []
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   $ref: '#/components/schemas/ClassMaterialWithContent'
+ *             examples:
+ *               slideExample:
+ *                 summary: Slide material with content
+ *                 value:
+ *                   success: true
+ *                   data:
+ *                     _id: "507f1f77bcf86cd799439011"
+ *                     title: "Introduction to Algebra"
+ *                     type: "slide"
+ *                     order_num: 1
+ *                     class_assign_id: "507f1f77bcf86cd799439012"
+ *                     topic_id: "507f1f77bcf86cd799439013"
+ *                     content_id: "507f1f77bcf86cd799439014"
+ *                     status: "reviewed"
+ *                     content:
+ *                       _id: "507f1f77bcf86cd799439014"
+ *                       title: "Introduction to Algebra"
+ *                       pages: []
+ *               quizExample:
+ *                 summary: Quiz material with questions
+ *                 value:
+ *                   success: true
+ *                   data:
+ *                     _id: "507f1f77bcf86cd799439015"
+ *                     title: "Algebra Quiz 1"
+ *                     type: "quiz"
+ *                     order_num: 2
+ *                     class_assign_id: "507f1f77bcf86cd799439012"
+ *                     content_id: "507f1f77bcf86cd799439016"
+ *                     status: "published"
+ *                     content:
+ *                       _id: "507f1f77bcf86cd799439016"
+ *                       title: "Algebra Quiz 1"
+ *                       questions: []
+ *               fileExample:
+ *                 summary: File material with file entity
+ *                 value:
+ *                   success: true
+ *                   data:
+ *                     _id: "507f1f77bcf86cd799439017"
+ *                     title: "Algebra Reference PDF"
+ *                     type: "file"
+ *                     order_num: 3
+ *                     class_assign_id: "507f1f77bcf86cd799439012"
+ *                     content_id: "507f1f77bcf86cd799439018"
+ *                     status: "reviewed"
+ *                     content:
+ *                       _id: "507f1f77bcf86cd799439018"
+ *                       filename: "algebra_reference.pdf"
+ *                       url: "https://example.com/files/algebra_reference.pdf"
  *       404:
  *         description: Class material not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: "Class material not found"
  *         content:
  *           application/json:
  *             schema:
