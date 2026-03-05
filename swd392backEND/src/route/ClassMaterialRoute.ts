@@ -46,12 +46,12 @@ router.patch("/class-materials/reorder", verifyRole.verifyTeacher, ClassMaterial
 router.patch("/class-materials/:id/toggle-ai", verifyRole.verifyTeacher, ClassMaterialController.toggleAiMaterial);
 
 
-//do it later
-// Student: flag a reviewed material for re-moderation
-router.patch("/class-materials/:id/flag", verifyRole.verifyStudent, ClassMaterialController.flagMaterial);
+// //do it later
+// // Student: flag a reviewed material for re-moderation
+// router.patch("/class-materials/:id/flag", verifyRole.verifyStudent, ClassMaterialController.flagMaterial);
 
-// Moderator: change status / verify after student flag
-router.patch("/class-materials/:id/status", verifyRole.verifyModerator, ClassMaterialController.changeStatus);
-router.patch("/class-materials/:id/verify", verifyRole.verifyModerator, ClassMaterialController.verifyAfterFlag);
+// // Moderator: change status / verify after student flag
+// router.patch("/class-materials/:id/status", verifyRole.verifyModerator, ClassMaterialController.changeStatus);
+// router.patch("/class-materials/:id/verify", verifyRole.verifyModerator, ClassMaterialController.verifyAfterFlag);
 
 export default router;

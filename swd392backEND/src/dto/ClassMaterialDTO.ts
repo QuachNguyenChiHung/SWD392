@@ -28,8 +28,9 @@ const createClassMaterialSchema = z.object({
     title: z.string().max(255),
     content_id: z.string().optional(),
     is_ai_material: z.boolean().optional(),
-
     ai_content_id: z.string().optional(),
+    isFlagged: z.boolean().optional(),
+    isFlaggable: z.boolean().optional(),
 });
 
 const updateClassMaterialSchema = z.object({

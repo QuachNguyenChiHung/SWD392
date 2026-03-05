@@ -13,18 +13,18 @@ import z from "zod";
 const createQuizSchema = z.object({
     title: z.string().max(255),
     type: z.string().max(50),
-    available_date: z.date().optional(),
-    max_attempt_number: z.number().int().positive().optional(),
-    end_date: z.date().optional(),
+    available_date: z.coerce.date().optional(),
+    max_attempt_number: z.number().int().min(1).optional(),
+    end_date: z.coerce.date().optional(),
     status: z.boolean().optional(),
 });
 
 const updateQuizSchema = z.object({
     title: z.string().max(255).optional(),
     type: z.string().max(50).optional(),
-    available_date: z.date().optional(),
-    max_attempt_number: z.number().int().positive().optional(),
-    end_date: z.date().optional(),
+    available_date: z.coerce.date().optional(),
+    max_attempt_number: z.number().int().min(1).optional(),
+    end_date: z.coerce.date().optional(),
     status: z.boolean().optional(),
 });
 

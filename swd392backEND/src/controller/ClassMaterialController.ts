@@ -6,6 +6,13 @@ import {
     reorderMaterialsSchema,
     toggleAiMaterialSchema,
 } from "../dto/ClassMaterialDTO.ts";
+import type { IQuiz } from "../interface/IQuiz";
+import FileService from "../services/FileService.ts";
+import QuizService from "../services/QuizService.ts";
+import SlideService from "../services/SlideService.ts";
+import type { CreateFileDTO } from "../dto/FileDTO.ts";
+import type { CreateSlideDTO } from "../dto/SlideDTO.ts";
+import type { CreateQuizDTO } from "../dto/QuizDTO.ts";
 
 class ClassMaterialController {
     async getPendingMaterials(req: Request, res: Response, next: NextFunction) {
@@ -71,7 +78,29 @@ class ClassMaterialController {
     async getMaterialById(req: Request, res: Response, next: NextFunction) {
         try {
             const { id } = req.params;
-            const result = await ClassMaterialService.getClassMaterialWithContent(id as string);
+            const result = await ClassMaterialService.getClassMaterialById(id as string);
+
+            let material: any = null;
+
+            switch (result.type) {
+                case "file":
+                    material = FileService.getFileById(result.file_id);
+                    break;
+                case "quiz":
+                    material = QuizService.getQuizById(result.quiz_id);
+                    break;
+                case "slide":
+                    material = SlideService.getSlideById(result.slide_id);
+                    break;
+                // case result.type === "2d_render":
+                //     material = TwoDRenderService.getTwoDRenderById(result.render_id);
+                // break;
+            }
+
+            if (!material) {
+                return res.status(404).json({ message: "Material content not found" });
+            }
+
             if ((result as any)?.error) {
                 return res.status(404).json({ message: (result as any).error });
             }
@@ -84,8 +113,38 @@ class ClassMaterialController {
     // POST /api/class-materials
     async createMaterial(req: Request, res: Response, next: NextFunction) {
         try {
-            const materialData = createClassMaterialSchema.parse(req.body);
-            const result = await ClassMaterialService.createClassMaterial(materialData);
+
+            const { materialData, content_id } = req.body;
+            const parsedMaterialData = createClassMaterialSchema.parse(materialData);
+
+            let material: any = null;
+
+            switch (parsedMaterialData.type) {
+                case "file":
+                    material = await FileService.getFileById(content_id as string);
+                    break;
+                case "quiz":
+                    material = await QuizService.getQuizById(content_id as string);
+                    break;
+                case "slide":
+                    material = await SlideService.getSlideById(content_id as string);
+                    break;
+                // case "2d_render":
+                //     material = await TwoDRenderService.getTwoDRenderById(content_id as string);
+                //     break;
+            }
+
+            if (!material) {
+                return res.status(400).json({ message: "Failed to create material content" });
+            }
+
+            // Include content_id in the material data
+            const dataToCreate = {
+                ...parsedMaterialData,
+                content_id: content_id,
+            };
+
+            const result = await ClassMaterialService.createClassMaterial(dataToCreate);
             return res.status(201).json(result);
         } catch (error) {
             next(error);
@@ -108,6 +167,7 @@ class ClassMaterialController {
     async deleteMaterial(req: Request, res: Response, next: NextFunction) {
         try {
             const { id } = req.params;
+
             const result = await ClassMaterialService.deleteClassMaterial(id as string);
             return res.status(200).json({ message: "Class material deleted successfully", data: result });
         } catch (error) {
@@ -155,51 +215,51 @@ class ClassMaterialController {
         }
     }
 
-    // PATCH /api/class-materials/:id/flag
-    async flagMaterial(req: Request, res: Response, next: NextFunction) {
-        try {
-            const { id } = req.params;
-            const result = await ClassMaterialService.flagMaterial(id as string);
-            if ((result as any)?.error) {
-                return res.status(400).json({ message: (result as any).error });
-            }
-            return res.status(200).json(result);
-        } catch (error) {
-            next(error);
-        }
-    }
+    // // PATCH /api/class-materials/:id/flag
+    // async flagMaterial(req: Request, res: Response, next: NextFunction) {
+    //     try {
+    //         const { id } = req.params;
+    //         const result = await ClassMaterialService.flagMaterial(id as string);
+    //         if ((result as any)?.error) {
+    //             return res.status(400).json({ message: (result as any).error });
+    //         }
+    //         return res.status(200).json(result);
+    //     } catch (error) {
+    //         next(error);
+    //     }
+    // }
 
-    // PATCH /api/class-materials/:id/status
-    async changeStatus(req: Request, res: Response, next: NextFunction) {
-        try {
-            const { id } = req.params;
-            const { status } = req.body;
-            if (!status) {
-                return res.status(400).json({ message: "status is required" });
-            }
-            const result = await ClassMaterialService.toggleClassMaterialStatus(id as string, status);
-            if ((result as any)?.error) {
-                return res.status(400).json({ message: (result as any).error });
-            }
-            return res.status(200).json(result);
-        } catch (error) {
-            next(error);
-        }
-    }
+    // // PATCH /api/class-materials/:id/status
+    // async changeStatus(req: Request, res: Response, next: NextFunction) {
+    //     try {
+    //         const { id } = req.params;
+    //         const { status } = req.body;
+    //         if (!status) {
+    //             return res.status(400).json({ message: "status is required" });
+    //         }
+    //         const result = await ClassMaterialService.toggleClassMaterialStatus(id as string, status);
+    //         if ((result as any)?.error) {
+    //             return res.status(400).json({ message: (result as any).error });
+    //         }
+    //         return res.status(200).json(result);
+    //     } catch (error) {
+    //         next(error);
+    //     }
+    // }
 
-    // PATCH /api/class-materials/:id/verify
-    async verifyAfterFlag(req: Request, res: Response, next: NextFunction) {
-        try {
-            const { id } = req.params;
-            const result = await ClassMaterialService.verifyAfterFlag(id as string);
-            if ((result as any)?.error) {
-                return res.status(400).json({ message: (result as any).error });
-            }
-            return res.status(200).json(result);
-        } catch (error) {
-            next(error);
-        }
-    }
+    // // PATCH /api/class-materials/:id/verify
+    // async verifyAfterFlag(req: Request, res: Response, next: NextFunction) {
+    //     try {
+    //         const { id } = req.params;
+    //         const result = await ClassMaterialService.verifyAfterFlag(id as string);
+    //         if ((result as any)?.error) {
+    //             return res.status(400).json({ message: (result as any).error });
+    //         }
+    //         return res.status(200).json(result);
+    //     } catch (error) {
+    //         next(error);
+    //     }
+    // }
 }
 
 export default new ClassMaterialController();
