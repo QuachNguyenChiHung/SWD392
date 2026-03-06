@@ -1,9 +1,6 @@
 import { apiService } from '../api';
 import type { Class, CreateClassData, UpdateClassData } from '../../types/teacherType';
 
-// Get the API base URL
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
-
 // API functions for teacher class management
 export const teacherClassApi = {
     // Get all classes for the authenticated teacher
@@ -78,18 +75,8 @@ export const teacherClassApi = {
             const formData = new FormData();
             formData.append('image', imageFile);
 
-            // Use fetch directly for file upload since apiService doesn't handle FormData well
-            const response = await fetch(`${API_BASE_URL}/teacher/upload-image`, {
-                method: 'POST',
-                body: formData,
-                credentials: 'include',
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
-
-            return await response.json();
+            const response = await apiService.uploadFile('/teacher/upload-image', formData);
+            return response;
         } catch (error) {
             console.error('Error uploading image cover:', error);
             throw error;
@@ -103,18 +90,12 @@ export const teacherClassApi = {
             formData.append('image', imageFile);
             formData.append('imageId', imageId);
 
-            // Use fetch directly for file upload since apiService doesn't handle FormData well
-            const response = await fetch(`${API_BASE_URL}/teacher/update-image`, {
-                method: 'PUT',
-                body: formData,
-                credentials: 'include',
+            const response = await apiService.put('/teacher/update-image', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
             });
-
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
-
-            return await response.json();
+            return response;
         } catch (error) {
             console.error('Error updating image cover:', error);
             throw error;
@@ -124,21 +105,10 @@ export const teacherClassApi = {
     // Delete image cover
     deleteImageCover: async (imageId: string) => {
         try {
-            // Use fetch directly to send imageId in request body for DELETE
-            const response = await fetch(`${API_BASE_URL}/teacher/delete-image`, {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ imageId }),
-                credentials: 'include',
+            const response = await apiService.delete('/teacher/delete-image', {
+                data: { imageId },
             });
-
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
-
-            return await response.json();
+            return response;
         } catch (error) {
             console.error('Error deleting image cover:', error);
             throw error;

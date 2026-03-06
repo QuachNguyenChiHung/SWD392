@@ -48,6 +48,10 @@ interface MaterialTypeViewerProps {
 const isImageExtension = (path: string) =>
   /\.(gif|png|jpg|jpeg|webp|svg)$/i.test(path);
 
+const isPdfExtension = (path: string) => /\.pdf$/i.test(path);
+
+const isPptxExtension = (path: string) => /\.(ppt|pptx)$/i.test(path);
+
 // ─── QuizViewer sub-component (owns modal state, needs useState) ──────────────
 
 interface QuizViewerProps {
@@ -83,10 +87,10 @@ function QuizViewer({ content, onQuestionsChange }: QuizViewerProps) {
   const formatDate = (d: Date | null) =>
     d
       ? new Date(d).toLocaleDateString("en-GB", {
-          day: "2-digit",
-          month: "short",
-          year: "numeric",
-        })
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      })
       : "\u2014";
 
   const TYPE_LABEL: Record<Question["type"], string> = {
@@ -391,12 +395,186 @@ function QuizViewer({ content, onQuestionsChange }: QuizViewerProps) {
   );
 }
 
+// ─── SlideViewer sub-component ─────────────────────────────────────────────
+
+interface SlideViewerProps {
+  content: SlideMaterial;
+}
+
+function SlideViewer({ content }: SlideViewerProps) {
+  const isPdf = isPdfExtension(content.file_path);
+  const isPptx = isPptxExtension(content.file_path);
+  // Treat PPTX as PDF for viewing purposes
+  const canPreview = isPdf || isPptx;
+
+  return (
+    <Box>
+      <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+        Bộ slide: <strong>{content.slide_name}</strong>
+      </Typography>
+
+      {isPptx && (
+        <Typography variant="caption" color="info.main" sx={{ display: 'block', mb: 1 }}>
+          Tệp PowerPoint đang được hiển thị dưới dạng PDF
+        </Typography>
+      )}
+
+      {/* PDF & PPTX Viewer using Google Docs Viewer (PPTX treated as PDF) */}
+      {canPreview && (
+        <Box>
+          <Box
+            component="iframe"
+            src={`https://docs.google.com/gview?url=${encodeURIComponent(content.file_path)}&embedded=true`}
+            title={content.slide_name}
+            sx={{
+              width: "100%",
+              height: 600,
+              border: "1px solid",
+              borderColor: "divider",
+              borderRadius: 2,
+              mt: 1,
+            }}
+          />
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+            {isPdf ? 'Nếu PDF không hiển thị, vui lòng tải về để xem' : 'Nếu slide không hiển thị, vui lòng tải về để xem'}
+          </Typography>
+        </Box>
+      )}
+
+      {/* Fallback for other formats */}
+      {!canPreview && (
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 2, textAlign: 'center' }}>
+          Không thể xem trước định dạng này. Vui lòng tải về để xem.
+        </Typography>
+      )}
+
+      <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
+        <Button
+          variant="outlined"
+          startIcon={<Download />}
+          href={content.file_path}
+          download={content.slide_name}
+        >
+          Tải slide về
+        </Button>
+        <Button
+          variant="outlined"
+          startIcon={<OpenInNew />}
+          href={content.file_path}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Mở tab mới
+        </Button>
+      </Stack>
+    </Box>
+  );
+}
+
+// ─── FileViewer sub-component ──────────────────────────────────────────────
+
+interface FileViewerProps {
+  content: FileMaterial;
+}
+
+function FileViewer({ content }: FileViewerProps) {
+  const isPdf = isPdfExtension(content.file_path);
+  const isPptx = isPptxExtension(content.file_path);
+  const isImage = isImageExtension(content.file_path);
+  // Treat PPTX as PDF for viewing purposes
+  const canShowAsPdf = isPdf || isPptx;
+
+  return (
+    <Box>
+      <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+        Tên tệp: <strong>{content.file_name}</strong>
+      </Typography>
+
+      {isPptx && (
+        <Typography variant="caption" color="info.main" sx={{ display: 'block', mb: 1 }}>
+          Tệp PowerPoint đang được hiển thị dưới dạng PDF
+        </Typography>
+      )}
+
+      {/* Image Viewer */}
+      {isImage && (
+        <Box
+          component="img"
+          src={content.file_path}
+          alt={content.file_name}
+          sx={{
+            maxWidth: "100%",
+            maxHeight: 420,
+            borderRadius: 2,
+            border: "1px solid",
+            borderColor: "divider",
+            objectFit: "contain",
+            display: "block",
+            mt: 1,
+          }}
+          onError={(e) => {
+            (e.target as HTMLImageElement).style.display = "none";
+            const errorMsg = document.createElement("div");
+            errorMsg.textContent = "Không thể tải hình ảnh";
+            errorMsg.style.color = "red";
+            errorMsg.style.textAlign = "center";
+            errorMsg.style.padding = "20px";
+            (e.target as HTMLImageElement).parentNode?.appendChild(errorMsg);
+          }}
+        />
+      )}
+
+      {/* PDF & PPTX Viewer using Google Docs Viewer (PPTX treated as PDF) */}
+      {canShowAsPdf && (
+        <Box>
+          <Box
+            component="iframe"
+            src={`https://docs.google.com/gview?url=${encodeURIComponent(content.file_path)}&embedded=true`}
+            title={content.file_name}
+            sx={{
+              width: "100%",
+              height: 600,
+              border: "1px solid",
+              borderColor: "divider",
+              borderRadius: 2,
+              mt: 1,
+            }}
+          />
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+            {isPdf ? 'Nếu PDF không hiển thị, vui lòng tải về để xem' : 'Nếu không hiển thị, vui lòng tải về để xem'}
+          </Typography>
+        </Box>
+      )}
+
+      {/* Fallback for other file types */}
+      {!isImage && !canShowAsPdf && (
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+          Không thể xem trước loại tệp này. Vui lòng tải về để xem.
+        </Typography>
+      )}
+
+      <Button
+        variant="outlined"
+        startIcon={<Download />}
+        href={content.file_path}
+        download={content.file_name}
+        sx={{ mt: 2 }}
+      >
+        Tải tệp về
+      </Button>
+    </Box>
+  );
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function MaterialTypeViewer({
   material,
   onQuestionsChange,
 }: MaterialTypeViewerProps) {
+  // Log material data for debugging
+  console.log("MaterialTypeViewer rendering with material:", material);
+
   // Early validation checks
   if (!material) {
     return (
@@ -443,56 +621,7 @@ export default function MaterialTypeViewer({
         );
       }
 
-      return (
-        <Box>
-          <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-            Tên tệp: <strong>{content.file_name}</strong>
-          </Typography>
-
-          {isImageExtension(content.file_path) ? (
-            <Box
-              component="img"
-              src={content.file_path}
-              alt={content.file_name}
-              sx={{
-                maxWidth: "100%",
-                maxHeight: 420,
-                borderRadius: 2,
-                border: "1px solid",
-                borderColor: "divider",
-                objectFit: "contain",
-                display: "block",
-                mt: 1,
-              }}
-              onError={(e) => {
-                (e.target as HTMLImageElement).style.display = "none";
-                const errorMsg = document.createElement("div");
-                errorMsg.textContent = "Không thể tải hình ảnh";
-                errorMsg.style.color = "red";
-                errorMsg.style.textAlign = "center";
-                errorMsg.style.padding = "20px";
-                (e.target as HTMLImageElement).parentNode?.appendChild(
-                  errorMsg,
-                );
-              }}
-            />
-          ) : (
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-              Không thể xem trước loại tệp này.
-            </Typography>
-          )}
-
-          <Button
-            variant="outlined"
-            startIcon={<Download />}
-            href={content.file_path}
-            download={content.file_name}
-            sx={{ mt: 2 }}
-          >
-            Tải tệp về
-          </Button>
-        </Box>
-      );
+      return <FileViewer content={content} />;
     }
 
     // ── SLIDE ─────────────────────────────────────────────────────────────────
@@ -509,50 +638,7 @@ export default function MaterialTypeViewer({
         );
       }
 
-      return (
-        <Box>
-          <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-            Bộ slide: <strong>{content.slide_name}</strong>
-          </Typography>
-
-          {/* Embed via Google Docs viewer for .pptx; falls back gracefully */}
-          <Box
-            component="iframe"
-            src={`https://docs.google.com/gview?url=${window.location.origin}${content.file_path}&embedded=true`}
-            title={content.slide_name}
-            sx={{
-              width: "100%",
-              height: 420,
-              border: "1px solid",
-              borderColor: "divider",
-              borderRadius: 2,
-              mt: 1,
-            }}
-            onError={() => {
-              console.error("Failed to load slide preview");
-            }}
-          />
-
-          <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
-            <Button
-              variant="outlined"
-              startIcon={<Download />}
-              href={content.file_path}
-              download={`${content.slide_name}.pptx`}
-            >
-              Tải slide về
-            </Button>
-            <Button
-              variant="outlined"
-              startIcon={<OpenInNew />}
-              href={content.file_path}
-              target="_blank"
-            >
-              Mở tab mới
-            </Button>
-          </Stack>
-        </Box>
-      );
+      return <SlideViewer content={content} />;
     }
 
     // ── 2D RENDER ─────────────────────────────────────────────────────────────

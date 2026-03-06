@@ -1,87 +1,103 @@
 // Base API configuration
+import axios, { type AxiosInstance, type AxiosRequestConfig, type AxiosError } from 'axios';
+
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
 class ApiService {
-    private baseUrl: string;
+    private axiosInstance: AxiosInstance;
 
     constructor(baseUrl: string) {
-        this.baseUrl = baseUrl;
-    }
+        this.axiosInstance = axios.create({
+            baseURL: baseUrl,
+            withCredentials: true, // Include cookies for session management
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
 
-    // Helper method to get auth headers
-    private getAuthHeaders(): Record<string, string> {
-        const token = localStorage.getItem('token');
-        return {
-            'Content-Type': 'application/json',
-            ...(token && { Authorization: `Bearer ${token}` }),
-        };
-    }
-
-    // Generic HTTP methods
-    private async request(
-        endpoint: string,
-        options: RequestInit = {}
-    ): Promise<any> {
-        const url = `${this.baseUrl}${endpoint}`;
-        const config: RequestInit = {
-            headers: this.getAuthHeaders(),
-            credentials: 'include', // Include cookies for session management
-            ...options,
-        };
-
-        try {
-            console.log(`API Request: ${options.method || 'GET'} ${url}`);
-            const response = await fetch(url, config);
-
-            // Handle different response types
-            let data;
-            const contentType = response.headers.get('content-type');
-            if (contentType && contentType.includes('application/json')) {
-                data = await response.json();
-            } else {
-                data = { message: await response.text() };
+        // Request interceptor to add auth token
+        this.axiosInstance.interceptors.request.use(
+            (config) => {
+                const token = localStorage.getItem('token');
+                if (token) {
+                    config.headers.Authorization = `Bearer ${token}`;
+                }
+                console.log(`API Request: ${config.method?.toUpperCase()} ${config.baseURL}${config.url}`);
+                return config;
+            },
+            (error) => {
+                console.error('Request interceptor error:', error);
+                return Promise.reject(error);
             }
+        );
 
-            if (!response.ok) {
-                throw new Error(data.message || `HTTP ${response.status}: ${response.statusText}`);
+        // Response interceptor for error handling
+        this.axiosInstance.interceptors.response.use(
+            (response) => {
+                console.log('API Response:', response.data);
+                return response;
+            },
+            (error: AxiosError) => {
+                console.error('API request error:', error.response?.data || error.message);
+                const message = (error.response?.data as any)?.message || error.message;
+                throw new Error(message);
             }
-
-            console.log('API Response:', data);
-            return data;
-        } catch (error) {
-            console.error('API request error:', error);
-            throw error;
-        }
+        );
     }
 
     // HTTP methods
-    async get(endpoint: string) {
-        return this.request(endpoint, { method: 'GET' });
+    async get(endpoint: string, config?: AxiosRequestConfig) {
+        const response = await this.axiosInstance.get(endpoint, config);
+        return response.data;
     }
 
-    async post(endpoint: string, body: any) {
-        return this.request(endpoint, {
-            method: 'POST',
-            body: JSON.stringify(body),
+    async post(endpoint: string, body?: any, config?: AxiosRequestConfig) {
+        const response = await this.axiosInstance.post(endpoint, body, config);
+        return response.data;
+    }
+
+    async put(endpoint: string, body?: any, config?: AxiosRequestConfig) {
+        const response = await this.axiosInstance.put(endpoint, body, config);
+        return response.data;
+    }
+
+    async patch(endpoint: string, body?: any, config?: AxiosRequestConfig) {
+        const response = await this.axiosInstance.patch(endpoint, body, config);
+        return response.data;
+    }
+
+    async delete(endpoint: string, config?: AxiosRequestConfig) {
+        const response = await this.axiosInstance.delete(endpoint, config);
+        return response.data;
+    }
+
+    // Helper method for file uploads with FormData
+    async uploadFile(endpoint: string, formData: FormData, config?: AxiosRequestConfig) {
+        const response = await this.axiosInstance.post(endpoint, formData, {
+            ...config,
+            headers: {
+                'Content-Type': 'multipart/form-data',
+                ...config?.headers,
+            },
         });
+        return response.data;
     }
 
-    async put(endpoint: string, body: any) {
-        return this.request(endpoint, {
-            method: 'PUT',
-            body: JSON.stringify(body),
+    // Helper method for file updates with FormData (PUT request)
+    async updateFileUpload(endpoint: string, formData: FormData, config?: AxiosRequestConfig) {
+        const response = await this.axiosInstance.put(endpoint, formData, {
+            ...config,
+            headers: {
+                'Content-Type': 'multipart/form-data',
+                ...config?.headers,
+            },
         });
+        return response.data;
     }
 
-    async patch(endpoint: string, body: any) {
-        return this.request(endpoint, {
-            method: 'PATCH',
-            body: JSON.stringify(body),
-        });
-    }
-
-    async delete(endpoint: string) {
-        return this.request(endpoint, { method: 'DELETE' });
+    // Get the axios instance for advanced usage
+    getAxiosInstance(): AxiosInstance {
+        return this.axiosInstance;
     }
 }
 

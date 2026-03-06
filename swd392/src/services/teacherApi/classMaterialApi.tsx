@@ -5,38 +5,38 @@ const classMaterialApi = {
     // Public / authenticated reads (student + teacher)
     getMaterialsByClass: async (classId: string, page: number = 1) => {
         const response = await apiService.get(`/class-materials?class_id=${classId}&page=${page}`);
-        return response.data || response;
+        return response;
     },
 
     getAllMaterials: async (page: number = 1) => {
         const response = await apiService.get(`/class-materials/all?page=${page}`);
-        return response.data || response;
+        return response;
     },
 
     getMaterialCount: async (classId: string) => {
         const response = await apiService.get(`/class-materials/count?class_id=${classId}`);
-        return response.data || response;
+        return response;
     },
 
     getMaterialsByTopic: async (topicId: string) => {
         const response = await apiService.get(`/class-materials/topic/${topicId}`);
-        return response.data || response;
+        return response;
     },
 
     getMaterialByTopicAndClass: async (topicId: string, classId: string) => {
         const response = await apiService.get(`/class-materials/topic/${topicId}/class/${classId}`);
-        return response.data || response;
+        return response;
     },
 
     getMaterialById: async (id: string) => {
         const response = await apiService.get(`/class-materials/${id}`);
-        return response.data || response;
+        return response;
     },
 
     // Moderator queue: published materials awaiting review
     getPendingMaterials: async () => {
         const response = await apiService.get('/class-materials/moderator/pending');
-        return response.data || response;
+        return response;
     },
 
     // Teacher-only writes
@@ -46,17 +46,17 @@ const classMaterialApi = {
             content_id: contentId
         };
         const response = await apiService.post('/class-materials', payload);
-        return response.data || response;
+        return response;
     },
 
     updateMaterial: async (id: string, updateData: UpdateClassMaterialDTO) => {
         const response = await apiService.put(`/class-materials/${id}`, updateData);
-        return response.data || response;
+        return response;
     },
 
     deleteMaterial: async (id: string) => {
         const response = await apiService.delete(`/class-materials/${id}`);
-        return response.data || response;
+        return response;
     },
 
     reorderMaterials: async (classId: string, materialIds: string[]) => {
@@ -65,7 +65,7 @@ const classMaterialApi = {
             material_ids: materialIds
         };
         const response = await apiService.patch('/class-materials/reorder', payload);
-        return response.data || response;
+        return response;
     },
 
     toggleAiMaterial: async (id: string, aiContentId?: string) => {
@@ -73,7 +73,7 @@ const classMaterialApi = {
             ai_content_id: aiContentId
         };
         const response = await apiService.patch(`/class-materials/${id}/toggle-ai`, payload);
-        return response.data || response;
+        return response;
     },
 
     // Additional utility methods

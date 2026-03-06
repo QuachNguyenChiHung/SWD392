@@ -6,17 +6,25 @@ interface FileUploadFormProps {
     materialType: ClassMaterialType;
     selectedFile: File | null;
     onFileChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+    isEditMode?: boolean;
 }
 
 export default function FileUploadForm({
     materialType,
     selectedFile,
-    onFileChange
+    onFileChange,
+    isEditMode = false
 }: FileUploadFormProps) {
     return (
         <Box sx={{ mt: 2 }}>
             <Typography variant="subtitle2" gutterBottom>
-                Tải lên {materialType === "file" ? "tệp tin" : "slide"}
+                {isEditMode ? `Thay thế ${materialType === "file" ? "tệp tin" : "slide"}` : `Tải lên ${materialType === "file" ? "tệp tin" : "slide"}`}
+            </Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                {isEditMode
+                    ? "Chọn tệp mới để thay thế (hoặc bỏ qua để giữ tệp hiện tại). Kích thước tối đa: 10MB"
+                    : "Kích thước tối đa: 10MB"
+                }
             </Typography>
             <Button
                 variant="outlined"
@@ -34,7 +42,7 @@ export default function FileUploadForm({
             </Button>
             {selectedFile && (
                 <Typography variant="body2" color="text.secondary">
-                    Đã chọn: {selectedFile.name}
+                    Đã chọn: {selectedFile.name} ({(selectedFile.size / 1024 / 1024).toFixed(2)} MB)
                 </Typography>
             )}
         </Box>

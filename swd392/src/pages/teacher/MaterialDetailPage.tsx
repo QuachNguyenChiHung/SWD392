@@ -200,11 +200,18 @@ export default function MaterialDetailPage() {
         try {
             if (!materialId) return;
 
+            // Extract content_id from the updated content
+            let contentId: string | undefined;
+            if (updated.content && typeof updated.content === 'object' && '_id' in updated.content) {
+                contentId = (updated.content as any)._id;
+            }
+
             await classMaterialApi.updateMaterial(materialId, {
                 title: updated.title,
                 type: updated.type,
                 order_num: updated.order_num,
-                // Add other fields as needed
+                is_ai_material: updated.is_ai_material,
+                content_id: contentId, // Pass the updated content_id
             });
 
             setMaterial(updated);
@@ -233,7 +240,6 @@ export default function MaterialDetailPage() {
 
             // Persist changes to backend
             await classMaterialApi.updateMaterial(materialId, {
-                dateUpdate: new Date(),
                 // Note: You may need to add a specific API for updating quiz content
                 // For now, this updates the general material data
             });

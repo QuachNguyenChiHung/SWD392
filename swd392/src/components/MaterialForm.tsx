@@ -211,40 +211,47 @@ export default function MaterialForm({
         {/* File Upload for File and Slide types */}
         {(formData.materialType === "file" ||
           formData.materialType === "slide") && (
-          <>
-            {mode === "create" ? (
-              <FileUploadForm
-                materialType={formData.materialType}
-                selectedFile={formData.selectedFile}
-                onFileChange={handleFileChange}
-              />
-            ) : (
-              <>
-                {/* Edit mode: Show current file name field */}
-                {formData.materialType === "file" && (
-                  <TextField
-                    label="Tên tệp"
-                    value={formData.fileName}
-                    onChange={(e) =>
-                      updateFormData({ fileName: e.target.value })
-                    }
-                    fullWidth
+            <>
+              {mode === "create" ? (
+                <FileUploadForm
+                  materialType={formData.materialType}
+                  selectedFile={formData.selectedFile}
+                  onFileChange={handleFileChange}
+                />
+              ) : (
+                <>
+                  {/* Edit mode: Show current file name field and allow file replacement */}
+                  {formData.materialType === "file" && (
+                    <TextField
+                      label="Tên tệp"
+                      value={formData.fileName}
+                      onChange={(e) =>
+                        updateFormData({ fileName: e.target.value })
+                      }
+                      fullWidth
+                    />
+                  )}
+                  {formData.materialType === "slide" && (
+                    <TextField
+                      label="Tên slide"
+                      value={formData.slideName}
+                      onChange={(e) =>
+                        updateFormData({ slideName: e.target.value })
+                      }
+                      fullWidth
+                    />
+                  )}
+                  {/* Allow file replacement in edit mode */}
+                  <FileUploadForm
+                    materialType={formData.materialType}
+                    selectedFile={formData.selectedFile}
+                    onFileChange={handleFileChange}
+                    isEditMode={true}
                   />
-                )}
-                {formData.materialType === "slide" && (
-                  <TextField
-                    label="Tên slide"
-                    value={formData.slideName}
-                    onChange={(e) =>
-                      updateFormData({ slideName: e.target.value })
-                    }
-                    fullWidth
-                  />
-                )}
-              </>
-            )}
-          </>
-        )}
+                </>
+              )}
+            </>
+          )}
 
         {/* 2D Render */}
         {formData.materialType === "2d_render" && <Render2DForm />}
