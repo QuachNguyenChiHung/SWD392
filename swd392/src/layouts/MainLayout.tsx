@@ -28,6 +28,7 @@ import {
   Settings,
   Logout,
   Science,
+  AdminPanelSettings,
 } from '@mui/icons-material';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -82,6 +83,12 @@ const navItems: NavItem[] = [
     path: '/admin/users',
     roles: [UserRole.ADMIN],
   },
+  {
+    text: 'Quản lý hệ thống',
+    icon: <AdminPanelSettings />,
+    path: '/admin/system',
+    roles: [UserRole.ADMIN],
+  },
 ];
 
 const MainLayout = () => {
@@ -111,10 +118,14 @@ const MainLayout = () => {
   const handleNavigation = (path: string) => {
     // Special handling for role-specific dashboard redirects
     if (path === '/dashboard') {
-      if (user?.role === UserRole.TEACHER) {
+      if (user?.role === UserRole.ADMIN) {
+        navigate('/admin/dashboard');
+      } else if (user?.role === UserRole.TEACHER) {
         navigate('/teacher/dashboard');
       } else if (user?.role === UserRole.STUDENT) {
         navigate('/student/dashboard');
+      } else if (user?.role === UserRole.MODERATOR) {
+        navigate('/moderator/dashboard');
       } else {
         navigate(path);
       }

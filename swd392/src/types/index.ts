@@ -16,6 +16,43 @@ export interface User {
   name: string;
   role: UserRole;
   avatar?: string;
+  createdAt?: Date;
+  status?: 'active' | 'inactive' | 'suspended';
+}
+
+// Teacher Request interface
+export interface TeacherRequest {
+  id: string;
+  userId: string;
+  userName: string;
+  userEmail: string;
+  requestDate: Date;
+  status: 'pending' | 'approved' | 'rejected';
+  reason?: string;
+  reviewedBy?: string;
+  reviewedAt?: Date;
+}
+
+// System Stats interface for Admin Dashboard
+export interface SystemStats {
+  totalUsers: number;
+  totalClasses: number;
+  totalMaterials: number;
+  totalStudents: number;
+  totalTeachers: number;
+  totalModerators: number;
+  activeClasses: number;
+}
+
+// Activity Log interface
+export interface ActivityLog {
+  id: string;
+  userId: string;
+  userName: string;
+  action: string;
+  details: string;
+  timestamp: Date;
+  type: 'user' | 'class' | 'material' | 'system';
 }
 
 // Auth state interface

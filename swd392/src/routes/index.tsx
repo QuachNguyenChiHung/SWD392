@@ -29,6 +29,7 @@ import ModeratorDashboard from "../pages/moderator/ModeratorDashboard";
 // Admin Pages
 import AdminDashboard from "../pages/admin/AdminDashboard";
 import AdminUsers from "../pages/admin/AdminUsers";
+import AdminSystemManagement from "../pages/admin/AdminSystemManagement";
 
 // Protected Route Component
 import ProtectedRoute from "../components/ProtectedRoute";
@@ -64,13 +65,7 @@ export const routes: RouteObject[] = [
         path: "dashboard",
         element: (
           <ProtectedRoute
-            allowedRoles={[
-              UserRole.GUEST,
-              UserRole.STUDENT,
-              UserRole.TEACHER,
-              UserRole.MODERATOR,
-              UserRole.ADMIN,
-            ]}
+            allowedRoles={[UserRole.GUEST]}
           >
             <GuestDashboard />
           </ProtectedRoute>
@@ -187,6 +182,14 @@ export const routes: RouteObject[] = [
             element: (
               <ProtectedRoute allowedRoles={[UserRole.ADMIN]}>
                 <AdminUsers />
+              </ProtectedRoute>
+            ),
+          },
+          {
+            path: "system",
+            element: (
+              <ProtectedRoute allowedRoles={[UserRole.ADMIN]}>
+                <AdminSystemManagement />
               </ProtectedRoute>
             ),
           },
