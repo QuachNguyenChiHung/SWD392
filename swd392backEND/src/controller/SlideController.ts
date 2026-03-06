@@ -1,6 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
 import SlideService from "../services/SlideService.ts";
 import { createSlideSchema, updateSlideSchema } from "../dto/SlideDTO.ts";
+import { updateFile, uploadFile } from "../ultis/cloudinary.ts";
 
 class SlideController {
     async getAllSlides(req: Request, res: Response, next: NextFunction) {
@@ -27,7 +28,15 @@ class SlideController {
 
     async createSlide(req: Request, res: Response, next: NextFunction) {
         try {
-            const slideData = createSlideSchema.parse(req.body);
+            if (!req.file) {
+                return res.status(400).json({ message: "File is required" });
+            }
+            const fileLink = await uploadFile(req.file?.buffer, req.file?.originalname || 'file');
+            const body = {
+                slide_name: req.file?.originalname || 'file',
+                file_path: fileLink
+            }
+            const slideData = createSlideSchema.parse(body);
             const created = await SlideService.createSlide(slideData);
             return res.status(201).json(created);
         } catch (error) {
@@ -37,7 +46,20 @@ class SlideController {
 
     async updateSlide(req: Request, res: Response, next: NextFunction) {
         try {
-            const updateData = updateSlideSchema.parse(req.body);
+            if (!req.file) {
+                console.error('No file uploaded');
+                return res.status(400).json({ message: "File is required" });
+            }
+            const slideEntity = await SlideService.getSlideById(req.params.id as string);
+            if (!slideEntity) {
+                return res.status(404).json({ message: "Slide not found" });
+            }
+            const p = await updateFile(slideEntity.file_path, req.file?.buffer, req.file?.originalname || 'file');
+            const body = {
+                slide_name: req.file?.originalname || 'file',
+                file_path: p
+            }
+            const updateData = updateSlideSchema.parse(body);
             const updated = await SlideService.updateSlide(req.params.id as string, updateData);
             if (!updated) {
                 return res.status(404).json({ message: "Slide not found" });

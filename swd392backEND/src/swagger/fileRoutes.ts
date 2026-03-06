@@ -71,13 +71,28 @@
  *   post:
  *     tags:
  *       - Files
- *     summary: Create a file
- *     description: "[Teacher] Create a new file entry."
+ *     summary: Upload and create a file
+ *     description: |
+ *       [Teacher] Upload a file to Cloudinary and create a file entry.
+ *       Supports both file upload with metadata or JSON payload.
  *     security:
  *       - cookieAuth: []
  *     requestBody:
  *       required: true
  *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - file
+ *             properties:
+ *               file:
+ *                 type: string
+ *                 format: binary
+ *                 description: File to upload (PDF, images, documents, etc.)
+ *               file_name:
+ *                 type: string
+ *                 description: Optional custom name for the file (defaults to original filename)
  *         application/json:
  *           schema:
  *             $ref: '#/components/schemas/FileCreateInput'
@@ -88,6 +103,8 @@
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/File'
+ *       400:
+ *         description: File is required
  *       401:
  *         description: Unauthorized
  *       403:
@@ -121,7 +138,9 @@
  *     tags:
  *       - Files
  *     summary: Update a file
- *     description: "[Teacher] Update an existing file."
+ *     description: |
+ *       [Teacher] Update an existing file.
+ *       Supports both file upload (replaces the file) or JSON payload (updates metadata only).
  *     security:
  *       - cookieAuth: []
  *     parameters:
@@ -133,6 +152,17 @@
  *     requestBody:
  *       required: true
  *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               file:
+ *                 type: string
+ *                 format: binary
+ *                 description: New file to replace the existing one
+ *               file_name:
+ *                 type: string
+ *                 description: Optional custom name for the file
  *         application/json:
  *           schema:
  *             $ref: '#/components/schemas/FileUpdateInput'

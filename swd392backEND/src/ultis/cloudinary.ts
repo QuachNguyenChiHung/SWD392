@@ -24,7 +24,7 @@ const imageMulterUpload = multer({
 });
 const filesMulterUpload = multer({
     storage: multer.memoryStorage(),
-    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+    limits: { fileSize: 20 * 1024 * 1024 }, // 20MB limit
 });
 function getCloudinaryPublicId(url: string): string {
     const filename = url.split('/').pop();

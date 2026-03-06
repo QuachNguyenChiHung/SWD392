@@ -180,6 +180,10 @@
  *           type: string
  *           enum: [file, slide, 2d_render, quiz]
  *           description: Change the material type
+ *         status:
+ *           type: string
+ *           enum: [published, draft, reviewed, deleted]
+ *           description: Update the moderation status
  *         order_num:
  *           type: integer
  *           minimum: 1
@@ -188,15 +192,23 @@
  *           type: string
  *           maxLength: 255
  *           description: Update the material title
+ *         content_id:
+ *           type: string
+ *           description: Update the reference to the associated content document (file, slide, quiz, etc.)
  *         is_ai_material:
  *           type: boolean
  *           description: Update AI-generated flag
  *         ai_content_id:
  *           type: string
  *           description: Update AI content reference
- *         content_data:
- *           type: object
- *           description: Updated content payload for the material
+ *         isFlagged:
+ *           type: boolean
+ *           description: Update flagged status
+ *         isFlaggable:
+ *           type: boolean
+ *           description: Update whether the material can be flagged
+ *       description: |
+ *         Note: The `dateUpdate` field is automatically set by the backend on each update and should not be included in the request body.
  *     ReorderMaterialsInput:
  *       type: object
  *       required:
@@ -684,14 +696,6 @@
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: "Class material not found"
- *         content:
- *           application/json:
- *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *       500:
  *         description: Internal server error
@@ -703,7 +707,9 @@
  *     tags:
  *       - ClassMaterials
  *     summary: Update a class material
- *     description: "[Teacher] Update material metadata and/or its content."
+ *     description: |
+ *       [Teacher] Update material metadata and/or its content.
+ *       The `dateUpdate` timestamp is automatically set by the backend.
  *     security:
  *       - cookieAuth: []
  *     parameters:

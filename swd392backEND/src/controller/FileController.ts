@@ -1,6 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
 import FileService from "../services/FileService.ts";
 import { createFileSchema, updateFileSchema } from "../dto/FileDTO.ts";
+import { updateFile, uploadFile } from "../ultis/cloudinary.ts";
 
 class FileController {
     async getAllFiles(req: Request, res: Response, next: NextFunction) {
@@ -27,7 +28,17 @@ class FileController {
 
     async createFile(req: Request, res: Response, next: NextFunction) {
         try {
-            const fileData = createFileSchema.parse(req.body);
+            console.log('Received file upload request:', req.file);
+            // if (!req.file) {
+            //     console.error('No file uploaded');
+            //     return res.status(400).json({ message: "File is required" });
+            // }
+            const fileLink = await uploadFile(req.file?.buffer, req.file?.originalname || 'file');
+            const body = {
+                file_name: req.file?.originalname || 'file',
+                file_path: fileLink
+            }
+            const fileData = createFileSchema.parse(body);
             const created = await FileService.createFile(fileData);
             return res.status(201).json(created);
         } catch (error) {
@@ -37,7 +48,20 @@ class FileController {
 
     async updateFile(req: Request, res: Response, next: NextFunction) {
         try {
-            const updateData = updateFileSchema.parse(req.body);
+           if (!req.file) {
+                console.error('No file uploaded');
+                return res.status(400).json({ message: "File is required" });
+            }
+            const fileEntity = await FileService.getFileById(req.params.id as string);
+            if (!fileEntity) {
+                return res.status(404).json({ message: "File not found" });
+            }
+            const p = await updateFile(fileEntity.file_path, req.file?.buffer, req.file?.originalname || 'file');
+            const body = {
+                file_name: req.file?.originalname || 'file',
+                file_path: p
+            }
+            const updateData = updateFileSchema.parse(body);
             const updated = await FileService.updateFile(req.params.id as string, updateData);
             if (!updated) {
                 return res.status(404).json({ message: "File not found" });

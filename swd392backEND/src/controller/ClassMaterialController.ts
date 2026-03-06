@@ -136,7 +136,14 @@ class ClassMaterialController {
         try {
             const { id } = req.params;
             const updateData = updateClassMaterialSchema.parse(req.body);
-            const result = await ClassMaterialService.updateClassMaterial(id as string, updateData);
+
+            // Backend handles timestamp logic
+            const dataWithTimestamp = {
+                ...updateData,
+                dateUpdate: new Date(),
+            };
+
+            const result = await ClassMaterialService.updateClassMaterial(id as string, dataWithTimestamp);
             return res.status(200).json(result);
         } catch (error) {
             next(error);

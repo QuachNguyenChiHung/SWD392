@@ -68,19 +68,28 @@
  *               type: array
  *               items:
  *                 $ref: '#/components/schemas/Slide'
+ *       500:
+ *         description: Internal server error
  *   post:
  *     tags:
  *       - Slides
  *     summary: Create a slide
- *     description: "[Teacher] Create a new slide entry."
+ *     description: "[Teacher] Upload a slide file. The file will be uploaded to Cloudinary and a slide entry will be created."
  *     security:
  *       - cookieAuth: []
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
- *             $ref: '#/components/schemas/SlideCreateInput'
+ *             type: object
+ *             required:
+ *               - file
+ *             properties:
+ *               file:
+ *                 type: string
+ *                 format: binary
+ *                 description: Slide file to upload (PPT, PPTX, PDF, etc.)
  *     responses:
  *       201:
  *         description: Slide created successfully
@@ -88,6 +97,16 @@
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Slide'
+ *       400:
+ *         description: File is required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "File is required"
  *       401:
  *         description: Unauthorized
  *       403:
@@ -117,11 +136,23 @@
  *               $ref: '#/components/schemas/Slide'
  *       404:
  *         description: Slide not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Slide not found"
+ *       500:
+ *         description: Internal server error
  *   put:
  *     tags:
  *       - Slides
  *     summary: Update a slide
- *     description: "[Teacher] Update an existing slide."
+ *     description: |
+ *       [Teacher] Update an existing slide.
+ *       Supports both file upload (replaces the slide file) or JSON payload (updates metadata only).
  *     security:
  *       - cookieAuth: []
  *     parameters:
@@ -133,6 +164,17 @@
  *     requestBody:
  *       required: true
  *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               slide:
+ *                 type: string
+ *                 format: binary
+ *                 description: New slide file to replace the existing one (PPT, PPTX, PDF, etc.)
+ *               slide_name:
+ *                 type: string
+ *                 description: Optional custom name for the slide
  *         application/json:
  *           schema:
  *             $ref: '#/components/schemas/SlideUpdateInput'
@@ -143,12 +185,24 @@
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Slide'
- *       404:
- *         description: Slide not found
+ *       400:
+ *         description: Invalid input data
  *       401:
  *         description: Unauthorized
  *       403:
  *         description: Forbidden - Teacher role required
+ *       404:
+ *         description: Slide not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Slide not found"
+ *       500:
+ *         description: Internal server error
  *   delete:
  *     tags:
  *       - Slides
@@ -165,12 +219,30 @@
  *     responses:
  *       200:
  *         description: Slide deleted successfully
- *       404:
- *         description: Slide not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Slide deleted successfully"
  *       401:
  *         description: Unauthorized
  *       403:
  *         description: Forbidden - Teacher role required
+ *       404:
+ *         description: Slide not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Slide not found"
+ *       500:
+ *         description: Internal server error
  */
 
 /**
@@ -198,6 +270,24 @@
  *               $ref: '#/components/schemas/Slide'
  *       400:
  *         description: Path parameter is required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "path query parameter is required"
  *       404:
  *         description: Slide not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Slide not found"
+ *       500:
+ *         description: Internal server error
  */

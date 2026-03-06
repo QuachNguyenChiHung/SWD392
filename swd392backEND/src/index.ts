@@ -91,9 +91,9 @@ console.log(process.env.MONGO_URI);
             app.use('/api', FileRoute);
             // Error handler must be after routes
             app.use((err: any, req: Request, res: Response, next: NextFunction) => {
-                console.error(err.stack);
+                console.error(err);
                 try {
-                    res.status(500).json({ message: JSON.parse(err.message.message || { "message": 'Something broke!' }) });
+                    res.status(500).json({ message: JSON.parse(err.message.message || err.message || { "message": 'Something broke!' }) });
                 } catch (error) {
                     res.status(500).json({ "message": 'Something broke!' });
                 }
