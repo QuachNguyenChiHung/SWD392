@@ -156,7 +156,7 @@ export interface ClassCompletionStat {
 
 export interface Student {
   _id: string;
-  student_name: string;
+  username: string;
   email: string;
   enrolled_date: Date;
   status: "active" | "inactive";
