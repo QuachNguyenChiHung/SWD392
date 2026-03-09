@@ -6,32 +6,39 @@ import {
   Typography,
 } from "@mui/material";
 import { MoreVert } from "@mui/icons-material";
-import type { DueAssignment } from "../../types";
+
+export type QuizMaterial = {
+  _id: string;
+  title: string;
+  type: string;
+  dateCreate: string;
+  status: string;
+  class_assign_id: string;
+  content_id?: string;
+};
 
 type DueAssignmentRowProps = {
-  assignment: DueAssignment;
+  quiz: QuizMaterial;
   onClick?: () => void;
 };
 
-const formatDate = (value: Date | null) =>
-  value ? value.toLocaleDateString() : "TBD";
-
-const getQuizStatus = (assignment: DueAssignment) => {
-  const now = new Date();
-
-  if (assignment.end_date && now > assignment.end_date) {
-    return { label: "Late", color: "error" } as const;
+const getStatusChip = (status: string) => {
+  switch (status) {
+    case "published":
+      return { label: "Published", color: "success" } as const;
+    case "draft":
+      return { label: "Draft", color: "default" } as const;
+    case "reviewed":
+      return { label: "Reviewed", color: "info" } as const;
+    case "deleted":
+      return { label: "Deleted", color: "error" } as const;
+    default:
+      return { label: status, color: "default" } as const;
   }
-
-  if (assignment.available_date && now < assignment.available_date) {
-    return { label: "Due", color: "warning" } as const;
-  }
-
-  return { label: "Available", color: "success" } as const;
 };
 
-const DueAssignmentRow = ({ assignment, onClick }: DueAssignmentRowProps) => {
-  const status = getQuizStatus(assignment);
+const DueAssignmentRow = ({ quiz, onClick }: DueAssignmentRowProps) => {
+  const status = getStatusChip(quiz.status);
 
   return (
     <TableRow
@@ -45,14 +52,9 @@ const DueAssignmentRow = ({ assignment, onClick }: DueAssignmentRowProps) => {
       }}
     >
       <TableCell>
-        <Typography variant="subtitle2">{assignment.title}</Typography>
-        <Typography variant="caption" color="text.secondary">
-          {assignment.keyword ?? "No keyword"} · {assignment.type} ·{" "}
-          {assignment.max_attempt_number ?? "Unlimited"} attempts
-        </Typography>
+        <Typography variant="subtitle2">{quiz.title}</Typography>
       </TableCell>
-      <TableCell>{formatDate(assignment.available_date)}</TableCell>
-      <TableCell>{formatDate(assignment.end_date)}</TableCell>
+      <TableCell>{new Date(quiz.dateCreate).toLocaleDateString()}</TableCell>
       <TableCell>
         <Chip label={status.label} color={status.color} size="small" />
       </TableCell>
