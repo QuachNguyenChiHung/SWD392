@@ -572,8 +572,10 @@ export default function MaterialTypeViewer({
   material,
   onQuestionsChange,
 }: MaterialTypeViewerProps) {
-  // Log material data for debugging
-  console.log("MaterialTypeViewer rendering with material:", material);
+  // Log material data for debugging (dev only to avoid leaking data in production)
+  if (typeof process !== "undefined" && process.env.NODE_ENV !== "production") {
+    console.log("MaterialTypeViewer rendering with material:", material);
+  }
 
   // Early validation checks
   if (!material) {
