@@ -82,19 +82,19 @@ const classMaterialApi = {
         return materials.filter((material: any) => material.type === type);
     },
 
-    getFilesByClass: async (classId: string, page: number = 1) => {
+    getFilesByClass: async (classId: string) => {
         return await classMaterialApi.getMaterialsByType(classId, 'file');
     },
 
-    getSlidesByClass: async (classId: string, page: number = 1) => {
+    getSlidesByClass: async (classId: string) => {
         return await classMaterialApi.getMaterialsByType(classId, 'slide');
     },
 
-    getQuizzesByClass: async (classId: string, page: number = 1) => {
+    getQuizzesByClass: async (classId: string) => {
         return await classMaterialApi.getMaterialsByType(classId, 'quiz');
     },
 
-    get2DRendersByClass: async (classId: string, page: number = 1) => {
+    get2DRendersByClass: async (classId: string) => {
         return await classMaterialApi.getMaterialsByType(classId, '2d_render');
     }
 };
