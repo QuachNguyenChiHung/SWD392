@@ -146,9 +146,9 @@ export default function ClassMaterial({ topics, classId }: ClassMaterialProps) {
           </Stack>
 
           <Stack spacing={1}>
-            {materialsByTopic[getTopicId(topic)]?.map((material) => (
+            {materialsByTopic[getTopicId(topic)]?.map((material, materialIndex) => (
               <Box
-                key={material._id}
+                key={material._id ?? materialIndex}
                 sx={{
                   display: "flex",
                   justifyContent: "space-between",
