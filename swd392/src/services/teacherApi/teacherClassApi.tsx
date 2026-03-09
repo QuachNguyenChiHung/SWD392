@@ -90,11 +90,7 @@ export const teacherClassApi = {
             formData.append('image', imageFile);
             formData.append('imageId', imageId);
 
-            const response = await apiService.put('/teacher/update-image', formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                },
-            });
+            const response = await apiService.put('/teacher/update-image', formData);
             return response;
         } catch (error) {
             console.error('Error updating image cover:', error);
