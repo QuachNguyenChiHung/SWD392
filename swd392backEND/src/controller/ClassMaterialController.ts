@@ -17,7 +17,8 @@ import type { CreateQuizDTO } from "../dto/QuizDTO.ts";
 class ClassMaterialController {
     async getPendingMaterials(req: Request, res: Response, next: NextFunction) {
         try {
-            const materials = await ClassMaterialService.getPendingMaterials();
+            const page = parseInt(req.query.page as string) || 1;
+            const materials = await ClassMaterialService.getPendingMaterials(page);
             return res.status(200).json(materials);
         } catch (error) {
             next(error);
