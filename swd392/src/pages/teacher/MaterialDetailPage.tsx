@@ -26,7 +26,7 @@ import {
 } from "@mui/icons-material";
 import { useState, useEffect } from "react";
 import type { ReactElement } from "react";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import type { ClassMaterial, ClassMaterialType, Quiz as QuizType, Question } from "../../types/teacherType";
 import MaterialTypeViewer from "../../components/MaterialTypeViewer";
 import MaterialEditModal from "../../components/MaterialEditModal";
@@ -77,9 +77,7 @@ const formatDate = (d: Date | null | undefined) => {
 
 export default function MaterialDetailPage() {
     const navigate = useNavigate();
-    const location = useLocation();
     const { classId, materialId } = useParams<{ classId: string; materialId: string }>();
-
 
     // State management
     const [material, setMaterial] = useState<ClassMaterial | null>(null);
@@ -87,8 +85,6 @@ export default function MaterialDetailPage() {
     const [error, setError] = useState<string | null>(null);
     const [editOpen, setEditOpen] = useState(false);
     const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-    const [quizContent, setQuizContent] = useState<QuizType | null>(null);
-    const [questions, setQuestions] = useState<Question[]>([]);
 
     const fetchMaterial = async () => {
         if (!materialId) {
