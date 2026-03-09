@@ -6,13 +6,9 @@ import {
     reorderMaterialsSchema,
     toggleAiMaterialSchema,
 } from "../dto/ClassMaterialDTO.ts";
-import type { IQuiz } from "../interface/IQuiz";
 import FileService from "../services/FileService.ts";
 import QuizService from "../services/QuizService.ts";
 import SlideService from "../services/SlideService.ts";
-import type { CreateFileDTO } from "../dto/FileDTO.ts";
-import type { CreateSlideDTO } from "../dto/SlideDTO.ts";
-import type { CreateQuizDTO } from "../dto/QuizDTO.ts";
 
 class ClassMaterialController {
     async getPendingMaterials(req: Request, res: Response, next: NextFunction) {
