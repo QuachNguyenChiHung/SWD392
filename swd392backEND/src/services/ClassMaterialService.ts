@@ -20,10 +20,8 @@ class ClassMaterialService {
     }
 
     async getClassMaterialByTopicAndClassId(topicId: string, classId: string, page: number = 1) {
-        const materials = await ClassMaterialRepo.getClassMaterialsByClass(classId, page);
-        return materials.filter((mat: IClassMaterial) => mat.topic_id && mat.topic_id.toString() === topicId);
+        return await ClassMaterialRepo.getClassMaterialByTopicAndClassId(topicId, classId, page);
     }
-
     async getClassMaterialsByType(classId: string, type: string) {
         return await ClassMaterialRepo.getClassMaterialsByType(classId, type);
     }
