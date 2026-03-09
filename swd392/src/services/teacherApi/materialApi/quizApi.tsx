@@ -48,7 +48,6 @@ class QuizApiService {
 
     // Create new quiz with proper validation
     async createQuiz(quizData: CreateQuizDTO): Promise<Quiz> {
-        console.log('Sending quiz data to backend:', quizData);
         const response = await apiService.post('/quizzes', quizData);
         return response.data || response;
     }
