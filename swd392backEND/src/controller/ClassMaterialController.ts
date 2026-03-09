@@ -96,6 +96,11 @@ class ClassMaterialController {
         try {
 
             const { materialData, content_id } = req.body;
+
+            if (!content_id) {
+                return res.status(400).json({ message: "content_id is required" });
+            }
+
             const parsedMaterialData = createClassMaterialSchema.parse(materialData);
 
             let material: any = null;
