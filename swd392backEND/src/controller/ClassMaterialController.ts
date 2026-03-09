@@ -156,6 +156,9 @@ class ClassMaterialController {
             const { id } = req.params;
 
             const result = await ClassMaterialService.deleteClassMaterial(id as string);
+            if (!result) {
+                return res.status(404).json({ message: "Class material not found" });
+            }
             return res.status(200).json({ message: "Class material deleted successfully", data: result });
         } catch (error) {
             next(error);
