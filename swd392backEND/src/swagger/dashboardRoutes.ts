@@ -52,7 +52,7 @@
  *     tags:
  *       - Dashboard
  *     summary: Get dashboard statistics
- *     description: Retrieve dashboard statistics and analytics
+ *     description: "[Public] Retrieve dashboard statistics and analytics."
  *     responses:
  *       200:
  *         description: Dashboard statistics

@@ -38,6 +38,21 @@
  *           nullable: true
  *           description: Reference to the associated content document
  *           example: "507f1f77bcf86cd799439014"
+ *         status:
+ *           type: string
+ *           enum: [published, draft, reviewed, deleted]
+ *           description: Moderation status of the material
+ *           example: "draft"
+ *         isFlagged:
+ *           type: boolean
+ *           description: Whether this material has been flagged by a student for re-moderation
+ *           default: false
+ *           example: false
+ *         isFlaggable:
+ *           type: boolean
+ *           description: Whether this material can still be flagged (false after moderator final verification)
+ *           default: true
+ *           example: true
  *         is_ai_material:
  *           type: boolean
  *           description: Flag indicating if this material was AI-generated
@@ -66,11 +81,48 @@
  *           properties:
  *             content:
  *               type: object
- *               description: Populated content document based on material type (File, Slide, Quiz, or Render2D)
+ *               description: |
+ *                 Populated content entity based on material type:
+ *                 - For 'file' type: File entity with filename, url, etc.
+ *                 - For 'quiz' type: Quiz entity with questions array
+ *                 - For 'slide' type: Slide entity with pages array
+ *                 - For '2d_render' type: Render2D entity with render data
  *               nullable: true
- *               example: 
- *                 title: "Introduction Slide"
- *                 pages: []
+ *               oneOf:
+ *                 - type: object
+ *                   description: File entity
+ *                   properties:
+ *                     _id:
+ *                       type: string
+ *                     filename:
+ *                       type: string
+ *                     url:
+ *                       type: string
+ *                 - type: object
+ *                   description: Quiz entity with questions
+ *                   properties:
+ *                     _id:
+ *                       type: string
+ *                     title:
+ *                       type: string
+ *                     questions:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                 - type: object
+ *                   description: Slide entity
+ *                   properties:
+ *                     _id:
+ *                       type: string
+ *                     title:
+ *                       type: string
+ *                     pages:
+ *                       type: array
+ *                 - type: object
+ *                   description: Render2D entity
+ *                   properties:
+ *                     _id:
+ *                       type: string
  *     ClassMaterialInput:
  *       type: object
  *       required:
@@ -128,6 +180,10 @@
  *           type: string
  *           enum: [file, slide, 2d_render, quiz]
  *           description: Change the material type
+ *         status:
+ *           type: string
+ *           enum: [published, draft, reviewed, deleted]
+ *           description: Update the moderation status
  *         order_num:
  *           type: integer
  *           minimum: 1
@@ -136,15 +192,23 @@
  *           type: string
  *           maxLength: 255
  *           description: Update the material title
+ *         content_id:
+ *           type: string
+ *           description: Update the reference to the associated content document (file, slide, quiz, etc.)
  *         is_ai_material:
  *           type: boolean
  *           description: Update AI-generated flag
  *         ai_content_id:
  *           type: string
  *           description: Update AI content reference
- *         content_data:
- *           type: object
- *           description: Updated content payload for the material
+ *         isFlagged:
+ *           type: boolean
+ *           description: Update flagged status
+ *         isFlaggable:
+ *           type: boolean
+ *           description: Update whether the material can be flagged
+ *       description: |
+ *         Note: The `dateUpdate` field is automatically set by the backend on each update and should not be included in the request body.
  *     ReorderMaterialsInput:
  *       type: object
  *       required:
@@ -169,6 +233,16 @@
  *           type: string
  *           description: AI content ID to associate (optional)
  *           example: "507f1f77bcf86cd799439015"
+ *     ChangeStatusInput:
+ *       type: object
+ *       required:
+ *         - status
+ *       properties:
+ *         status:
+ *           type: string
+ *           enum: [published, draft, reviewed, deleted]
+ *           description: New status to set for the material
+ *           example: "reviewed"
  *     ErrorResponse:
  *       type: object
  *       properties:
@@ -192,7 +266,7 @@
  *     tags:
  *       - ClassMaterials
  *     summary: Get class materials by class ID
- *     description: Retrieve all materials belonging to a specific class with pagination support
+ *     description: "[Public] Retrieve all materials belonging to a specific class with pagination support."
  *     parameters:
  *       - in: query
  *         name: class_id
@@ -236,7 +310,7 @@
  *     tags:
  *       - ClassMaterials
  *     summary: Create a new class material
- *     description: Create a class material with associated content. Only accessible by teachers.
+ *     description: "[Teacher] Create a class material with associated content."
  *     security:
  *       - cookieAuth: []
  *     requestBody:
@@ -314,7 +388,7 @@
  *     tags:
  *       - ClassMaterials
  *     summary: Get all class materials
- *     description: Retrieve all class materials across all classes with pagination. Admin access required.
+ *     description: "[Admin] Retrieve all class materials across all classes with pagination."
  *     security:
  *       - cookieAuth: []
  *     parameters:
@@ -362,7 +436,7 @@
  *     tags:
  *       - ClassMaterials
  *     summary: Get material count for a class
- *     description: Get the total number of materials in a specific class
+ *     description: "[Public] Get the total number of materials in a specific class."
  *     parameters:
  *       - in: query
  *         name: class_id
@@ -401,7 +475,7 @@
  *     tags:
  *       - ClassMaterials
  *     summary: Reorder class materials
- *     description: Update the display order of materials within a class. Only accessible by teachers.
+ *     description: "[Teacher] Update the display order of materials within a class."
  *     security:
  *       - cookieAuth: []
  *     requestBody:
@@ -460,7 +534,7 @@
  *     tags:
  *       - ClassMaterials
  *     summary: Get materials by topic
- *     description: Retrieve all class materials associated with a specific topic
+ *     description: "[Public] Retrieve all class materials associated with a specific topic."
  *     parameters:
  *       - in: path
  *         name: topicId
@@ -499,7 +573,7 @@
  *     tags:
  *       - ClassMaterials
  *     summary: Get material by topic and class
- *     description: Retrieve the specific material that matches both a topic and a class
+ *     description: "[Public] Retrieve the specific material that matches both a topic and a class."
  *     parameters:
  *       - in: path
  *         name: topicId
@@ -545,7 +619,7 @@
  *     tags:
  *       - ClassMaterials
  *     summary: Get material by ID with content
- *     description: Retrieve a specific class material by ID including its populated content document
+ *     description: "[Public] Retrieve a specific class material by ID. Automatically includes populated content based on material type (File entity for 'file' type, Quiz with Questions for 'quiz' type, Slide for 'slide' type, or Render2D for '2d_render' type)."
  *     parameters:
  *       - in: path
  *         name: id
@@ -556,21 +630,67 @@
  *         example: "507f1f77bcf86cd799439011"
  *     responses:
  *       200:
- *         description: Successfully retrieved class material with populated content
+ *         description: Successfully retrieved class material with populated content entity based on type
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/ClassMaterialWithContent'
- *             example:
- *               _id: "507f1f77bcf86cd799439011"
- *               title: "Introduction to Algebra"
- *               type: "slide"
- *               order_num: 1
- *               class_assign_id: "507f1f77bcf86cd799439012"
- *               topic_id: "507f1f77bcf86cd799439013"
- *               content:
- *                 title: "Introduction to Algebra"
- *                 pages: []
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   $ref: '#/components/schemas/ClassMaterialWithContent'
+ *             examples:
+ *               slideExample:
+ *                 summary: Slide material with content
+ *                 value:
+ *                   success: true
+ *                   data:
+ *                     _id: "507f1f77bcf86cd799439011"
+ *                     title: "Introduction to Algebra"
+ *                     type: "slide"
+ *                     order_num: 1
+ *                     class_assign_id: "507f1f77bcf86cd799439012"
+ *                     topic_id: "507f1f77bcf86cd799439013"
+ *                     content_id: "507f1f77bcf86cd799439014"
+ *                     status: "reviewed"
+ *                     content:
+ *                       _id: "507f1f77bcf86cd799439014"
+ *                       title: "Introduction to Algebra"
+ *                       pages: []
+ *               quizExample:
+ *                 summary: Quiz material with questions
+ *                 value:
+ *                   success: true
+ *                   data:
+ *                     _id: "507f1f77bcf86cd799439015"
+ *                     title: "Algebra Quiz 1"
+ *                     type: "quiz"
+ *                     order_num: 2
+ *                     class_assign_id: "507f1f77bcf86cd799439012"
+ *                     content_id: "507f1f77bcf86cd799439016"
+ *                     status: "published"
+ *                     content:
+ *                       _id: "507f1f77bcf86cd799439016"
+ *                       title: "Algebra Quiz 1"
+ *                       questions: []
+ *               fileExample:
+ *                 summary: File material with file entity
+ *                 value:
+ *                   success: true
+ *                   data:
+ *                     _id: "507f1f77bcf86cd799439017"
+ *                     title: "Algebra Reference PDF"
+ *                     type: "file"
+ *                     order_num: 3
+ *                     class_assign_id: "507f1f77bcf86cd799439012"
+ *                     content_id: "507f1f77bcf86cd799439018"
+ *                     status: "reviewed"
+ *                     content:
+ *                       _id: "507f1f77bcf86cd799439018"
+ *                       filename: "algebra_reference.pdf"
+ *                       url: "https://example.com/files/algebra_reference.pdf"
  *       404:
  *         description: Class material not found
  *         content:
@@ -587,7 +707,9 @@
  *     tags:
  *       - ClassMaterials
  *     summary: Update a class material
- *     description: Update material metadata and/or its content. Only accessible by teachers.
+ *     description: |
+ *       [Teacher] Update material metadata and/or its content.
+ *       The `dateUpdate` timestamp is automatically set by the backend.
  *     security:
  *       - cookieAuth: []
  *     parameters:
@@ -651,7 +773,7 @@
  *     tags:
  *       - ClassMaterials
  *     summary: Delete a class material
- *     description: Delete a class material and its associated content permanently. Only accessible by teachers.
+ *     description: "[Teacher] Delete a class material and its associated content permanently."
  *     security:
  *       - cookieAuth: []
  *     parameters:
@@ -703,12 +825,262 @@
 
 /**
  * @openapi
+ * /api/class-materials/moderator/pending:
+ *   get:
+ *     tags:
+ *       - ClassMaterials
+ *     summary: Get pending materials for moderation
+ *     description: "[Moderator] Retrieve all published (pending review) class materials."
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *         description: Page number for pagination (12 items per page)
+ *         example: 1
+ *     responses:
+ *       200:
+ *         description: Successfully retrieved pending materials
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/ClassMaterial'
+ *       401:
+ *         description: Unauthorized - authentication required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       403:
+ *         description: Forbidden - moderator role required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+
+/**
+ * @openapi
+ * /api/class-materials/{id}/status:
+ *   patch:
+ *     tags:
+ *       - ClassMaterials
+ *     summary: Change material status
+ *     description: "[Moderator] Update the moderation status of a class material (e.g. published → reviewed)."
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Class material ID
+ *         example: "507f1f77bcf86cd799439011"
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ChangeStatusInput'
+ *           example:
+ *             status: "reviewed"
+ *     responses:
+ *       200:
+ *         description: Status updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ClassMaterial'
+ *       400:
+ *         description: Invalid status value
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               message: "Invalid status value"
+ *       401:
+ *         description: Unauthorized - authentication required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       403:
+ *         description: Forbidden - moderator role required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       404:
+ *         description: Class material not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+
+/**
+ * @openapi
+ * /api/class-materials/{id}/flag:
+ *   patch:
+ *     tags:
+ *       - ClassMaterials
+ *     summary: Flag a material for re-moderation
+ *     description: "[Student] Flag a reviewed material for re-moderation. Only works on materials with status 'reviewed' and isFlaggable=true."
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Class material ID to flag
+ *         example: "507f1f77bcf86cd799439011"
+ *     responses:
+ *       200:
+ *         description: Material flagged successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   $ref: '#/components/schemas/ClassMaterial'
+ *       400:
+ *         description: Material cannot be flagged (wrong status, already flagged, or isFlaggable=false)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             examples:
+ *               notReviewed:
+ *                 summary: Material is not reviewed
+ *                 value:
+ *                   message: "Only reviewed materials can be flagged"
+ *               alreadyFlagged:
+ *                 summary: Material already flagged
+ *                 value:
+ *                   message: "Material is already flagged"
+ *               notFlaggable:
+ *                 summary: Material cannot be flagged
+ *                 value:
+ *                   message: "This material has already been verified and cannot be flagged"
+ *       401:
+ *         description: Unauthorized - authentication required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       404:
+ *         description: Class material not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+
+/**
+ * @openapi
+ * /api/class-materials/{id}/verify:
+ *   patch:
+ *     tags:
+ *       - ClassMaterials
+ *     summary: Re-verify a flagged material
+ *     description: "[Moderator] Re-verify a student-flagged material. Sets status back to 'reviewed', clears the flag, and permanently disables further flagging (isFlaggable=false)."
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Class material ID to verify
+ *         example: "507f1f77bcf86cd799439011"
+ *     responses:
+ *       200:
+ *         description: Material re-verified successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   $ref: '#/components/schemas/ClassMaterial'
+ *       400:
+ *         description: Material is not currently flagged
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               message: "Material is not currently flagged"
+ *       401:
+ *         description: Unauthorized - authentication required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       403:
+ *         description: Forbidden - moderator role required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       404:
+ *         description: Class material not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+
+/**
+ * @openapi
  * /api/class-materials/{id}/toggle-ai:
  *   patch:
  *     tags:
  *       - ClassMaterials
  *     summary: Toggle AI material flag
- *     description: Toggle whether a material is marked as AI-generated and optionally link AI content. Only accessible by teachers.
+ *     description: "[Teacher] Toggle whether a material is marked as AI-generated and optionally link AI content."
  *     security:
  *       - cookieAuth: []
  *     parameters:

@@ -13,18 +13,18 @@ import z from "zod";
 const createQuizSchema = z.object({
     title: z.string().max(255),
     type: z.string().max(50),
-    available_date: z.date().optional(),
-    max_attempt_number: z.number().int().positive().optional(),
-    end_date: z.date().optional(),
+    available_date: z.coerce.date().optional(),
+    max_attempt_number: z.number().int().min(1).optional(),
+    end_date: z.coerce.date().optional(),
     status: z.boolean().optional(),
 });
 
 const updateQuizSchema = z.object({
     title: z.string().max(255).optional(),
     type: z.string().max(50).optional(),
-    available_date: z.date().optional(),
-    max_attempt_number: z.number().int().positive().optional(),
-    end_date: z.date().optional(),
+    available_date: z.coerce.date().optional(),
+    max_attempt_number: z.number().int().min(1).optional(),
+    end_date: z.coerce.date().optional(),
     status: z.boolean().optional(),
 });
 
@@ -33,13 +33,9 @@ const updateQuizSchema = z.object({
 //     quiz_id: { type: Schema.Types.ObjectId, ref: 'Quiz', required: true },
 //     options: { type: [Schema.Types.Mixed], required: true },
 //     correct_index: { type: Number, required: true },
+//     type: { type: String, required: true, maxlength: 50, enum: ['multiple_choice', 'true_false'], default: 'multiple_choice' }
 // }
 
-const createQuestionSchema = z.object({
-    quiz_id: z.string(),
-    options: z.array(z.any()).min(2), // At least 2 options
-    correct_index: z.number().int().min(0),
-});
 
 // QuizAttempt Schema Reference:
 // {
@@ -59,12 +55,12 @@ const createQuizAttemptSchema = z.object({
 
 export type CreateQuizDTO = z.infer<typeof createQuizSchema>;
 export type UpdateQuizDTO = z.infer<typeof updateQuizSchema>;
-export type CreateQuestionDTO = z.infer<typeof createQuestionSchema>;
+
 export type CreateQuizAttemptDTO = z.infer<typeof createQuizAttemptSchema>;
 
-export { 
-    createQuizSchema, 
+export {
+    createQuizSchema,
     updateQuizSchema,
-    createQuestionSchema,
-    createQuizAttemptSchema 
+
+    createQuizAttemptSchema
 };

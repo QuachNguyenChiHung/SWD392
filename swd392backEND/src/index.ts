@@ -17,6 +17,10 @@ import TopicRoute from './route/TopicRoute.ts';
 import ClassRoute from './route/ClassRoute.ts';
 import ClassMaterialRoute from './route/ClassMaterialRoute.ts';
 import DashboardRoute from './route/DashboardRoute.ts';
+import QuizRoute from './route/QuizRoute.ts';
+import QuestionRoute from './route/QuestionRoute.ts';
+import SlideRoute from './route/SlideRoute.ts';
+import FileRoute from './route/FileRoute.ts';
 
 const spec = swaggerJSDoc({
     definition: { openapi: '3.0.0', info: { title: 'API', version: '1.0.0' } },
@@ -81,11 +85,15 @@ console.log(process.env.MONGO_URI);
             app.use('/api', ClassRoute);
             app.use('/api', ClassMaterialRoute);
             app.use('/api', DashboardRoute);
+            app.use('/api', QuizRoute);
+            app.use('/api', QuestionRoute);
+            app.use('/api', SlideRoute);
+            app.use('/api', FileRoute);
             // Error handler must be after routes
             app.use((err: any, req: Request, res: Response, next: NextFunction) => {
-                console.error(err.stack);
+                console.error(err);
                 try {
-                    res.status(500).json({ message: JSON.parse(err.message.message || { "message": 'Something broke!' }) });
+                    res.status(500).json({ message: JSON.parse(err.message.message || err.message || { "message": 'Something broke!' }) });
                 } catch (error) {
                     res.status(500).json({ "message": 'Something broke!' });
                 }

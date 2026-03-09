@@ -118,7 +118,7 @@
  *     tags:
  *       - Courses
  *     summary: Get all courses
- *     description: Retrieve paginated list of all courses with 12 items per page
+ *     description: "[Public] Retrieve paginated list of all courses with 12 items per page."
  *     parameters:
  *       - in: query
  *         name: page
@@ -154,7 +154,7 @@
  *     tags:
  *       - Courses
  *     summary: Create a new course
- *     description: Create a new course with course name and grade level. Only accessible by administrators.
+ *     description: "[Admin] Create a new course with course name and grade level."
  *     security:
  *       - cookieAuth: []
  *     requestBody:
@@ -233,7 +233,7 @@
  *     tags:
  *       - Courses
  *     summary: Search courses by keyword
- *     description: Search courses by keyword in course name with pagination support
+ *     description: "[Public] Search courses by keyword in course name with pagination support."
  *     parameters:
  *       - in: query
  *         name: keyword
@@ -288,7 +288,7 @@
  *     tags:
  *       - Courses
  *     summary: Get course by ID
- *     description: Retrieve a specific course by its unique identifier
+ *     description: "[Public] Retrieve a specific course by its unique identifier."
  *     parameters:
  *       - in: path
  *         name: id
@@ -329,7 +329,7 @@
  *     tags:
  *       - Courses
  *     summary: Update course
- *     description: Update course information including name, grade level, and status. Only accessible by administrators.
+ *     description: "[Admin] Update course information including name, grade level, and status."
  *     security:
  *       - cookieAuth: []
  *     parameters:
@@ -409,7 +409,7 @@
  *     tags:
  *       - Courses
  *     summary: Delete course
- *     description: Delete a course and all associated data permanently. Only accessible by administrators.
+ *     description: "[Admin] Delete a course and all associated data permanently."
  *     security:
  *       - cookieAuth: []
  *     parameters:
@@ -466,7 +466,7 @@
  *     tags:
  *       - Courses
  *     summary: Toggle course status
- *     description: Toggle course status between active and inactive. Only accessible by administrators.
+ *     description: "[Admin] Toggle course status between active and inactive."
  *     security:
  *       - cookieAuth: []
  *     parameters:

@@ -8,54 +8,46 @@ class TopicService {
     }
 
     async createTopic(topicData: TopicCreateDTO) {
-        try {
-            // Validate that the course exists
-            const course = await CourseRepo.getCourseById(topicData.course_id);
-            if (!course) {
-                return { error: "Course not found" };
-            }
-
-            // Check if topic with same title already exists for this course
-            const existingTopic = await TopicRepo.findByTitle(topicData.title);
-            if (existingTopic && existingTopic.course_id.toString() === topicData.course_id) {
-                return { error: "Topic with this title already exists in the course" };
-            }
-
-            const newTopic = await TopicRepo.createTopic(topicData);
-            return newTopic;
-        } catch (error) {
-            return { error: `Error creating topic: ${error}` };
+        // Validate that the course exists
+        const course = await CourseRepo.getCourseById(topicData.course_id);
+        if (!course) {
+            return { error: "Course not found" };
         }
+
+        // Check if topic with same title already exists for this course
+        const existingTopic = await TopicRepo.findByTitle(topicData.title);
+        if (existingTopic && existingTopic.course_id.toString() === topicData.course_id) {
+            return { error: "Topic with this title already exists in the course" };
+        }
+
+        const newTopic = await TopicRepo.createTopic(topicData);
+        return newTopic;
     }
 
     async updateTopic(topicId: string, updateData: TopicUpdateDTO) {
-        try {
-            // If updating course_id, validate that the course exists
-            if (updateData.course_id) {
-                const course = await CourseRepo.getCourseById(updateData.course_id);
-                if (!course) {
-                    return { error: "Course not found" };
-                }
+        // If updating course_id, validate that the course exists
+        if (updateData.course_id) {
+            const course = await CourseRepo.getCourseById(updateData.course_id);
+            if (!course) {
+                return { error: "Course not found" };
             }
-
-            // If updating title, check if it already exists in the same course
-            if (updateData.title) {
-                const existingTopic = await TopicRepo.findByTitle(updateData.title);
-                if (existingTopic && existingTopic._id.toString() !== topicId) {
-                    const currentTopic = await TopicRepo.getTopicById(topicId);
-                    const targetCourseId = updateData.course_id || currentTopic?.course_id.toString();
-
-                    if (existingTopic.course_id.toString() === targetCourseId) {
-                        return { error: "Topic with this title already exists in the course" };
-                    }
-                }
-            }
-
-            const updatedTopic = await TopicRepo.updateTopic(topicId, updateData);
-            return updatedTopic;
-        } catch (error) {
-            return { error: `Error updating topic: ${error}` };
         }
+
+        // If updating title, check if it already exists in the same course
+        if (updateData.title) {
+            const existingTopic = await TopicRepo.findByTitle(updateData.title);
+            if (existingTopic && existingTopic._id.toString() !== topicId) {
+                const currentTopic = await TopicRepo.getTopicById(topicId);
+                const targetCourseId = updateData.course_id || currentTopic?.course_id.toString();
+
+                if (existingTopic.course_id.toString() === targetCourseId) {
+                    return { error: "Topic with this title already exists in the course" };
+                }
+            }
+        }
+
+        const updatedTopic = await TopicRepo.updateTopic(topicId, updateData);
+        return updatedTopic;
     }
 
     async deleteTopic(topicId: string) {
@@ -67,21 +59,17 @@ class TopicService {
     }
 
     async getTopicsByCourse(courseId: string, page: number = 1) {
-        try {
-            // Validate that the course exists
-            const course = await CourseRepo.getCourseById(courseId);
-            if (!course) {
-                return { error: "Course not found" };
-            }
-
-            // Get topics for the course with pagination
-            const topics = await TopicRepo.getTopicsByCourseIdWithPagination(courseId, page);
-
-                const courseObj = { ...course.toObject(), topics };
-                return courseObj;
-        } catch (error) {
-            return { error: `Error retrieving topics by course: ${error}` };
+        // Validate that the course exists
+        const course = await CourseRepo.getCourseById(courseId);
+        if (!course) {
+            return { error: "Course not found" };
         }
+
+        // Get topics for the course with pagination
+        const topics = await TopicRepo.getTopicsByCourseIdWithPagination(courseId, page);
+
+        const courseObj = { ...course.toObject(), topics };
+        return courseObj;
     }
 
     async searchTopicsByCourseId(courseId: string) {
@@ -102,23 +90,19 @@ class TopicService {
     }
 
     async getTopicStatisticsByCourse(courseId: string) {
-        try {
-            // Validate that the course exists
-            const course = await CourseRepo.getCourseById(courseId);
-            if (!course) {
-                return { error: "Course not found" };
-            }
-
-            const topicsCount = await TopicRepo.getTopicsCountByCourse(courseId);
-
-            return {
-                courseId,
-                courseName: course.course_name,
-                topicsCount
-            };
-        } catch (error) {
-            return { error: `Error retrieving topic statistics by course: ${error}` };
+        // Validate that the course exists
+        const course = await CourseRepo.getCourseById(courseId);
+        if (!course) {
+            return { error: "Course not found" };
         }
+
+        const topicsCount = await TopicRepo.getTopicsCountByCourse(courseId);
+
+        return {
+            courseId,
+            courseName: course.course_name,
+            topicsCount
+        };
     }
 }
 

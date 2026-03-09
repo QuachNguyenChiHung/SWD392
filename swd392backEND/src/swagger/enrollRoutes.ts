@@ -40,7 +40,7 @@
  *     tags:
  *       - Enrollments
  *     summary: Enroll in a class
- *     description: Student enrolls in a class using class ID (student only)
+ *     description: "[Student] Enroll in a class using the class ID."
  *     security:
  *       - cookieAuth: []
  *     parameters:
@@ -85,7 +85,7 @@
  *     tags:
  *       - Enrollments
  *     summary: Get enrollments by class
- *     description: Get all enrollments for a specific class (teacher only)
+ *     description: "[Teacher] Get all enrollments for a specific class."
  *     security:
  *       - cookieAuth: []
  *     parameters:
@@ -142,7 +142,7 @@
  *     tags:
  *       - Enrollments
  *     summary: Mark enrollment as completed
- *     description: Mark a student's enrollment as completed (teacher only, must be the class teacher)
+ *     description: "[Teacher] Mark a student's enrollment as completed. Only the teacher of that specific class can do this."
  *     security:
  *       - cookieAuth: []
  *     parameters:

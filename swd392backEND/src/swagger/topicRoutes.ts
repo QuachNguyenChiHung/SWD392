@@ -2,57 +2,6 @@
  * @openapi
  * components:
  *   schemas:
-        CourseWithTopics:
-            type: object
-            description: Course data with topics array at the root level
-            properties:
-                _id:
-                    type: string
-                    example: "507f1f77bcf86cd799439012"
-                course_name:
-                    type: string
-                    example: "Introduction to Programming"
-                grade_level:
-                    type: integer
-                    example: 10
-                status:
-                    type: string
-                    enum: [active, inactive]
-                    example: "active"
-                date_create:
-                    type: string
-                    format: date-time
-                    example: "2024-01-15T10:30:00Z"
-                change_log:
-                    type: object
-                    nullable: true
-                    example: null
-                topics:
-                    type: array
-                    description: Array of topics belonging to this course
-                    items:
-                        $ref: '#/components/schemas/Topic'
- *             _id:
- *               type: string
- *               example: "507f1f77bcf86cd799439012"
- *             course_name:
- *               type: string
- *               example: "Introduction to Programming"
- *             grade_level:
- *               type: integer
- *               example: 10
- *             status:
- *               type: string
- *               enum: [active, inactive]
- *               example: "active"
- *             date_create:
- *               type: string
- *               format: date-time
- *               example: "2024-01-15T10:30:00Z"
- *             change_log:
- *               type: object
- *               nullable: true
- *               example: null
  *     TopicCreateInput:
  *       type: object
  *       required:
@@ -149,7 +98,7 @@
  *     tags:
  *       - Topics
  *     summary: Create a new topic
- *     description: Create a new topic for a course. Only accessible by administrators.
+ *     description: "[Admin] Create a new topic for a course."
  *     security:
  *       - cookieAuth: []
  *     requestBody:
@@ -229,7 +178,7 @@
  *     tags:
  *       - Topics
  *     summary: Search topics by keyword
- *     description: Search topics by keyword in title or description with pagination support
+ *     description: "[Public] Search topics by keyword in title or description with pagination support."
  *     parameters:
  *       - in: query
  *         name: keyword
@@ -286,7 +235,7 @@
  *     tags:
  *       - Topics
  *     summary: Get topic by ID
- *     description: Retrieve a specific topic by its unique identifier with populated course information
+ *     description: "[Public] Retrieve a specific topic by its unique identifier with populated course information."
  *     parameters:
  *       - in: path
  *         name: id
@@ -331,7 +280,7 @@
  *     tags:
  *       - Topics
  *     summary: Update topic
- *     description: Update topic information including title, description, and content. Only accessible by administrators.
+ *     description: "[Admin] Update topic information including title, description, and content."
  *     security:
  *       - cookieAuth: []
  *     parameters:
@@ -418,7 +367,7 @@
  *     tags:
  *       - Topics
  *     summary: Get topics by course
-     description: Retrieve course information with all its topics in a flattened structure with pagination support
+ *     description: "[Public] Retrieve course information with all its topics in a flattened structure with pagination support."
  *     parameters:
  *       - in: path
  *         name: course_id
