@@ -257,7 +257,7 @@ export default function AiContentGenerator() {
                                 {generatedMaterials.map((material, index) => {
                                     const meta = TYPE_META[material.type];
                                     return (
-                                        <Box key={material.material_id} sx={{ mb: index < generatedMaterials.length - 1 ? 4 : 0 }}>
+                                        <Box key={material._id ?? index} sx={{ mb: index < generatedMaterials.length - 1 ? 4 : 0 }}>
                                             {/* Back to generator button */}
                                             {index === 0 && (
                                                 <Stack direction="row" justifyContent="space-between" alignItems="center" mb={3}>

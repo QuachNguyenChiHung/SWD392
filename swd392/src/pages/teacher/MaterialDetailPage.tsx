@@ -11,6 +11,8 @@ import {
     DialogContent,
     DialogContentText,
     DialogActions,
+    CircularProgress,
+    Alert,
 } from "@mui/material";
 import {
     ArrowBack,
@@ -22,12 +24,17 @@ import {
     Quiz,
     SmartToy,
 } from "@mui/icons-material";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { ReactElement } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import type { ClassMaterial, ClassMaterialType, Quiz as QuizType, Question } from "../../types/teacherType";
 import MaterialTypeViewer from "../../components/MaterialTypeViewer";
 import MaterialEditModal from "../../components/MaterialEditModal";
+import { fileApiService } from "../../services/teacherApi/materialApi/fileApi";
+import { quizApiService } from "../../services/teacherApi/materialApi/quizApi";
+import { questionApiService } from "../../services/teacherApi/materialApi/questionApi";
+import classMaterialApi from "../../services/teacherApi/classMaterialApi";
+import { slideApiService } from "../../services/teacherApi/materialApi";
 
 // ─── Type helpers ──────────────────────────────────────────────────────────────
 
@@ -71,28 +78,115 @@ const formatDate = (d: Date | null | undefined) => {
 export default function MaterialDetailPage() {
     const navigate = useNavigate();
     const location = useLocation();
-    const { classId } = useParams<{ classId: string }>();
+    const { classId, materialId } = useParams<{ classId: string; materialId: string }>();
 
-    // Material is passed via router state from the list
-    const [material, setMaterial] = useState<ClassMaterial>(
-        location.state?.material as ClassMaterial
-    );
 
+    // State management
+    const [material, setMaterial] = useState<ClassMaterial | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     const [editOpen, setEditOpen] = useState(false);
     const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+    const [quizContent, setQuizContent] = useState<QuizType | null>(null);
+    const [questions, setQuestions] = useState<Question[]>([]);
 
-    if (!material) {
+    const fetchMaterial = async () => {
+        if (!materialId) {
+            setError("Material ID is required");
+            setLoading(false);
+            return;
+        }
+
+        try {
+            setLoading(true);
+            setError(null);
+
+            // Use navigation state or fetch from API
+            const mat = material ?? await classMaterialApi.getMaterialById(materialId);
+            console.log('Material data:', mat);
+
+            // content_id is a string reference from the backend, not an embedded object
+            const contentId = (mat as any).content_id as string | undefined;
+
+            if (contentId) {
+                switch (mat.type) {
+                    case "file": {
+                        const fileData = await fileApiService.getFileById(contentId);
+                        setMaterial({ ...mat, content: fileData });
+                        break;
+                    }
+                    case "slide": {
+                        const slideData = await slideApiService.getSlideById(contentId);
+                        setMaterial({ ...mat, content: slideData });
+                        break;
+                    }
+                    case "quiz": {
+                        const quizData = await quizApiService.getQuizById(contentId);
+                        const questionData = await questionApiService.getQuestionsByQuizId(contentId);
+                        setMaterial({ ...mat, content: { ...quizData, questions: questionData } });
+                        break;
+                    }
+                    default:
+                        setMaterial(mat);
+                }
+            } else {
+                setMaterial(mat);
+            }
+        } catch (err) {
+            console.error('Error fetching material:', err);
+            setError('Không thể tải thông tin tài liệu');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Fetch material by ID (skip if already loaded from location state)
+    useEffect(() => {
+
+
+        fetchMaterial();
+    }, [materialId]);
+
+    // Loading state
+    if (loading) {
+        return (
+            <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+                <CircularProgress />
+            </Box>
+        );
+    }
+
+    // Error state
+    if (error) {
         return (
             <Box p={4}>
-                <Typography variant="h6" color="error">
-                    Không tìm thấy dữ liệu tài liệu. Vui lòng quay lại và chọn tài liệu khác.
-                </Typography>
+                <Alert severity="error" sx={{ mb: 2 }}>
+                    {error}
+                </Alert>
                 <Button
                     startIcon={<ArrowBack />}
                     onClick={() => navigate(`/teacher/class/${classId}`)}
-                    sx={{ mt: 2 }}
+                    variant="outlined"
                 >
-                    Quay lại
+                    Quay lại lớp học
+                </Button>
+            </Box>
+        );
+    }
+
+    // Material not found
+    if (!material) {
+        return (
+            <Box p={4}>
+                <Alert severity="warning" sx={{ mb: 2 }}>
+                    Không tìm thấy tài liệu
+                </Alert>
+                <Button
+                    startIcon={<ArrowBack />}
+                    onClick={() => navigate(`/teacher/class/${classId}`)}
+                    variant="outlined"
+                >
+                    Quay lại lớp học
                 </Button>
             </Box>
         );
@@ -102,27 +196,67 @@ export default function MaterialDetailPage() {
 
     // ─── Handlers ────────────────────────────────────────────────────────────────
 
-    const handleSave = (updated: ClassMaterial) => {
-        setMaterial(updated);
-        // TODO: call API to persist changes
+    const handleSave = async (updated: ClassMaterial) => {
+        try {
+            if (!materialId) return;
+
+            // Extract content_id from the updated content
+            let contentId: string | undefined;
+            if (updated.content && typeof updated.content === 'object' && '_id' in updated.content) {
+                contentId = (updated.content as any)._id;
+            }
+
+            await classMaterialApi.updateMaterial(materialId, {
+                title: updated.title,
+                type: updated.type,
+                order_num: updated.order_num,
+                is_ai_material: updated.is_ai_material,
+                content_id: contentId, // Pass the updated content_id
+            });
+
+            setMaterial(updated);
+            setEditOpen(false);
+        } catch (error) {
+            console.error('Error updating material:', error);
+            alert('Có lỗi xảy ra khi cập nhật tài liệu');
+        }
     };
 
-    const handleQuestionsChange = (questions: Question[]) => {
-        setMaterial((prev) => ({
-            ...prev,
-            dateUpdate: new Date(),
-            content: {
-                ...(prev.content as QuizType),
-                questions,
-            },
-        }));
-        // TODO: call API to persist question changes
+    const handleQuestionsChange = async (questions: Question[]) => {
+        if (!material || !materialId) return;
+
+        try {
+            // Update local state optimistically
+            const updatedMaterial = {
+                ...material,
+                dateUpdate: new Date(),
+                content: {
+                    ...(material.content as QuizType),
+                    questions,
+                },
+            };
+
+            setMaterial(updatedMaterial);
+            // TODO: Persist question changes via a dedicated quiz/question API endpoint
+        } catch (error) {
+            console.error('Error updating quiz questions:', error);
+            // Revert the local state change on error
+            setMaterial(material);
+            alert('Có lỗi xảy ra khi cập nhật câu hỏi');
+        }
     };
 
-    const handleDelete = () => {
-        setDeleteConfirmOpen(false);
-        // TODO: call API to delete material
-        navigate(`/teacher/class/${classId}`);
+    const handleDelete = async () => {
+        try {
+            if (!materialId) return;
+
+            await classMaterialApi.deleteMaterial(materialId);
+            setDeleteConfirmOpen(false);
+            navigate(`/teacher/class/${classId}`);
+        } catch (error) {
+            console.error('Error deleting material:', error);
+            alert('Có lỗi xảy ra khi xóa tài liệu');
+        }
     };
 
     // ─── Render ───────────────────────────────────────────────────────────────────

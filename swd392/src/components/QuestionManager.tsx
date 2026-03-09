@@ -23,8 +23,13 @@ import {
     ExpandMore,
     ViewInAr,
 } from "@mui/icons-material";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { Question } from "../types/teacherType";
+
+// Local wrapper to track questions in the UI without assigning _id
+interface LocalQuestion extends Question {
+    tempId: string;
+}
 
 interface QuestionManagerProps {
     questions: Question[];
@@ -35,70 +40,90 @@ interface QuestionManagerProps {
 export default function QuestionManager({ questions, onChange, quizType }: QuestionManagerProps) {
     const [expandedQuestion, setExpandedQuestion] = useState<string | false>(false);
 
-    const generateQuestionId = () => {
-        return `question_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    // Assign stable tempIds for UI tracking
+    const [localQuestions, setLocalQuestions] = useState<LocalQuestion[]>(() =>
+        questions.map(q => ({ ...q, tempId: q._id || generateTempId() }))
+    );
+
+    // Keep localQuestions in sync when questions prop changes externally
+    useEffect(() => {
+        const synced = questions.map((q, i) => ({
+            ...q,
+            tempId: localQuestions[i]?.tempId || q._id || generateTempId()
+        }));
+        setLocalQuestions(synced);
+    }, [questions]);
+
+    function generateTempId(): string {
+        return `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    }
+
+    // Strip tempId before passing back to parent
+    const emitChange = (updated: LocalQuestion[]) => {
+        setLocalQuestions(updated);
+        onChange(updated.map(({ tempId, ...rest }) => rest));
     };
 
     const addQuestion = () => {
-        const newQuestion: Question = {
-            id: generateQuestionId(),
+        const newQuestion: LocalQuestion = {
+            tempId: generateTempId(),
             content: "",
             type: "multiple-choice",
             options: ["", "", "", ""],
             correctAnswer: "",
-            explanation: "",
             has2DVisualization: false,
         };
 
-        onChange([...questions, newQuestion]);
-        setExpandedQuestion(newQuestion.id);
+        const updated = [...localQuestions, newQuestion];
+        emitChange(updated);
+        setExpandedQuestion(newQuestion.tempId);
     };
 
-    const updateQuestion = (questionId: string, updates: Partial<Question>) => {
-        const updatedQuestions = questions.map(q =>
-            q.id === questionId ? { ...q, ...updates } : q
+    const updateQuestion = (tempId: string, updates: Partial<Question>) => {
+        const updated = localQuestions.map(q =>
+            q.tempId === tempId ? { ...q, ...updates } : q
         );
-        onChange(updatedQuestions);
+        emitChange(updated);
     };
 
-    const removeQuestion = (questionId: string) => {
-        const updatedQuestions = questions.filter(q => q.id !== questionId);
-        onChange(updatedQuestions);
-        if (expandedQuestion === questionId) {
+    const removeQuestion = (tempId: string) => {
+        const updated = localQuestions.filter(q => q.tempId !== tempId);
+        emitChange(updated);
+        if (expandedQuestion === tempId) {
             setExpandedQuestion(false);
         }
     };
 
-    const updateQuestionOption = (questionId: string, optionIndex: number, value: string) => {
-        const question = questions.find(q => q.id === questionId);
+    const updateQuestionOption = (tempId: string, optionIndex: number, value: string) => {
+        const question = localQuestions.find(q => q.tempId === tempId);
         if (!question || !question.options) return;
 
         const newOptions = [...question.options];
         newOptions[optionIndex] = value;
-        updateQuestion(questionId, { options: newOptions });
+        updateQuestion(tempId, { options: newOptions });
     };
 
-    const addOption = (questionId: string) => {
-        const question = questions.find(q => q.id === questionId);
+    const addOption = (tempId: string) => {
+        const question = localQuestions.find(q => q.tempId === tempId);
         if (!question || !question.options) return;
 
         const newOptions = [...question.options, ""];
-        updateQuestion(questionId, { options: newOptions });
+        updateQuestion(tempId, { options: newOptions });
     };
 
-    const removeOption = (questionId: string, optionIndex: number) => {
-        const question = questions.find(q => q.id === questionId);
+    const removeOption = (tempId: string, optionIndex: number) => {
+        const question = localQuestions.find(q => q.tempId === tempId);
         if (!question || !question.options || question.options.length <= 2) return;
 
         const newOptions = question.options.filter((_, index) => index !== optionIndex);
-        updateQuestion(questionId, { options: newOptions });
+        updateQuestion(tempId, { options: newOptions });
     };
 
-    const handleAccordionChange = (questionId: string) => (
-        event: React.SyntheticEvent,
+    const handleAccordionChange = (tempId: string) => (
+        _event: React.SyntheticEvent,
         isExpanded: boolean
     ) => {
-        setExpandedQuestion(isExpanded ? questionId : false);
+        setExpandedQuestion(isExpanded ? tempId : false);
     };
 
     return (
@@ -116,11 +141,11 @@ export default function QuestionManager({ questions, onChange, quizType }: Quest
             </Stack>
 
             <Stack spacing={2}>
-                {questions.map((question, index) => (
+                {localQuestions.map((question, index) => (
                     <Accordion
-                        key={question.id}
-                        expanded={expandedQuestion === question.id}
-                        onChange={handleAccordionChange(question.id)}
+                        key={question.tempId}
+                        expanded={expandedQuestion === question.tempId}
+                        onChange={handleAccordionChange(question.tempId)}
                     >
                         <AccordionSummary expandIcon={<ExpandMore />}>
                             <Stack direction="row" alignItems="center" spacing={2} sx={{ width: '100%' }}>
@@ -159,7 +184,7 @@ export default function QuestionManager({ questions, onChange, quizType }: Quest
                                     rows={3}
                                     fullWidth
                                     value={question.content}
-                                    onChange={(e) => updateQuestion(question.id, { content: e.target.value })}
+                                    onChange={(e) => updateQuestion(question.tempId, { content: e.target.value })}
                                     required
                                 />
 
@@ -169,7 +194,7 @@ export default function QuestionManager({ questions, onChange, quizType }: Quest
                                     <Select
                                         value={question.type}
                                         label="Loại câu hỏi"
-                                        onChange={(e) => updateQuestion(question.id, {
+                                        onChange={(e) => updateQuestion(question.tempId, {
                                             type: e.target.value as Question['type'],
                                             options: e.target.value === 'multiple-choice' ? (question.options || ["", "", "", ""]) :
                                                 e.target.value === 'true-false' ? ["Đúng", "Sai"] : undefined,
@@ -188,7 +213,7 @@ export default function QuestionManager({ questions, onChange, quizType }: Quest
                                         control={
                                             <Switch
                                                 checked={question.has2DVisualization || false}
-                                                onChange={(e) => updateQuestion(question.id, { has2DVisualization: e.target.checked })}
+                                                onChange={(e) => updateQuestion(question.tempId, { has2DVisualization: e.target.checked })}
                                             />
                                         }
                                         label="Có hỗ trợ trực quan hóa 2D"
@@ -201,7 +226,7 @@ export default function QuestionManager({ questions, onChange, quizType }: Quest
                                         <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
                                             <Typography variant="subtitle2">Các lựa chọn</Typography>
                                             {question.type === 'multiple-choice' && (
-                                                <Button size="small" onClick={() => addOption(question.id)}>
+                                                <Button size="small" onClick={() => addOption(question.tempId)}>
                                                     Thêm lựa chọn
                                                 </Button>
                                             )}
@@ -213,14 +238,14 @@ export default function QuestionManager({ questions, onChange, quizType }: Quest
                                                     <TextField
                                                         label={`Lựa chọn ${optionIndex + 1}`}
                                                         value={option}
-                                                        onChange={(e) => updateQuestionOption(question.id, optionIndex, e.target.value)}
+                                                        onChange={(e) => updateQuestionOption(question.tempId, optionIndex, e.target.value)}
                                                         fullWidth
                                                         size="small"
                                                     />
                                                     <Button
                                                         variant={question.correctAnswer === option ? "contained" : "outlined"}
                                                         size="small"
-                                                        onClick={() => updateQuestion(question.id, { correctAnswer: option })}
+                                                        onClick={() => updateQuestion(question.tempId, { correctAnswer: option })}
                                                         color={question.correctAnswer === option ? "success" : "primary"}
                                                     >
                                                         {question.correctAnswer === option ? "Đáp án đúng" : "Chọn làm đáp án"}
@@ -228,7 +253,7 @@ export default function QuestionManager({ questions, onChange, quizType }: Quest
                                                     {question.type === 'multiple-choice' && question.options!.length > 2 && (
                                                         <IconButton
                                                             size="small"
-                                                            onClick={() => removeOption(question.id, optionIndex)}
+                                                            onClick={() => removeOption(question.tempId, optionIndex)}
                                                             color="error"
                                                         >
                                                             <Delete />
@@ -246,21 +271,10 @@ export default function QuestionManager({ questions, onChange, quizType }: Quest
                                         label="Đáp án mẫu"
                                         fullWidth
                                         value={question.correctAnswer}
-                                        onChange={(e) => updateQuestion(question.id, { correctAnswer: e.target.value })}
+                                        onChange={(e) => updateQuestion(question.tempId, { correctAnswer: e.target.value })}
                                         helperText="Nhập đáp án mẫu hoặc từ khóa chấm điểm"
                                     />
                                 )}
-
-                                {/* Explanation */}
-                                <TextField
-                                    label="Giải thích (tùy chọn)"
-                                    multiline
-                                    rows={2}
-                                    fullWidth
-                                    value={question.explanation || ""}
-                                    onChange={(e) => updateQuestion(question.id, { explanation: e.target.value })}
-                                    helperText="Giải thích sẽ hiển thị sau khi học sinh làm bài"
-                                />
 
                                 {/* Remove Question Button */}
                                 <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
@@ -268,7 +282,7 @@ export default function QuestionManager({ questions, onChange, quizType }: Quest
                                         variant="outlined"
                                         color="error"
                                         startIcon={<Delete />}
-                                        onClick={() => removeQuestion(question.id)}
+                                        onClick={() => removeQuestion(question.tempId)}
                                         size="small"
                                     >
                                         Xóa câu hỏi
