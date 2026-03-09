@@ -145,6 +145,9 @@ class ClassMaterialController {
             };
 
             const result = await ClassMaterialService.updateClassMaterial(id as string, dataWithTimestamp);
+            if (!result) {
+                return res.status(404).json({ message: "Class material not found" });
+            }
             return res.status(200).json(result);
         } catch (error) {
             next(error);
