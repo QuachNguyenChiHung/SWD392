@@ -201,6 +201,7 @@ export default function CreateClassMaterialModal({
                         : `Tài liệu ${currentMaterialCount + 1}`),
                 topic_id: topicId,
                 content_id: content_id || undefined,
+                description: materialDescription || undefined,
             };
 
             const createdMaterial = await classMaterialApi.createMaterial(
