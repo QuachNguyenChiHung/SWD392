@@ -25,6 +25,11 @@ class EnrollRepo {
             .limit(limit);
     }
 
+    async getAllEnrollsByClassId(classId: string) {
+        return await Enroll.find({ class_id: classId })
+            .populate('student_id', 'username email');
+    }
+
     async updateEnrollStatusById(enrollId: string, status: "in_progress" | "completed") {
         const updateData: any = { status };
         if (status === "completed") {

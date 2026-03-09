@@ -1,5 +1,4 @@
 import { ClassMaterial } from "../entities/ClassMaterial.ts";
-import { Class } from "../entities/Class.ts";
 
 class ClassMaterialRepo {
     async getClassMaterialById(id: string) {
@@ -42,6 +41,18 @@ class ClassMaterialRepo {
     async getClassMaterialCount(classId: string) {
         return await ClassMaterial.countDocuments({ class_assign_id: classId });
     }
+    async getActiveClassMaterialsByClass(classId: string) {
+        return await ClassMaterial.find({
+            class_assign_id: classId,
+            status: { $nin: ['draft', 'deleted'] }
+        }).sort({ order_num: 1 });
+    }
+    async getActiveClassMaterialCount(classId: string) {
+        return await ClassMaterial.countDocuments({
+            class_assign_id: classId,
+            status: { $nin: ['draft', 'deleted'] }
+        });
+    }
     async updateOrderNumbers(classId: string, materialIds: string[]) {
         const updatePromises = materialIds.map((id, index) =>
             ClassMaterial.findByIdAndUpdate(id, { order_num: index + 1 })
@@ -81,8 +92,7 @@ class ClassMaterialRepo {
     async getClassMaterialsByTeacher(teacherId: string, page: number) {
         const limit = 12;
         const skip = (page - 1) * limit;
-        const classIds = await Class.find({ teacher_id: teacherId }).distinct('_id');
-        return await ClassMaterial.find({ class_assign_id: { $in: classIds } })
+        return await ClassMaterial.find({ teacher_id: teacherId })
             .sort({ dateCreate: -1 })
             .skip(skip)
             .limit(limit);

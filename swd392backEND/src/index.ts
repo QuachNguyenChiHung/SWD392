@@ -21,6 +21,8 @@ import QuizRoute from './route/QuizRoute.ts';
 import QuestionRoute from './route/QuestionRoute.ts';
 import SlideRoute from './route/SlideRoute.ts';
 import FileRoute from './route/FileRoute.ts';
+import ProgressClassMaterialRoute from './route/ProgressClassMaterialRoute.ts';
+
 
 const spec = swaggerJSDoc({
     definition: { openapi: '3.0.0', info: { title: 'API', version: '1.0.0' } },
@@ -34,7 +36,10 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors({
-    origin: process.env.FE || 'http://localhost:5173',
+    origin: [
+        process.env.FE || 'http://localhost:5173',
+        `http://localhost:${process.env.PORT || 3000}`,
+    ],
     credentials: true
 }));
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(spec));
@@ -89,6 +94,7 @@ console.log(process.env.MONGO_URI);
             app.use('/api', QuestionRoute);
             app.use('/api', SlideRoute);
             app.use('/api', FileRoute);
+            app.use('/api', ProgressClassMaterialRoute);
             // Error handler must be after routes
             app.use((err: any, req: Request, res: Response, next: NextFunction) => {
                 console.error(err);

@@ -9,7 +9,7 @@
  *           type: string
  *           description: Enrollment ID
  *           example: "507f1f77bcf86cd799439011"
- *         user_id:
+ *         student_id:
  *           type: string
  *           description: Student ID
  *           example: "507f1f77bcf86cd799439012"
@@ -19,18 +19,126 @@
  *           example: "507f1f77bcf86cd799439013"
  *         status:
  *           type: string
- *           enum: [enrolled, completed, dropped]
+ *           enum: [in_progress, completed]
  *           description: Enrollment status
- *           example: "enrolled"
- *         enrollment_date:
+ *           example: "in_progress"
+ *         date_join:
  *           type: string
  *           format: date-time
  *           description: Date of enrollment
- *         completion_date:
+ *         date_end:
  *           type: string
  *           format: date-time
  *           description: Date when enrollment was marked as completed
  *           nullable: true
+ */
+
+/**
+ * @openapi
+ * /api/enroll/student:
+ *   get:
+ *     tags:
+ *       - Enrollments
+ *     summary: Get my enrollments
+ *     description: "[Student] Get all enrollments for the authenticated student."
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: List of student's enrollments
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Enrollment'
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - Student access required
+ */
+
+/**
+ * @openapi
+ * /api/enroll/keypass:
+ *   post:
+ *     tags:
+ *       - Enrollments
+ *     summary: Enroll by keypass
+ *     description: "[Student] Enroll in a class using a keypass. The class is resolved from the keypass. Progress records are automatically created for all active class materials."
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - keypass
+ *             properties:
+ *               keypass:
+ *                 type: string
+ *                 description: Class enrollment keypass
+ *                 example: "ABC123XYZ"
+ *     responses:
+ *       201:
+ *         description: Enrollment successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Enrollment'
+ *       400:
+ *         description: Bad request - Invalid keypass or already enrolled
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - Student access required
+ */
+
+/**
+ * @openapi
+ * /api/enroll/invite/{class_id}:
+ *   post:
+ *     tags:
+ *       - Enrollments
+ *     summary: Invite student to class
+ *     description: "[Teacher] Invite a student to a class by providing their user ID. Only the teacher of the class can invite students. Progress records are automatically created for all active class materials."
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: class_id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Class ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - student_id
+ *             properties:
+ *               student_id:
+ *                 type: string
+ *                 description: Student's user ID
+ *                 example: "507f1f77bcf86cd799439012"
+ *     responses:
+ *       201:
+ *         description: Student enrolled successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Enrollment'
+ *       400:
+ *         description: Bad request - Student already enrolled or class not found
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - Must be the teacher of this class
  */
 
 /**
@@ -40,7 +148,7 @@
  *     tags:
  *       - Enrollments
  *     summary: Enroll in a class
- *     description: "[Student] Enroll in a class using the class ID."
+ *     description: "[Student] Enroll in a class using the class ID. On successful enrollment, progress records are automatically created for all active class materials."
  *     security:
  *       - cookieAuth: []
  *     parameters:
@@ -101,18 +209,6 @@
  *           type: integer
  *           default: 1
  *         description: Page number
- *       - in: query
- *         name: limit
- *         schema:
- *           type: integer
- *           default: 10
- *         description: Results per page
- *       - in: query
- *         name: status
- *         schema:
- *           type: string
- *           enum: [enrolled, completed, dropped]
- *         description: Filter by enrollment status
  *     responses:
  *       200:
  *         description: List of enrollments

@@ -8,6 +8,9 @@ class ClassRepo {
     async getClassById(id: string) {
         return await Class.findById(id);
     }
+    async getClassByKeypass(keypass: string) {
+        return await Class.findOne({ keypass });
+    }
     async searchClassesByName(name: string, page: number) {
         const limit = 12;
         const skip = (page - 1) * limit;
