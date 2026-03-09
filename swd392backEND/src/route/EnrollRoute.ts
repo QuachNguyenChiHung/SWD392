@@ -13,9 +13,6 @@ router.post("/enroll/keypass", verifyRole.verifyStudent, EnrollController.enroll
 // POST: /api/enroll/invite/:class_id - Teacher invites student to class
 router.post("/enroll/invite/:class_id", verifyRole.verifyTeacher, EnrollController.inviteStudent);
 
-// POST: /api/enroll/:class_id - Student enrollment (legacy)
-router.post("/enroll/:class_id", verifyRole.verifyStudent, EnrollController.createEnrollment);
-
 // GET: /teacher/enroll/:class_id  Get all enrollments from a class (paginated, teachers only)
 router.get("/teacher/enroll/:class_id", verifyRole.verifyTeacher, EnrollController.getEnrollmentsByClass);
 
