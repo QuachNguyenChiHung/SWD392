@@ -36,6 +36,13 @@ router.get("/class-materials/topic/:topicId/class/:classId", ClassMaterialContro
 
 // Moderator queue: published materials awaiting review (must be before /:id)
 router.get("/class-materials/moderator/pending", verifyRole.verifyModerator, ClassMaterialController.getPendingMaterials);
+
+// Teacher: get all file-type materials (file, slide, 2d_render) for the authenticated teacher
+router.get("/class-materials/teacher/files", verifyRole.verifyTeacher, ClassMaterialController.getUploadedFilesByTeacher);
+
+router.get("/class-materials/teacher/quiz", verifyRole.verifyTeacher, ClassMaterialController.getQuizByTeacher);
+
+
 router.get("/class-materials/:id", ClassMaterialController.getMaterialById);
 
 // Teacher-only writes

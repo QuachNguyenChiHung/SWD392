@@ -35,6 +35,26 @@ class ClassMaterialController {
         }
     }
 
+    async getUploadedFilesByTeacher(req: Request, res: Response, next: NextFunction) {
+        try {
+            const teacher_id = req.teacher?._id?.toString();
+            const classes = await ClassMaterialService.getClassMaterialsFilesByTeacher(teacher_id as string);
+            return res.status(200).json(classes);
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    async getQuizByTeacher(req: Request, res: Response, next: NextFunction) {
+        try {
+            const teacher_id = req.teacher?._id?.toString();
+            const classes = await ClassMaterialService.getClassMaterialsQuizByTeacher(teacher_id as string);
+            return res.status(200).json(classes);
+        } catch (error) {
+            next(error);
+        }
+    }
+
     // GET /api/class-materials/all?page=
     async getAllMaterials(req: Request, res: Response, next: NextFunction) {
         try {

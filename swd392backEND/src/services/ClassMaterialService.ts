@@ -27,6 +27,18 @@ class ClassMaterialService {
         return await ClassMaterialRepo.getClassMaterialsByType(classId, type);
     }
 
+    async getClassMaterialsFilesByTeacher(teacherId: string) {
+        const files = ['file', 'slide', '2d_render'];
+        const result = await ClassMaterialRepo.getClassMaterialsByTeacher(teacherId);
+        return result.filter((material: IClassMaterial) => files.includes(material.type));
+    }
+
+    async getClassMaterialsQuizByTeacher(teacherId: string) {
+        const files = ['quiz'];
+        const result = await ClassMaterialRepo.getClassMaterialsByTeacher(teacherId);
+        return result.filter((material: IClassMaterial) => files.includes(material.type));
+    }
+
     async getPendingMaterials(page: number = 1) {
         return await ClassMaterialRepo.getPendingMaterials(page);
     }
@@ -55,9 +67,6 @@ class ClassMaterialService {
         return await ClassMaterialRepo.getAllClassMaterials(page);
     }
 
-    async getClassMaterialsByTeacher(teacherId: string, page: number = 1) {
-        return await ClassMaterialRepo.getClassMaterialsByTeacher(teacherId, page);
-    }
 
 
     async createClassMaterial(materialData: any) {
