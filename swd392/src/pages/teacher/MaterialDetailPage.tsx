@@ -237,13 +237,7 @@ export default function MaterialDetailPage() {
             };
 
             setMaterial(updatedMaterial);
-
-            // Persist changes to backend
-            await classMaterialApi.updateMaterial(materialId, {
-                // Note: You may need to add a specific API for updating quiz content
-                // For now, this updates the general material data
-            });
-
+            // TODO: Persist question changes via a dedicated quiz/question API endpoint
         } catch (error) {
             console.error('Error updating quiz questions:', error);
             // Revert the local state change on error
