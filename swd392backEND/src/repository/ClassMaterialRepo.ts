@@ -1,4 +1,5 @@
 import { ClassMaterial } from "../entities/ClassMaterial.ts";
+import { Class } from "../entities/Class.ts";
 
 class ClassMaterialRepo {
     async getClassMaterialById(id: string) {
@@ -80,7 +81,8 @@ class ClassMaterialRepo {
     async getClassMaterialsByTeacher(teacherId: string, page: number) {
         const limit = 12;
         const skip = (page - 1) * limit;
-        return await ClassMaterial.find({ teacher_id: teacherId })
+        const classIds = await Class.find({ teacher_id: teacherId }).distinct('_id');
+        return await ClassMaterial.find({ class_assign_id: { $in: classIds } })
             .sort({ dateCreate: -1 })
             .skip(skip)
             .limit(limit);
