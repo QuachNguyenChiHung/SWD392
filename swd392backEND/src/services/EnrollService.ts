@@ -6,23 +6,18 @@ import ProgressClassMaterialService from "./ProgressClassMaterialService.ts";
 class EnrollService {
     async createEnrollment(enrollData: CreateEnrollDTO) {
         // Validate keypass with class
+        const classData = await Class.findById(enrollData.class_id);
         if (enrollData.class_id) {
-            const classData = await Class.findById(enrollData.class_id);
+
             if (!classData) {
                 return { error: "Class not found" };
             }
         }
 
-        if (enrollData.keypass) {
-            const classData = await Class.getClassByKeypass(enrollData.keypass);
-            if (!classData) {
-                return { error: "Class not found" };
-            }
-        }
         // Check if already enrolled
         const existingEnroll = await EnrollRepo.findEnrollByUserAndClass(
             enrollData.student_id,
-            enrollData.class_id
+            enrollData.class_id as string
         );
 
         if (existingEnroll) {
@@ -121,6 +116,59 @@ class EnrollService {
 
     async removeEnrollment(userId: string, classId: string) {
         return await EnrollRepo.deleteEnroll(userId, classId);
+    }
+
+    async getAdminEnrollmentStats(timeRange: string = '30days', status: string = 'all') {
+        const validTimeRanges = ['7days', '30days', '3months', '1year', 'all'];
+        const validStatuses = ['in_progress', 'completed', 'all'];
+        
+        if (!validTimeRanges.includes(timeRange)) {
+            return { error: "Invalid timeRange parameter. Must be one of: 7days, 30days, 3months, 1year, all" };
+        }
+        if (!validStatuses.includes(status)) {
+            return { error: "Invalid status parameter. Must be one of: in_progress, completed, all" };
+        }
+
+        const stats = await EnrollRepo.getAdminEnrollmentStats(timeRange, status);
+        
+        // Format byStatus data
+        const byStatus: any = {};
+        if (stats.byStatus) {
+            stats.byStatus.forEach((item: any) => {
+                byStatus[item._id] = item.count;
+            });
+        }
+
+        // Format trend data
+        const trend = stats.trend || [];
+        const trendData = trend.map((item: any) => ({
+            date: item._id,
+            count: item.count
+        }));
+
+        // Calculate total
+        const totalEnrollments = stats.total && stats.total[0] ? stats.total[0].count : 0;
+
+        // Calculate completion rate
+        const completedCount = byStatus.completed || 0;
+        const completionRate = totalEnrollments > 0 
+            ? Math.round((completedCount / totalEnrollments) * 1000) / 10 
+            : 0;
+
+        // Calculate average completion days
+        const avgCompletionDays = stats.completionData && stats.completionData[0]
+            ? Math.round(stats.completionData[0].avgDays)
+            : 0;
+
+        return {
+            timeRange,
+            status,
+            totalEnrollments,
+            byStatus,
+            completionRate,
+            averageCompletionDays: avgCompletionDays,
+            trend: trendData
+        };
     }
 }
 

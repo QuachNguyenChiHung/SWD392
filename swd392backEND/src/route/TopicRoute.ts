@@ -9,8 +9,12 @@ router.post("/topics", verifyRole.verifyAdmin, TopicController.createTopic);
 
 // GET: Search topics by keyword (paginated)
 router.get("/topics/search", TopicController.searchTopicsByKeyword);
+
 // PUT: Update topic (admin only)
 router.put("/topics/:id", verifyRole.verifyAdmin, TopicController.updateTopic);
+
+// DELETE: Delete topic with cascade (admin only)
+router.delete("/topics/:id", verifyRole.verifyAdmin, TopicController.deleteTopic);
 
 // GET: Get topic by ID
 router.get("/topics/:id", TopicController.getTopicById);

@@ -86,6 +86,60 @@ class TopicController {
             next(error);
         }
     }
+
+    /**
+     * DELETE: Delete a topic with cascade deletion of all related entities.
+     * 
+     * Performs atomic cascade deletion of:
+     * - All ClassMaterials associated with the topic
+     * - All content entities (Quiz, File, Slide, Render2D, AiContent, AiRequest) via ClassMaterial
+     * - All Feedback related to the materials
+     * - All ProgressClassMaterial records
+     * - The Topic itself
+     * 
+     * Uses MongoDB transactions for atomicity - either all entities are deleted or none are.
+     * 
+     * @route DELETE /topics/:id
+     * @param {Request} req - Express request with topic ID in params
+     * @param {Response} res - Express response
+     * @param {NextFunction} next - Express error handler
+     * 
+     * @returns {Response} 200 - Success with deletion counts
+     * @returns {Response} 404 - Topic not found
+     * @returns {Response} 500 - Transaction failed
+     * 
+     * @example
+     * // Success response
+     * {
+     *   "success": true,
+     *   "message": "Topic deleted successfully",
+     *   "deletedCounts": {
+     *     "topics": 1,
+     *     "classMaterials": 5,
+     *     "quizzes": 2,
+     *     "questions": 15,
+     *     "aiContents": 3,
+     *     ...
+     *   }
+     * }
+     */
+    async deleteTopic(req: Request, res: Response, next: NextFunction) {
+        try {
+            const { id } = req.params;
+            const result = await TopicService.deleteTopicCascade(id);
+
+            if (!result.success) {
+                if (result.error === "Topic not found") {
+                    return res.status(404).json(result);
+                }
+                return res.status(500).json(result);
+            }
+
+            res.status(200).json(result);
+        } catch (error) {
+            next(error);
+        }
+    }
 }
 
 export default new TopicController();

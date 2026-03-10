@@ -1,4 +1,4 @@
-import type { CreateRender2DDTO } from "../dto/Render2DDTO";
+import type { CreateRender2DDTO } from "../dto/Render2DDTO.ts";
 import { Render2D } from "../entities/Render2D.ts";
 
 class Render2DRepo {

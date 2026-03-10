@@ -7,5 +7,5 @@ export interface IUser extends Document {
     password: string;
     name: string;
     date_create: Date;
-    status: "active" | "inactive" | "banned";
+    status: "active" | "banned" | "deleted";
 }
