@@ -1,4 +1,4 @@
-import { Box, Typography, Stack, Paper, Button, TextField, Modal, FormControl, InputLabel, Select, MenuItem, RadioGroup, FormControlLabel, Radio, FormLabel } from "@mui/material";
+import { Box, Typography, Stack, Paper, Button } from "@mui/material";
 import {
   Add,
   Description,
@@ -6,12 +6,12 @@ import {
   ViewInAr,
   Quiz,
   AutoAwesome,
-  CloudUpload,
 } from "@mui/icons-material";
-import { type Topic, type ClassMaterialType, type Question } from "../../../types/teacherType";
-import { useState } from "react";
+import { type Topic, type ClassMaterialType, type ClassMaterial, type CreateClassMaterialDTO } from "../../../types/teacherType";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import QuestionManager from "../../../components/QuestionManager";
+import CreateClassMaterialModal from "../../../components/CreateClassMaterialModal";
+import classMaterialApi from "../../../services/teacherApi/classMaterialApi";
 
 const getMaterialIcon = (type: ClassMaterialType) => {
   switch (type) {
@@ -35,79 +35,83 @@ interface ClassMaterialProps {
 
 export default function ClassMaterial({ topics, classId }: ClassMaterialProps) {
   const navigate = useNavigate();
-  const [modalClassMaterialCreation, setModalClassMaterialCreation] = useState(false);
-  const [selectedMaterialType, setSelectedMaterialType] = useState<ClassMaterialType | "">("");
-  const [selectedQuizType, setSelectedQuizType] = useState("standard");
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [materialName, setMaterialName] = useState("");
-  const [materialDescription, setMaterialDescription] = useState("");
+  const [modalOpen, setModalOpen] = useState(false);
   const [currentTopicId, setCurrentTopicId] = useState<string>("");
-  const [quizQuestions, setQuizQuestions] = useState<Question[]>([]);
+  const [currentTopic, setCurrentTopic] = useState<Topic | null>(null);
+  const [materialsByTopic, setMaterialsByTopic] = useState<Record<string, ClassMaterial[]>>({});
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.files && event.target.files[0]) {
-      setSelectedFile(event.target.files[0]);
+  // Fetch materials for all topics
+  useEffect(() => {
+    const fetchMaterials = async () => {
+      const materialMap: Record<string, ClassMaterial[]> = {};
+
+      for (const topic of topics) {
+        const topicId = topic._id || topic.topic_id;
+        try {
+          const materials = await classMaterialApi.getMaterialByTopicAndClass(topicId, classId);
+          materialMap[topicId] = materials;
+        } catch (error) {
+          console.error(`Error fetching materials for topic ${topicId}:`, error);
+          materialMap[topicId] = [];
+        }
+      }
+
+      setMaterialsByTopic(materialMap);
+    };
+
+    if (topics.length > 0) {
+      fetchMaterials();
     }
+  }, [topics, classId]);
+
+  const getTopicId = (topic: Topic) => topic._id || topic.topic_id;
+
+  const handleOpenModal = (topicId: string) => {
+    const topic = topics.find(t => getTopicId(t) === topicId);
+    setCurrentTopicId(topicId);
+    setCurrentTopic(topic || null);
+    setModalOpen(true);
   };
 
   const handleModalClose = () => {
-    setModalClassMaterialCreation(false);
-    setSelectedMaterialType("");
-    setSelectedQuizType("standard");
-    setSelectedFile(null);
-    setMaterialName("");
-    setMaterialDescription("");
+    setModalOpen(false);
     setCurrentTopicId("");
-    setQuizQuestions([]);
+    setCurrentTopic(null);
   };
 
-  const handleOpenModal = (topicTitle: string) => {
-    setCurrentTopicId(topicTitle);
-    setModalClassMaterialCreation(true);
-  };
-
-  const handleCreateMaterial = () => {
-    // Basic validation
-    if (!materialName.trim()) {
-      alert("Vui lòng nhập tên tài liệu");
-      return;
+  const handleMaterialCreated = async (topicId: string, newMaterial: CreateClassMaterialDTO) => {
+    // Refresh materials for the topic
+    try {
+      const updatedMaterials = await classMaterialApi.getMaterialByTopicAndClass(topicId, classId);
+      setMaterialsByTopic(prev => ({
+        ...prev,
+        [topicId]: updatedMaterials
+      }));
+    } catch (error) {
+      console.error(`Error refreshing materials for topic ${topicId}:`, error);
     }
-    if (!selectedMaterialType) {
-      alert("Vui lòng chọn loại tài liệu");
-      return;
-    }
-    if ((selectedMaterialType === "file" || selectedMaterialType === "slide") && !selectedFile) {
-      alert("Vui lòng chọn tệp để tải lên");
-      return;
-    }
-    if (selectedMaterialType === "quiz" && quizQuestions.length === 0) {
-      alert("Vui lòng thêm ít nhất một câu hỏi cho bài kiểm tra");
-      return;
-    }
-
-    // TODO: Implement actual API call to create material
-    console.log("Creating material:", {
-      name: materialName,
-      description: materialDescription,
-      type: selectedMaterialType,
-      quizType: selectedQuizType,
-      questions: quizQuestions,
-      file: selectedFile,
-      topicId: currentTopicId,
-      classId
-    });
-
-    // Close modal and reset form
-    handleModalClose();
   };
 
   const handleMaterialClick = (material: any) => {
-    navigate(`/teacher/class/${classId}/materials/${material.material_id}`, { state: { material } });
+    const id = material._id || material.material_id;
+    console.log('Material clicked:', material, 'Resolved ID:', id);
+    navigate(`/teacher/class/${classId}/materials/${id}`, { state: { material } });
   };
+
   return (
     <>
+      <CreateClassMaterialModal
+        open={modalOpen}
+        onClose={handleModalClose}
+        onMaterialCreated={handleMaterialCreated}
+        topicId={currentTopicId}
+        classId={classId}
+        currentMaterialCount={materialsByTopic[currentTopicId]?.length || 0}
+        topicTitle={currentTopic?.title}
+      />
+
       {topics.map((topic) => (
-        <Paper key={topic.title} sx={{ p: 3 }}>
+        <Paper key={getTopicId(topic)} sx={{ p: 3 }}>
           <Stack spacing={2} mb={2}>
             <Stack
               direction="row"
@@ -116,173 +120,35 @@ export default function ClassMaterial({ topics, classId }: ClassMaterialProps) {
             >
               <Typography variant="h6">{topic.title}</Typography>
               <div style={{ display: "flex", gap: "8px" }}>
-                <Button variant="contained" size="small" startIcon={<Add />} onClick={() => handleOpenModal(topic.title)}>
+                <Button variant="contained" size="small" startIcon={<Add />} onClick={() => handleOpenModal(getTopicId(topic))}>
                   Thêm tài liệu
                 </Button>
-                <Button variant="contained" startIcon={<AutoAwesome />}>
+                <Button
+                  variant="contained"
+                  startIcon={<AutoAwesome />}
+                  onClick={() => navigate(`/teacher/class/${classId}/ai-generator`, {
+                    state: { topic: topic, classId: classId }
+                  })}
+                >
                   Tạo với AI
                 </Button>
               </div>
 
             </Stack>
-            <Modal
-              open={modalClassMaterialCreation}
-              onClose={handleModalClose}
-              aria-labelledby="modal-modal-title"
-              aria-describedby="modal-modal-description"
-            >
-              <Box sx={{
-                position: 'absolute',
-                top: '50%',
-                left: '50%',
-                transform: 'translate(-50%, -50%)',
-                width: { xs: '95%', sm: '80%', md: 800 },
-                bgcolor: 'background.paper',
-                borderRadius: 2,
-                boxShadow: 24,
-                p: 4,
-                maxHeight: '85vh',
-                overflowY: 'auto'
-              }}>
-                <Typography id="modal-modal-title" variant="h6" component="h2" gutterBottom>
-                  Tạo tài liệu cho chủ đề {currentTopicId}
-                </Typography>
-                <Stack spacing={3}>
-                  <TextField
-                    label="Tên tài liệu"
-                    variant="outlined"
-                    required
-                    fullWidth
-                    value={materialName}
-                    onChange={(e) => setMaterialName(e.target.value)}
-                  />
-                  <TextField
-                    label="Mô tả tài liệu"
-                    variant="outlined"
-                    multiline
-                    rows={3}
-                    fullWidth
-                    value={materialDescription}
-                    onChange={(e) => setMaterialDescription(e.target.value)}
-                  />
-                  <FormControl fullWidth>
-                    <InputLabel id="material-type-select-label">Loại tài liệu</InputLabel>
-                    <Select
-                      labelId="material-type-select-label"
-                      id="material-type-select"
-                      value={selectedMaterialType}
-                      onChange={(e) => setSelectedMaterialType(e.target.value as ClassMaterialType)}
-                      label="Loại tài liệu"
-                      required
-                    >
-                      <MenuItem value={"file"}>File</MenuItem>
-                      <MenuItem value={"slide"}>Slide</MenuItem>
-                      <MenuItem value={"2d_render"}>2D Render</MenuItem>
-                      <MenuItem value={"quiz"}>Quiz</MenuItem>
-                    </Select>
-                  </FormControl>
-
-                  {/* Conditional rendering based on material type */}
-                  {(selectedMaterialType === "file" || selectedMaterialType === "slide") && (
-                    <Box sx={{ mt: 2 }}>
-                      <Typography variant="subtitle2" gutterBottom>
-                        Tải lên {selectedMaterialType === "file" ? "Tệp" : "Slide"}
-                      </Typography>
-                      <Button
-                        variant="outlined"
-                        component="label"
-                        startIcon={<CloudUpload />}
-                        sx={{ mb: 1 }}
-                      >
-                        Chọn tệp
-                        <input
-                          type="file"
-                          hidden
-                          onChange={handleFileChange}
-                          accept={selectedMaterialType === "file" ? "*/*" : ".ppt,.pptx,.pdf"}
-                        />
-                      </Button>
-                      {selectedFile && (
-                        <Typography variant="body2" color="text.secondary">
-                          Đã chọn: {selectedFile.name}
-                        </Typography>
-                      )}
-                    </Box>
-                  )}
-
-                  {selectedMaterialType === "2d_render" && (
-                    <Box sx={{ p: 2, border: "1px dashed grey", borderRadius: 1, textAlign: 'center' }}>
-                      <ViewInAr sx={{ fontSize: 48, color: 'text.secondary', mb: 1 }} />
-                      <Typography variant="body2" color="text.secondary">
-                        Tính năng 2D Render sắp ra mắt...
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary" display="block">
-                        Sẽ hỗ trợ tạo mô hình hóa học 3D tương tác
-                      </Typography>
-                    </Box>
-                  )}
-
-                  {selectedMaterialType === "quiz" && (
-                    <Box>
-                      <FormControl component="fieldset" fullWidth sx={{ mb: 3 }}>
-                        <FormLabel component="legend">Loại bài kiểm tra</FormLabel>
-                        <RadioGroup
-                          value={selectedQuizType}
-                          onChange={(e) => setSelectedQuizType(e.target.value)}
-                        >
-                          <FormControlLabel
-                            value="interactive"
-                            control={<Radio />}
-                            label="Câu hỏi tương tác (có thể có 2D visualization)"
-                          />
-                          <FormControlLabel
-                            value="standard"
-                            control={<Radio />}
-                            label="Chỉ câu hỏi thông thường"
-                          />
-                        </RadioGroup>
-                      </FormControl>
-
-                      <QuestionManager
-                        questions={quizQuestions}
-                        onChange={setQuizQuestions}
-                        quizType={selectedQuizType as 'interactive' | 'standard'}
-                      />
-                    </Box>
-                  )}
-
-                </Stack>
-
-                <Stack direction="row" spacing={2} justifyContent="end" sx={{ mt: 4 }}>
-                  <Button variant="outlined" onClick={handleModalClose}>
-                    Hủy
-                  </Button>
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    onClick={handleCreateMaterial}
-                    disabled={!materialName.trim() || !selectedMaterialType ||
-                      (selectedMaterialType === "quiz" && quizQuestions.length === 0)}
-                  >
-                    Tạo tài liệu
-                  </Button>
-                </Stack>
-              </Box>
-            </Modal>
             <Box>
               <Typography variant="body2" color="text.secondary">
                 {topic.description}
               </Typography>
               <Typography variant="caption" color="text.secondary">
-                {topic.class} · {topic.belongToCourse}
+                Chủ đề {topic.order_num} · {materialsByTopic[getTopicId(topic)]?.length || 0} tài liệu
               </Typography>
             </Box>
           </Stack>
 
           <Stack spacing={1}>
-            {topic?.ClassMaterialType?.map((material) => (
+            {materialsByTopic[getTopicId(topic)]?.map((material, materialIndex) => (
               <Box
-                key={material.material_id}
+                key={material._id ?? materialIndex}
                 sx={{
                   display: "flex",
                   justifyContent: "space-between",
@@ -317,7 +183,11 @@ export default function ClassMaterial({ topics, classId }: ClassMaterialProps) {
                   Xem
                 </Button>
               </Box>
-            ))}
+            )) || (
+                <Typography variant="body2" color="text.secondary" sx={{ py: 2, textAlign: 'center' }}>
+                  Chưa có tài liệu nào cho chủ đề này
+                </Typography>
+              )}
           </Stack>
         </Paper>
       ))}

@@ -21,6 +21,7 @@ import StudentQuizzes from "../pages/student/StudentQuizzes";
 // Teacher Pages
 import TeacherDashboard from "../pages/teacher/TeacherDashboard";
 import TeacherClasses from "../pages/teacher/TeacherClasses";
+import AiContentGenerator from "../pages/teacher/aiContentGenerator";
 
 
 // Moderator Pages
@@ -36,6 +37,8 @@ import ProtectedRoute from "../components/ProtectedRoute";
 import TeacherClassDetail from "../pages/teacher/teacherClassDetail";
 import MaterialDetailPage from "../pages/teacher/MaterialDetailPage";
 import StudentClassDetail from "../pages/student/StudentClassDetail";
+import QuizTakingInterface from "../components/student/quizTakingInterface";
+import { QuizResultView } from "../pages/student/QuizResultView";
 
 export const routes: RouteObject[] = [
   {
@@ -108,6 +111,22 @@ export const routes: RouteObject[] = [
               </ProtectedRoute>
             ),
           },
+          {
+            path: "take-quiz/:id",
+            element: (
+              <ProtectedRoute allowedRoles={[UserRole.STUDENT]}>
+                <QuizTakingInterface />
+              </ProtectedRoute>
+            ),
+          },
+          {
+            path: "quiz-result/:id",
+            element: (
+              <ProtectedRoute allowedRoles={[UserRole.STUDENT]}>
+                <QuizResultView />
+              </ProtectedRoute>
+            ),
+          },
         ],
       },
 
@@ -136,6 +155,14 @@ export const routes: RouteObject[] = [
             element: (
               <ProtectedRoute allowedRoles={[UserRole.TEACHER]}>
                 <TeacherClassDetail />
+              </ProtectedRoute>
+            ),
+          },
+          {
+            path: "class/:classId/ai-generator",
+            element: (
+              <ProtectedRoute allowedRoles={[UserRole.TEACHER]}>
+                <AiContentGenerator />
               </ProtectedRoute>
             ),
           },

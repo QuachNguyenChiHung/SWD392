@@ -5,7 +5,6 @@ import type { User } from '../types';
 export interface LoginRequest {
     email: string;
     password: string;
-    role?: string; // Backend requires role, but we'll try to get it from user account
 }
 
 export interface RegisterRequest {
@@ -29,33 +28,14 @@ export interface ApiError {
 class AuthService {
     async login(credentials: LoginRequest): Promise<AuthResponse> {
         try {
-            // Backend requires role in login, but user shouldn't select it
-            // Try to login with each possible role until one works
-            const roles = ['student', 'teacher', 'admin', 'moderator'];
-            let loginResponse = null;
-
-            for (const role of roles) {
-                try {
-                    loginResponse = await apiService.post('/login', {
-                        ...credentials,
-                        role
-                    });
-                    break; // Success, exit loop
-                } catch (error) {
-                    // If this is the last role to try, throw the error
-                    if (role === roles[roles.length - 1]) {
-                        throw error;
-                    }
-                    // Otherwise, continue to try next role
-                    continue;
-                }
-            }
+            // Backend expects email and password, and sets signed cookie automatically
+            const loginResponse = await apiService.post('/login', credentials);
 
             if (!loginResponse?.token) {
                 throw new Error('Login failed - no token received');
             }
 
-            // Store token
+            // Store token in localStorage as backup (backend uses signed cookies as primary)
             localStorage.setItem('token', loginResponse.token);
 
             // Get user data from /me endpoint
@@ -97,8 +77,8 @@ class AuthService {
 
     async logout(): Promise<void> {
         try {
-            // Call logout endpoint to invalidate session/token on backend
-            await apiService.post('/logout', {});
+            // Call logout endpoint to clear signed cookie on backend
+            await apiService.post('/removeToken', {});
         } catch (error) {
             console.error('Logout API call failed:', error);
             // Continue with local cleanup even if API call fails

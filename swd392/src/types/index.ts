@@ -102,8 +102,8 @@ export interface ScheduleSlot {
 }
 
 export interface DueAssignment {
-  quiz_id: number;
-  material_id: number;
+  quiz_id: string;
+  material_id: string;
   title: string;
   keyword: string | null;
   type: string;

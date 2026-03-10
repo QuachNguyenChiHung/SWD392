@@ -7,12 +7,30 @@ import {
   Typography,
 } from "@mui/material";
 import { MoreVert } from "@mui/icons-material";
-import type { UploadedFileRecord } from "../../types";
+
+export type FileMaterial = {
+  _id: string;
+  title: string;
+  type: string;
+  dateCreate: string;
+  status: string;
+  class_assign_id: string;
+  content_id?: string;
+};
 
 type UploadedFileItemProps = {
-  file: UploadedFileRecord;
+  file: FileMaterial;
   showDivider: boolean;
   onClick?: () => void;
+};
+
+const getTypeLabel = (type: string) => {
+  switch (type) {
+    case "file": return "File";
+    case "slide": return "Slide";
+    case "2d_render": return "2D Render";
+    default: return type;
+  }
 };
 
 const UploadedFileItem = ({ file, showDivider, onClick }: UploadedFileItemProps) => (
@@ -32,10 +50,10 @@ const UploadedFileItem = ({ file, showDivider, onClick }: UploadedFileItemProps)
       }
     >
       <ListItemText
-        primary={<Typography variant="subtitle2">{file.file}</Typography>}
+        primary={<Typography variant="subtitle2">{file.title}</Typography>}
         secondary={
-          <Typography variant="body2" color="text.secondary">
-            {file.course} · {file.createdAt}
+          <Typography variant="body2" color="text.secondary" component="span">
+            {getTypeLabel(file.type)} · {new Date(file.dateCreate).toLocaleDateString()}
           </Typography>
         }
       />

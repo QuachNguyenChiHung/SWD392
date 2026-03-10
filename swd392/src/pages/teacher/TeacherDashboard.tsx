@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import {
   Box,
   Typography,
@@ -5,96 +6,67 @@ import {
   Paper,
   Button,
   Grid,
-  List,
+  CircularProgress,
   Table,
   TableBody,
   TableCell,
+  TableContainer,
   TableHead,
   TableRow,
+  List,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import CourseProgressCard from "../../components/dashboard/CourseProgressCard";
 import DueAssignmentRow from "../../components/dashboard/DueAssignmentRow";
+import type { QuizMaterial } from "../../components/dashboard/DueAssignmentRow";
 import UploadedFileItem from "../../components/dashboard/UploadedFileItem";
-import type {
-  ClassCompletionStat,
-  UploadedFileRecord,
-  DueAssignment,
-} from "../../types/teacherType";
-import {
-  classCompletionStats,
-  quickActions,
-  dueAssignments,
-  uploadedFiles,
-  teacherClasses,
-  getTopicsByClassId,
-  getAllMaterials,
-  mockTopicsByClass
-} from "../../../data/teacherMockData";
+import type { FileMaterial } from "../../components/dashboard/UploadedFileItem";
+import { apiService } from "../../services/api";
+import classMaterialApi from "../../services/teacherApi/classMaterialApi";
+
+type ClassProgress = {
+  name: string;
+  completed: number;
+  total: number;
+};
 
 const TeacherDashboard = () => {
   const navigate = useNavigate();
 
-  // Handle navigation to quiz/material preview
-  const handleDueAssignmentClick = (assignment: DueAssignment) => {
-    // Find the material from all classes
-    const allMaterials = getAllMaterials();
-    const material = allMaterials.find(material => material.material_id === assignment.material_id);
+  const [classProgress, setClassProgress] = useState<ClassProgress[]>([]);
+  const [quizzes, setQuizzes] = useState<QuizMaterial[]>([]);
+  const [files, setFiles] = useState<FileMaterial[]>([]);
+  const [loading, setLoading] = useState(true);
 
-    if (material) {
-      // Find which class this material belongs to
-      const classId = findClassIdForMaterial(material.material_id);
-      if (classId) {
-        navigate(`/teacher/class/${classId}/materials/${material.material_id}`, {
-          state: { material }
-        });
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        const [dashboardRes, quizRes, fileRes] = await Promise.all([
+          apiService.get("/dashboard"),
+          classMaterialApi.getTeacherQuizzes(),
+          classMaterialApi.getTeacherFiles(),
+        ]);
+
+        setClassProgress(dashboardRes.classProgress ?? []);
+        setQuizzes((quizRes as QuizMaterial[]) ?? []);
+        setFiles((fileRes as FileMaterial[]) ?? []);
+      } catch (error) {
+        console.error("Error fetching dashboard data:", error);
+      } finally {
+        setLoading(false);
       }
-    }
-  };
+    };
 
-  // Handle navigation to file preview
-  const handleFileClick = (file: UploadedFileRecord) => {
-    // Find the material from all classes
-    const allMaterials = getAllMaterials();
-    const material = allMaterials.find(material => material.material_id === file.file_id);
+    fetchDashboardData();
+  }, []);
 
-    if (material) {
-      // Find which class this material belongs to
-      const classId = findClassIdForMaterial(material.material_id);
-      if (classId) {
-        navigate(`/teacher/class/${classId}/materials/${material.material_id}`, {
-          state: { material }
-        });
-      }
-    }
-  };
-
-  // Helper function to find which class a material belongs to
-  const findClassIdForMaterial = (materialId: number) => {
-    for (const [classId, topics] of Object.entries(mockTopicsByClass || {})) {
-      const hasMateria = topics.some(topic =>
-        topic.ClassMaterialType?.some(material => material.material_id === materialId)
-      );
-      if (hasMateria) {
-        return classId;
-      }
-    }
-    return null;
-  };
-
-  // Handle navigation to class detail
-  const handleClassProgressClick = (stat: ClassCompletionStat) => {
-    // Find the class by course name
-    const targetClass = teacherClasses.find(cls => cls.course_name === stat.course);
-    if (targetClass) {
-      navigate(`/teacher/class/${targetClass.class_id}`, {
-        state: {
-          classDetail: targetClass,
-          materials: getTopicsByClassId(targetClass.class_id)
-        }
-      });
-    }
-  };
+  if (loading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight={300}>
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   return (
     <Box>
@@ -108,148 +80,128 @@ const TeacherDashboard = () => {
         <Grid container spacing={3}>
           <Grid size={{ xs: 12, md: 8 }}>
             <Grid container direction="column" spacing={3}>
+              {/* Class Stats */}
               <Grid size={{ xs: 12 }}>
                 <Paper sx={{ p: 3 }}>
-                  <Stack
-                    direction="row"
-                    justifyContent="space-between"
-                    alignItems="center"
-                    mb={2}
-                  >
-                    <Typography variant="h6">Class progress</Typography>
+                  <Typography variant="h6" gutterBottom>
+                    Thống kê lớp học
+                  </Typography>
+                  {classProgress.length === 0 ? (
                     <Typography variant="body2" color="text.secondary">
-                      Students who finished all materials
+                      Chưa có lớp học nào.
                     </Typography>
-                  </Stack>
-                  <Box
-                    sx={{
-                      display: "grid",
-                      gridAutoFlow: "column",
-                      gridAutoColumns: "minmax(240px, 260px)",
-                      gap: 2,
-                      overflowX: "auto",
-                      width: "100%",
-                      pb: 1,
-                    }}
-                  >
-                    {classCompletionStats.map((stat) => (
-                      <CourseProgressCard
-                        key={stat.course}
-                        {...stat}
-                        onClick={() => handleClassProgressClick(stat)}
-                      />
-                    ))}
-                  </Box>
+                  ) : (
+                    <Grid container spacing={2}>
+                      {classProgress.map((cp) => (
+                        <Grid size={{ xs: 12, sm: 6, md: 4 }} key={cp.name}>
+                          <CourseProgressCard
+                            name={cp.name}
+                            completed={cp.completed}
+                            total={cp.total}
+                          />
+                        </Grid>
+                      ))}
+                    </Grid>
+                  )}
                 </Paper>
               </Grid>
+
+              {/* Quizzes */}
               <Grid size={{ xs: 12 }}>
                 <Paper sx={{ p: 3 }}>
-                  <Stack
-                    direction="row"
-                    justifyContent="space-between"
-                    alignItems="center"
-                    mb={2}
-                  >
-                    <Typography variant="h6">What's due</Typography>
-                    <Button variant="text" size="small">
-                      Up coming class material
-                    </Button>
-                  </Stack>
-                  <Table size="small">
-                    <TableHead>
-                      <TableRow>
-                        <TableCell>Quiz</TableCell>
-                        <TableCell>Available</TableCell>
-                        <TableCell>End date</TableCell>
-                        <TableCell>Status</TableCell>
-                        <TableCell align="right">Actions</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {dueAssignments.map((item) => (
-                        <DueAssignmentRow
-                          key={item.quiz_id}
-                          assignment={item}
-                          onClick={() => handleDueAssignmentClick(item)}
+                  <Typography variant="h6" gutterBottom>
+                    Bài kiểm tra
+                  </Typography>
+                  {quizzes.length === 0 ? (
+                    <Typography variant="body2" color="text.secondary">
+                      Chưa có bài kiểm tra nào.
+                    </Typography>
+                  ) : (
+                    <TableContainer>
+                      <Table size="small">
+                        <TableHead>
+                          <TableRow>
+                            <TableCell>Tiêu đề</TableCell>
+                            <TableCell>Ngày tạo</TableCell>
+                            <TableCell>Trạng thái</TableCell>
+                            <TableCell align="right" />
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          {quizzes.slice(0, 5).map((quiz) => (
+                            <DueAssignmentRow
+                              key={quiz._id}
+                              quiz={quiz}
+                              onClick={() => navigate(`/teacher/class/${quiz.class_assign_id}/materials/${quiz._id}`)}
+                            />
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
+                  )}
+                </Paper>
+              </Grid>
+
+              {/* Uploaded Files */}
+              <Grid size={{ xs: 12 }}>
+                <Paper sx={{ p: 3 }}>
+                  <Typography variant="h6" gutterBottom>
+                    Tệp đã tải lên gần đây
+                  </Typography>
+                  {files.length === 0 ? (
+                    <Typography variant="body2" color="text.secondary">
+                      Chưa có tệp nào được tải lên.
+                    </Typography>
+                  ) : (
+                    <List disablePadding>
+                      {files.slice(0, 5).map((file, idx) => (
+                        <UploadedFileItem
+                          key={file._id}
+                          file={file}
+                          showDivider={idx < Math.min(files.length, 5) - 1}
+                          onClick={() => navigate(`/teacher/class/${file.class_assign_id}/materials/${file._id}`)}
                         />
                       ))}
-                    </TableBody>
-                  </Table>
-                </Paper>
-              </Grid>
-              <Grid size={{ xs: 12 }}>
-                <Paper sx={{ p: 3 }}>
-                  <Stack
-                    direction="row"
-                    justifyContent="space-between"
-                    alignItems="center"
-                    mb={2}
-                  >
-                    <Typography variant="h6">Latest uploaded files</Typography>
-                    <Button variant="text" size="small">
-                      View all files
-                    </Button>
-                  </Stack>
-                  <List disablePadding>
-                    {uploadedFiles.map((file, index) => (
-                      <UploadedFileItem
-                        key={file.file}
-                        file={file}
-                        showDivider={index < uploadedFiles.length - 1}
-                        onClick={() => handleFileClick(file)}
-                      />
-                    ))}
-                  </List>
+                    </List>
+                  )}
                 </Paper>
               </Grid>
             </Grid>
           </Grid>
+
+          {/* Quick Actions Sidebar */}
           <Grid size={{ xs: 12, md: 4 }}>
-            <Grid container direction="column" spacing={3}>
-              <Grid size={{ xs: 12 }}>
-                <Paper sx={{ p: 3 }}>
-                  <Stack
-                    direction="row"
-                    justifyContent="space-between"
-                    alignItems="center"
-                    mb={2}
-                  >
-                    <Typography variant="h6">Quick actions</Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {quickActions.length} items
-                    </Typography>
-                  </Stack>
-                  <Stack spacing={2}>
-                    {quickActions.map((action) => (
-                      <Paper
-                        key={action.title}
-                        variant="outlined"
-                        sx={{
-                          p: 2,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          gap: 2,
-                          flexWrap: "wrap",
-                        }}
-                      >
-                        <Box>
-                          <Typography variant="subtitle2" fontWeight={600}>
-                            {action.title}
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            {action.description}
-                          </Typography>
-                        </Box>
-                        <Button variant="contained" size="small">
-                          {action.actionLabel}
-                        </Button>
-                      </Paper>
-                    ))}
-                  </Stack>
+            <Paper sx={{ p: 3 }}>
+              <Typography variant="h6" gutterBottom>
+                Thao tác nhanh
+              </Typography>
+              <Stack spacing={2}>
+                <Paper
+                  variant="outlined"
+                  sx={{ p: 2, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 2, flexWrap: "wrap" }}
+                >
+                  <Box>
+                    <Typography variant="subtitle2" fontWeight={600}>Tạo lớp học mới</Typography>
+                    <Typography variant="body2" color="text.secondary">Tạo lớp học mới với tài liệu.</Typography>
+                  </Box>
+                  <Button variant="contained" size="small" onClick={() => navigate("/teacher/classes")}>
+                    Tạo lớp
+                  </Button>
                 </Paper>
-              </Grid>
-            </Grid>
+                <Paper
+                  variant="outlined"
+                  sx={{ p: 2, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 2, flexWrap: "wrap" }}
+                >
+                  <Box>
+                    <Typography variant="subtitle2" fontWeight={600}>Xem tất cả khóa học</Typography>
+                    <Typography variant="body2" color="text.secondary">Duyệt danh sách khóa học bạn quản lý.</Typography>
+                  </Box>
+                  <Button variant="contained" size="small" onClick={() => navigate("/teacher/courses")}>
+                    Khóa học
+                  </Button>
+                </Paper>
+              </Stack>
+            </Paper>
           </Grid>
         </Grid>
       </Stack>

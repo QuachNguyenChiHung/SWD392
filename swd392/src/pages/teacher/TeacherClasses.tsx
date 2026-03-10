@@ -12,27 +12,85 @@ import {
   Modal,
   TextField,
   Autocomplete,
+  CircularProgress,
+  Alert,
 } from "@mui/material";
 import { Add } from "@mui/icons-material";
 import ClassTableRow from "../../components/teacher/ClassTableRow";
-import CourseTopicTable from "../../components/CourseTopicTable";
-import type { Class, Course } from "../../types/teacherType";
-import { useState } from "react";
-import { teacherClasses, courseOptions } from "../../../data/teacherMockData";
+import type { Class, Course, CreateClassData } from "../../types/teacherType";
+import { useState, useEffect } from "react";
+import { teacherClassApi } from "../../services/teacherApi/teacherClassApi";
+import { courseApi } from "../../services/teacherApi/courseApi";
 
 const TeacherClasses = () => {
-  const classes: (Class & { studentCount: number })[] = teacherClasses;
+  const [classes, setClasses] = useState<Class[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [modalClassCreation, setModalClassCreation] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [className, setClassName] = useState("");
+  const [classDescription, setClassDescription] = useState("");
+  const [creating, setCreating] = useState(false);
+
+  // Course states
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [coursesLoading, setCoursesLoading] = useState(false);
+
+  // Fetch classes on component mount
+  useEffect(() => {
+    fetchClasses();
+  }, []);
+
+  const fetchClasses = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const fetchedClasses = await teacherClassApi.getClassesByTeacher();
+      setClasses(fetchedClasses);
+    } catch (err) {
+      console.error('Error fetching classes:', err);
+      setError('Không thể tải danh sách lớp học. Vui lòng thử lại.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchCourses = async () => {
+    try {
+      setCoursesLoading(true);
+      setError(null);
+      const response = await courseApi.getActiveCourses(1);
+      setCourses(response.courses || response || []);
+    } catch (err) {
+      console.error('Error fetching courses:', err);
+      setError('Không thể tải danh sách khóa học. Vui lòng thử lại.');
+      setCourses([]);
+    } finally {
+      setCoursesLoading(false);
+    }
+  };
+
+  const handleModalOpen = async () => {
+    setModalClassCreation(true);
+    // Fetch courses when modal opens
+    await fetchCourses();
+  };
 
   const handleModalClose = () => {
     setModalClassCreation(false);
     setSelectedCourse(null);
     setClassName("");
+    setClassDescription("");
+    setCreating(false);
+    setCourses([]);
+    setError(null);
   };
 
-  const handleCreateClass = () => {
+  const handleCourseSelection = (course: Course | null) => {
+    setSelectedCourse(course);
+  };
+
+  const handleCreateClass = async () => {
     if (!className.trim()) {
       alert("Vui lòng nhập tên lớp học");
       return;
@@ -42,13 +100,29 @@ const TeacherClasses = () => {
       return;
     }
 
-    // TODO: Implement API call to create class
-    console.log("Creating class:", {
-      name: className,
-      course: selectedCourse
-    });
+    try {
+      setCreating(true);
 
-    handleModalClose();
+      const createData: CreateClassData = {
+        class_name: className.trim(),
+        description: classDescription.trim() || undefined,
+        course_id: selectedCourse._id,
+      };
+
+      await teacherClassApi.createClass(createData);
+
+      // Refresh classes list
+      await fetchClasses();
+
+      // Close modal and reset form
+      handleModalClose();
+
+    } catch (err) {
+      console.error('Error creating class:', err);
+      alert('Không thể tạo lớp học. Vui lòng thử lại.');
+    } finally {
+      setCreating(false);
+    }
   };
   return (
     <Box>
@@ -63,7 +137,7 @@ const TeacherClasses = () => {
         <Typography variant="h4" fontWeight="bold">
           Quản lý lớp học
         </Typography>
-        <Button variant="contained" startIcon={<Add />} onClick={() => setModalClassCreation(true)}>
+        <Button variant="contained" startIcon={<Add />} onClick={handleModalOpen}>
           Tạo lớp học mới
         </Button>
       </Box>
@@ -90,81 +164,114 @@ const TeacherClasses = () => {
             Tạo lớp học mới
           </Typography>
 
-          <Stack spacing={3}>
-            <TextField
-              label="Tên lớp học"
-              variant="outlined"
-              required
-              fullWidth
-              value={className}
-              onChange={(e) => setClassName(e.target.value)}
-              placeholder="VD: Hóa học 9A"
-            />
-
-            <Autocomplete
-              fullWidth
-              options={courseOptions}
-              getOptionLabel={(option) => `${option.course_name} (Lớp ${option.grade_level})`}
-              value={selectedCourse}
-              onChange={(event, value) => setSelectedCourse(value)}
-              renderInput={(params) =>
+          {coursesLoading ? (
+            <Box sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              py: 6
+            }}>
+              <CircularProgress size={40} sx={{ mb: 2 }} />
+              <Typography variant="body1" color="text.secondary">
+                Đang tải danh sách khóa học...
+              </Typography>
+            </Box>
+          ) : (
+            <>
+              <Stack spacing={3}>
                 <TextField
-                  {...params}
-                  label="Chọn khóa học"
-                  variant="outlined"
+                  label="Tên lớp học"
                   required
-                  placeholder="Tìm và chọn khóa học"
+                  fullWidth
+                  value={className}
+                  onChange={(e) => setClassName(e.target.value)}
+                  placeholder="VD: Hóa học 9A"
+                  disabled={creating}
                 />
-              }
-              renderOption={(props, option) => (
-                <Box component="li" {...props}>
-                  <Box>
-                    <Typography variant="body1">
-                      {option.course_name}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Lớp {option.grade_level} • {option.topics?.length || 0} chủ đề
-                    </Typography>
-                  </Box>
-                </Box>
+
+                <TextField
+                  label="Mô tả lớp học"
+                  variant="outlined"
+                  fullWidth
+                  multiline
+                  rows={3}
+                  value={classDescription}
+                  onChange={(e) => setClassDescription(e.target.value)}
+                  placeholder="Mô tả ngắn về lớp học (tùy chọn)"
+                  disabled={creating}
+                />
+
+                <Autocomplete
+                  fullWidth
+                  options={courses || []}
+                  getOptionLabel={(option) => {
+                    if (!option || typeof option !== 'object') return '';
+                    const name = option.course_name || 'Unknown';
+                    const grade = option.grade_level || 'N/A';
+                    return `${name} (Lớp ${grade})`;
+                  }}
+                  value={selectedCourse}
+                  onChange={(event, value) => {
+                    handleCourseSelection(value);
+                  }}
+                  disabled={creating}
+                  noOptionsText="Không có khóa học nào"
+                  renderInput={(params) =>
+                    <TextField
+                      {...params}
+                      label="Chọn khóa học"
+                      variant="outlined"
+                      required
+                      placeholder="Tìm và chọn khóa học"
+                    />
+                  }
+                  renderOption={(props, option) => (
+                    <Box component="li" {...props} key={option._id}>
+                      <Box>
+                        <Typography variant="body1">
+                          {option.course_name || 'Unknown Course'}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          Lớp {option.grade_level || 'N/A'} • {option.description ? 'Có mô tả' : 'Chưa có mô tả'}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  )}
+                />
+              </Stack>
+
+              {error && (
+                <Alert severity="error" sx={{ mt: 2 }}>
+                  {error}
+                </Alert>
               )}
-            />
 
-            {selectedCourse && (
-              <Box>
-                <Typography variant="body2" color="text.primary" gutterBottom>
-                  <strong>Mô tả khóa học:</strong> {selectedCourse.description || "Chưa có mô tả"}
-                </Typography>
-
-                {selectedCourse.topics && selectedCourse.topics.length > 0 && (
-                  <CourseTopicTable
-                    topics={selectedCourse.topics}
-                    courseName={selectedCourse.course_name}
-                  />
-                )}
-              </Box>
-            )}
-          </Stack>
-
-          <Stack direction="row" spacing={2} justifyContent="end" sx={{ mt: 4 }}>
-            <Button variant="outlined" onClick={handleModalClose}>
-              Hủy
-            </Button>
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={handleCreateClass}
-              disabled={!className.trim() || !selectedCourse}
-            >
-              Tạo lớp học
-            </Button>
-          </Stack>
+              <Stack direction="row" spacing={2} justifyContent="end" sx={{ mt: 4 }}>
+                <Button
+                  variant="outlined"
+                  onClick={handleModalClose}
+                  disabled={creating}
+                >
+                  Hủy
+                </Button>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={handleCreateClass}
+                  disabled={!className.trim() || !selectedCourse || creating}
+                  startIcon={creating ? <CircularProgress size={20} /> : <Add />}
+                >
+                  {creating ? 'Đang tạo...' : 'Tạo lớp học'}
+                </Button>
+              </Stack>
+            </>
+          )}
         </Box>
       </Modal>
       <Stack spacing={1} mb={2}>
         <Typography variant="subtitle1" color="text.secondary">
-          Theo dõi mã lớp học, sĩ số, ngày khởi tạo và khóa truy cập (ẩn mặc
-          định).
+          Theo dõi mã lớp học, mô tả, course ID, trạng thái, ngày khởi tạo và khóa truy cập (ẩn mặc định).
         </Typography>
       </Stack>
 
@@ -173,20 +280,44 @@ const TeacherClasses = () => {
           <TableHead>
             <TableRow>
               <TableCell>Lớp học</TableCell>
-              <TableCell>Học sinh</TableCell>
+              <TableCell>Mô tả</TableCell>
+              <TableCell>Course ID</TableCell>
+              <TableCell>Trạng thái</TableCell>
               <TableCell>Ngày khởi tạo</TableCell>
               <TableCell>Khóa lớp</TableCell>
               <TableCell align="right">Thao tác</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {classes.map((classItem) => (
-              <ClassTableRow key={classItem.class_id} {...classItem} />
-            ))}
+            {loading ? (
+              <TableRow key="loading">
+                <TableCell colSpan={7} sx={{ textAlign: 'center', py: 4 }}>
+                  <CircularProgress size={30} />
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                    Đang tải danh sách lớp học...
+                  </Typography>
+                </TableCell>
+              </TableRow>
+            ) : !classes?.length ? (
+              <TableRow key="empty">
+                <TableCell colSpan={7} sx={{ textAlign: 'center', py: 4 }}>
+                  <Typography variant="body1" color="text.secondary">
+                    Chưa có lớp học nào
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Hãy tạo lớp học đầu tiên của bạn
+                  </Typography>
+                </TableCell>
+              </TableRow>
+            ) : (
+              classes.map((classItem) => (
+                <ClassTableRow key={classItem._id} {...classItem} />
+              ))
+            )}
           </TableBody>
         </Table>
       </Paper>
-    </Box>
+    </Box >
   );
 };
 
