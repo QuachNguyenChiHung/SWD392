@@ -22,6 +22,7 @@ import QuestionRoute from './route/QuestionRoute.ts';
 import SlideRoute from './route/SlideRoute.ts';
 import FileRoute from './route/FileRoute.ts';
 import ProgressClassMaterialRoute from './route/ProgressClassMaterialRoute.ts';
+import QuizAttemptRoute from './route/QuizAttemptRoute.ts';
 
 
 const spec = swaggerJSDoc({
@@ -95,6 +96,7 @@ console.log(process.env.MONGO_URI);
             app.use('/api', SlideRoute);
             app.use('/api', FileRoute);
             app.use('/api', ProgressClassMaterialRoute);
+            app.use('/api', QuizAttemptRoute);
             // Error handler must be after routes
             app.use((err: any, req: Request, res: Response, next: NextFunction) => {
                 console.error(err);
