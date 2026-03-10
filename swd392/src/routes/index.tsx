@@ -31,6 +31,7 @@ import ModeratorDashboard from "../pages/moderator/ModeratorDashboard";
 import AdminDashboard from "../pages/admin/AdminDashboard";
 import AdminUsers from "../pages/admin/AdminUsers";
 import AdminSystemManagement from "../pages/admin/AdminSystemManagement";
+import AdminCourses from "../pages/admin/AdminCourses";
 
 // Protected Route Component
 import ProtectedRoute from "../components/ProtectedRoute";
@@ -209,6 +210,14 @@ export const routes: RouteObject[] = [
             element: (
               <ProtectedRoute allowedRoles={[UserRole.ADMIN]}>
                 <AdminUsers />
+              </ProtectedRoute>
+            ),
+          },
+          {
+            path: "courses",
+            element: (
+              <ProtectedRoute allowedRoles={[UserRole.ADMIN]}>
+                <AdminCourses />
               </ProtectedRoute>
             ),
           },

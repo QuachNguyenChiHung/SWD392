@@ -1,66 +1,56 @@
-import { Box, Typography, Paper, Tabs, Tab, Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip, IconButton, TextField, InputAdornment, Dialog, DialogTitle, DialogContent, DialogActions, MenuItem, FormControl, InputLabel, Select, Alert, Stack } from '@mui/material';
+import { Box, Typography, Paper, Tabs, Tab, Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip, IconButton, TextField, InputAdornment, Dialog, DialogTitle, DialogContent, DialogActions, MenuItem, FormControl, InputLabel, Select, Alert, Stack, CircularProgress } from '@mui/material';
 import { useState, useEffect } from 'react';
-import { Add, Search, Edit, Delete, PersonAdd } from '@mui/icons-material';
-import type { User } from '../../types';
-import { UserRole } from '../../types';
+import { Add, Search, Edit, Delete, PersonAdd, Block, CheckCircle } from '@mui/icons-material';
+import type { AdminUser, CreateUserRequest, UpdateUserRequest } from '../../types/adminType';
+import { UserRole } from '../../types/adminType';
+import { adminUsersApi } from '../../services/adminApi';
 
 const AdminUsers = () => {
   const [tabValue, setTabValue] = useState(0);
-  const [users, setUsers] = useState<User[]>([]);
-  const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<AdminUser[]>([]);
+  const [filteredUsers, setFilteredUsers] = useState<AdminUser[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [openCreateDialog, setOpenCreateDialog] = useState(false);
   const [openEditDialog, setOpenEditDialog] = useState(false);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   
   // New user form state
-  const [newUser, setNewUser] = useState({
-    name: '',
+  const [newUser, setNewUser] = useState<CreateUserRequest>({
+    username: '',
     email: '',
     password: '',
-    role: UserRole.TEACHER as UserRole,
+    role: UserRole.TEACHER,
   });
 
+  // Edit user form state
+  const [editUser, setEditUser] = useState<UpdateUserRequest>({
+    username: '',
+    email: '',
+    role: UserRole.TEACHER,
+  });
+
+  // Fetch users on mount
   useEffect(() => {
-    // TODO: Fetch users from API
-    const mockUsers: User[] = [
-      {
-        id: '1',
-        name: 'Nguyễn Văn A',
-        email: 'nguyenvana@example.com',
-        role: UserRole.TEACHER,
-        status: 'active',
-        createdAt: new Date('2024-01-15'),
-      },
-      {
-        id: '2',
-        name: 'Trần Thị B',
-        email: 'tranthib@example.com',
-        role: UserRole.STUDENT,
-        status: 'active',
-        createdAt: new Date('2024-02-20'),
-      },
-      {
-        id: '3',
-        name: 'Lê Văn C',
-        email: 'levanc@example.com',
-        role: UserRole.MODERATOR,
-        status: 'active',
-        createdAt: new Date('2024-03-10'),
-      },
-      {
-        id: '4',
-        name: 'Phạm Thị D',
-        email: 'phamthid@example.com',
-        role: UserRole.STUDENT,
-        status: 'inactive',
-        createdAt: new Date('2024-04-05'),
-      },
-    ];
-    setUsers(mockUsers);
-    setFilteredUsers(mockUsers);
+    fetchUsers();
   }, []);
+
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await adminUsersApi.getAllUsers({ page: 1, limit: 100 });
+      setUsers(response.users);
+      setFilteredUsers(response.users);
+    } catch (err) {
+      console.error('Error fetching users:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load users');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     let filtered = users;
@@ -81,7 +71,7 @@ const AdminUsers = () => {
     // Filter by search
     if (searchQuery) {
       filtered = filtered.filter(u => 
-        u.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        u.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
         u.email.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
@@ -89,38 +79,59 @@ const AdminUsers = () => {
     setFilteredUsers(filtered);
   }, [tabValue, searchQuery, users]);
 
-  const handleCreateUser = () => {
-    // TODO: API call to create user
-    console.log('Creating user:', newUser);
-    const user: User = {
-      id: Date.now().toString(),
-      name: newUser.name,
-      email: newUser.email,
-      role: newUser.role,
-      status: 'active',
-      createdAt: new Date(),
-    };
-    setUsers([...users, user]);
-    setOpenCreateDialog(false);
-    setNewUser({ name: '', email: '', password: '', role: UserRole.TEACHER });
+  const handleCreateUser = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      await adminUsersApi.createUser(newUser);
+      setOpenCreateDialog(false);
+      setNewUser({
+        username: '',
+        email: '',
+        password: '',
+        role: UserRole.TEACHER,
+      });
+      await fetchUsers();
+    } catch (err) {
+      console.error('Error creating user:', err);
+      setError(err instanceof Error ? err.message : 'Failed to create user');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleEditUser = () => {
+  const handleEditUser = async () => {
     if (!selectedUser) return;
-    // TODO: API call to update user
-    console.log('Updating user:', selectedUser);
-    setUsers(users.map(u => u.id === selectedUser.id ? selectedUser : u));
-    setOpenEditDialog(false);
-    setSelectedUser(null);
+    try {
+      setLoading(true);
+      setError(null);
+      await adminUsersApi.updateUser(selectedUser._id, editUser);
+      setOpenEditDialog(false);
+      setSelectedUser(null);
+      await fetchUsers();
+    } catch (err) {
+      console.error('Error updating user:', err);
+      setError(err instanceof Error ? err.message : 'Failed to update user');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleDeleteUser = () => {
+  const handleDeleteUser = async () => {
     if (!selectedUser) return;
-    // TODO: API call to delete user
-    console.log('Deleting user:', selectedUser.id);
-    setUsers(users.filter(u => u.id !== selectedUser.id));
-    setOpenDeleteDialog(false);
-    setSelectedUser(null);
+    try {
+      setLoading(true);
+      setError(null);
+      await adminUsersApi.deleteUser(selectedUser._id);
+      setOpenDeleteDialog(false);
+      setSelectedUser(null);
+      await fetchUsers();
+    } catch (err) {
+      console.error('Error deleting user:', err);
+      setError(err instanceof Error ? err.message : 'Failed to delete user');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const getRoleColor = (role: UserRole) => {
@@ -146,8 +157,7 @@ const AdminUsers = () => {
   const getStatusColor = (status?: string) => {
     switch (status) {
       case 'active': return 'success';
-      case 'inactive': return 'warning';
-      case 'suspended': return 'error';
+      case 'banned': return 'error';
       default: return 'default';
     }
   };
@@ -155,14 +165,55 @@ const AdminUsers = () => {
   const getStatusLabel = (status?: string) => {
     switch (status) {
       case 'active': return 'Hoạt động';
-      case 'inactive': return 'Không hoạt động';
-      case 'suspended': return 'Bị khóa';
+      case 'banned': return 'Bị cấm';
       default: return status;
     }
   };
 
+  const handleToggleUserStatus = async (user: AdminUser) => {
+    try {
+      setLoading(true);
+      await adminUsersApi.toggleUserStatus(user._id);
+      await fetchUsers();
+    } catch (err) {
+      console.error('Error toggling user status:', err);
+      setError(err instanceof Error ? err.message : 'Failed to toggle user status');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const openEdit = (user: AdminUser) => {
+    setSelectedUser(user);
+    setEditUser({
+      username: user.username,
+      email: user.email,
+      role: user.role,
+    });
+    setOpenEditDialog(true);
+  };
+
+  const openDelete = (user: AdminUser) => {
+    setSelectedUser(user);
+    setOpenDeleteDialog(true);
+  };
+
+  // Loading state
+  if (loading && (!users || users.length === 0)) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
   return (
     <Box>
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
+          {error}
+        </Alert>
+      )}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Box>
           <Typography variant="h4" fontWeight="bold">
@@ -199,10 +250,10 @@ const AdminUsers = () => {
 
       <Paper sx={{ mt: 3 }}>
         <Tabs value={tabValue} onChange={(_, v) => setTabValue(v)}>
-          <Tab label={`Tất cả (${users.length})`} />
-          <Tab label={`Giáo viên (${users.filter(u => u.role === UserRole.TEACHER).length})`} />
-          <Tab label={`Học sinh (${users.filter(u => u.role === UserRole.STUDENT).length})`} />
-          <Tab label={`Người điều hành (${users.filter(u => u.role === UserRole.MODERATOR).length})`} />
+          <Tab label={`Tất cả (${users?.length || 0})`} />
+          <Tab label={`Giáo viên (${users?.filter(u => u.role === UserRole.TEACHER).length || 0})`} />
+          <Tab label={`Học sinh (${users?.filter(u => u.role === UserRole.STUDENT).length || 0})`} />
+          <Tab label={`Người điều hành (${users?.filter(u => u.role === UserRole.MODERATOR).length || 0})`} />
         </Tabs>
         
         <TableContainer>
@@ -220,8 +271,8 @@ const AdminUsers = () => {
             <TableBody>
               {filteredUsers.length > 0 ? (
                 filteredUsers.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell>{user.name}</TableCell>
+                  <TableRow key={user._id}>
+                    <TableCell>{user.username}</TableCell>
                     <TableCell>{user.email}</TableCell>
                     <TableCell>
                       <Chip 
@@ -239,26 +290,28 @@ const AdminUsers = () => {
                       />
                     </TableCell>
                     <TableCell>
-                      {user.createdAt ? new Date(user.createdAt).toLocaleDateString('vi-VN') : '-'}
+                      {user.date_create ? new Date(user.date_create).toLocaleDateString('vi-VN') : '-'}
                     </TableCell>
                     <TableCell align="right">
                       <IconButton 
                         size="small" 
+                        color={user.status === 'active' ? 'error' : 'success'}
+                        onClick={() => handleToggleUserStatus(user)}
+                        title={user.status === 'active' ? 'Ban user' : 'Unban user'}
+                      >
+                        {user.status === 'active' ? <Block /> : <CheckCircle />}
+                      </IconButton>
+                      <IconButton 
+                        size="small" 
                         color="primary"
-                        onClick={() => {
-                          setSelectedUser(user);
-                          setOpenEditDialog(true);
-                        }}
+                        onClick={() => openEdit(user)}
                       >
                         <Edit />
                       </IconButton>
                       <IconButton 
                         size="small" 
                         color="error"
-                        onClick={() => {
-                          setSelectedUser(user);
-                          setOpenDeleteDialog(true);
-                        }}
+                        onClick={() => openDelete(user)}
                       >
                         <Delete />
                       </IconButton>
@@ -290,11 +343,11 @@ const AdminUsers = () => {
         <DialogContent>
           <Stack spacing={2} sx={{ mt: 1 }}>
             <TextField
-              label="Họ và tên"
+              label="Tên người dùng"
               fullWidth
               required
-              value={newUser.name}
-              onChange={(e) => setNewUser({...newUser, name: e.target.value})}
+              value={newUser.username}
+              onChange={(e) => setNewUser({...newUser, username: e.target.value})}
             />
             <TextField
               label="Email"
@@ -319,7 +372,8 @@ const AdminUsers = () => {
                 label="Vai trò"
                 onChange={(e) => setNewUser({...newUser, role: e.target.value as UserRole})}
               >
-                <MenuItem value={UserRole.TEACHER}>Teacher</MenuItem>
+                <MenuItem value={UserRole.STUDENT}>Học sinh</MenuItem>
+                <MenuItem value={UserRole.TEACHER}>Giáo viên</MenuItem>
                 <MenuItem value={UserRole.MODERATOR}>Người điều hành</MenuItem>
               </Select>
             </FormControl>
@@ -330,7 +384,7 @@ const AdminUsers = () => {
           <Button 
             variant="contained" 
             onClick={handleCreateUser}
-            disabled={!newUser.name || !newUser.email || !newUser.password}
+            disabled={!newUser.username || !newUser.email || !newUser.password || loading}
           >
             Tạo
           </Button>
@@ -344,40 +398,28 @@ const AdminUsers = () => {
           {selectedUser && (
             <Stack spacing={2} sx={{ mt: 1 }}>
               <TextField
-                label="Họ và tên"
+                label="Tên người dùng"
                 fullWidth
-                value={selectedUser.name}
-                onChange={(e) => setSelectedUser({...selectedUser, name: e.target.value})}
+                value={editUser.username}
+                onChange={(e) => setEditUser({...editUser, username: e.target.value})}
               />
               <TextField
                 label="Email"
                 type="email"
                 fullWidth
-                value={selectedUser.email}
-                onChange={(e) => setSelectedUser({...selectedUser, email: e.target.value})}
+                value={editUser.email}
+                onChange={(e) => setEditUser({...editUser, email: e.target.value})}
               />
               <FormControl fullWidth>
                 <InputLabel>Vai trò</InputLabel>
                 <Select
-                  value={selectedUser.role}
+                  value={editUser.role}
                   label="Vai trò"
-                  onChange={(e) => setSelectedUser({...selectedUser, role: e.target.value as UserRole})}
+                  onChange={(e) => setEditUser({...editUser, role: e.target.value as UserRole})}
                 >
                   <MenuItem value={UserRole.STUDENT}>Học sinh</MenuItem>
                   <MenuItem value={UserRole.TEACHER}>Giáo viên</MenuItem>
                   <MenuItem value={UserRole.MODERATOR}>Người điều hành</MenuItem>
-                </Select>
-              </FormControl>
-              <FormControl fullWidth>
-                <InputLabel>Trạng thái</InputLabel>
-                <Select
-                  value={selectedUser.status || 'active'}
-                  label="Trạng thái"
-                  onChange={(e) => setSelectedUser({...selectedUser, status: e.target.value as any})}
-                >
-                  <MenuItem value="active">Hoạt động</MenuItem>
-                  <MenuItem value="inactive">Không hoạt động</MenuItem>
-                  <MenuItem value="suspended">Bị khóa</MenuItem>
                 </Select>
               </FormControl>
             </Stack>
@@ -385,7 +427,7 @@ const AdminUsers = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenEditDialog(false)}>Hủy</Button>
-          <Button variant="contained" onClick={handleEditUser}>
+          <Button variant="contained" onClick={handleEditUser} disabled={loading}>
             Lưu
           </Button>
         </DialogActions>
@@ -399,7 +441,7 @@ const AdminUsers = () => {
             Hành động này sẽ xóa vĩnh viễn người dùng khỏi hệ thống!
           </Alert>
           <Typography>
-            Bạn có chắc chắn muốn xóa người dùng <strong>{selectedUser?.name}</strong> ({selectedUser?.email})?
+            Bạn có chắc chắn muốn xóa người dùng <strong>{selectedUser?.username}</strong> ({selectedUser?.email})?
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
             Tất cả dữ liệu liên quan đến người dùng này sẽ bị xóa.
