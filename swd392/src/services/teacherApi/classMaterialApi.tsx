@@ -39,6 +39,18 @@ const classMaterialApi = {
         return response;
     },
 
+    // Teacher: get all file-type materials (file, slide, 2d_render) for the authenticated teacher
+    getTeacherFiles: async () => {
+        const response = await apiService.get('/class-materials/teacher/files');
+        return response;
+    },
+
+    // Teacher: get all quiz-type materials for the authenticated teacher
+    getTeacherQuizzes: async () => {
+        const response = await apiService.get('/class-materials/teacher/quiz');
+        return response;
+    },
+
     // Teacher-only writes
     createMaterial: async (materialData: CreateClassMaterialDTO, contentId?: string) => {
         const payload = {
