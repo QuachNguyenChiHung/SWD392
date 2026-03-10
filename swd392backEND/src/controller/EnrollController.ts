@@ -1,9 +1,9 @@
 import type { Request, Response, NextFunction } from "express";
 import EnrollService from "../services/EnrollService.ts";
-import { CreateEnrollSchema } from "../dto/EnrollDTO.ts";
+import { CreateEnrollSchema, EnrollByKeypassSchema, InviteStudentSchema } from "../dto/EnrollDTO.ts";
 
 class EnrollController {
-    // POST: /api/enroll/:u_id/:class_id - Student enrollment
+    // POST: /api/enroll/ - Student enrollment
     async createEnrollment(req: Request, res: Response, next: NextFunction) {
         try {
             const { class_id } = req.params;
@@ -17,6 +17,53 @@ class EnrollController {
 
             const validatedData = CreateEnrollSchema.parse(enrollData);
             const result = await EnrollService.createEnrollment(validatedData);
+
+            if ((result as any).error) {
+                return res.status(400).json(result);
+            }
+
+            res.status(201).json(result);
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    // POST: /api/enroll/keypass - Student enrolls by keypass
+    async enrollByKeypass(req: Request, res: Response, next: NextFunction) {
+        try {
+            const student_id = req.user?.id as string;
+            const { keypass } = req.body;
+
+            if (!student_id) {
+                return res.status(401).json({ error: "Unauthorized" });
+            }
+
+            const validatedData = EnrollByKeypassSchema.parse({ student_id, keypass });
+            const result = await EnrollService.enrollByKeypass(validatedData);
+
+            if ((result as any).error) {
+                return res.status(400).json(result);
+            }
+
+            res.status(201).json(result);
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    // POST: /api/enroll/invite/:class_id - Teacher invites student to class
+    async inviteStudent(req: Request, res: Response, next: NextFunction) {
+        try {
+            const { class_id } = req.params;
+            const { student_id } = req.body;
+            const teacher_id = req.teacher?._id?.toString();
+
+            if (!teacher_id) {
+                return res.status(401).json({ error: "Unauthorized" });
+            }
+
+            const validatedData = InviteStudentSchema.parse({ student_id, class_id });
+            const result = await EnrollService.inviteStudent(validatedData, teacher_id);
 
             if ((result as any).error) {
                 return res.status(400).json(result);
@@ -54,6 +101,22 @@ class EnrollController {
             }
 
             res.status(200).json(result);
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    // GET: /api/enroll/student - Get all enrollments for the authenticated student
+    async getMyEnrollments(req: Request, res: Response, next: NextFunction) {
+        try {
+            const student_id = req.user?.id as string;
+
+            if (!student_id) {
+                return res.status(401).json({ error: "Unauthorized" });
+            }
+
+            const enrollments = await EnrollService.getStudentEnrollments(student_id);
+            res.status(200).json(enrollments);
         } catch (error) {
             next(error);
         }

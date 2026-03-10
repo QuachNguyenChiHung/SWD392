@@ -42,6 +42,18 @@ class ClassMaterialRepo {
     async getClassMaterialCount(classId: string) {
         return await ClassMaterial.countDocuments({ class_assign_id: classId });
     }
+    async getActiveClassMaterialsByClass(classId: string) {
+        return await ClassMaterial.find({
+            class_assign_id: classId,
+            status: { $nin: ['draft', 'deleted'] }
+        }).sort({ order_num: 1 });
+    }
+    async getActiveClassMaterialCount(classId: string) {
+        return await ClassMaterial.countDocuments({
+            class_assign_id: classId,
+            status: { $nin: ['draft', 'deleted'] }
+        });
+    }
     async updateOrderNumbers(classId: string, materialIds: string[]) {
         const updatePromises = materialIds.map((id, index) =>
             ClassMaterial.findByIdAndUpdate(id, { order_num: index + 1 })
@@ -78,14 +90,11 @@ class ClassMaterialRepo {
             .skip(skip)
             .limit(limit);
     }
-    async getClassMaterialsByTeacher(teacherId: string, page: number) {
-        const limit = 12;
-        const skip = (page - 1) * limit;
-        const classIds = await Class.find({ teacher_id: teacherId }).distinct('_id');
+    async getClassMaterialsByTeacher(teacherId: string) {
+        const classes = await Class.find({ teacher_id: teacherId }).select('_id');
+        const classIds = classes.map(c => c._id);
         return await ClassMaterial.find({ class_assign_id: { $in: classIds } })
-            .sort({ dateCreate: -1 })
-            .skip(skip)
-            .limit(limit);
+            .sort({ dateCreate: -1 });
     }
     // Returns published materials (first-time or re-flagged) for moderator review
     async getPendingMaterials(page: number) {

@@ -310,7 +310,7 @@
  *     tags:
  *       - ClassMaterials
  *     summary: Create a new class material
- *     description: "[Teacher] Create a class material with associated content."
+ *     description: "[Teacher] Create a class material with associated content. If the material status is active (not draft/deleted), progress records are automatically created for all enrolled students in the class."
  *     security:
  *       - cookieAuth: []
  *     requestBody:
@@ -710,6 +710,9 @@
  *     description: |
  *       [Teacher] Update material metadata and/or its content.
  *       The `dateUpdate` timestamp is automatically set by the backend.
+ *       Status changes trigger automatic progress sync:
+ *       - Changing from draft/deleted to published/reviewed creates progress records for all enrolled students.
+ *       - Changing from published/reviewed to draft/deleted deletes all progress records for this material.
  *     security:
  *       - cookieAuth: []
  *     parameters:
@@ -773,7 +776,7 @@
  *     tags:
  *       - ClassMaterials
  *     summary: Delete a class material
- *     description: "[Teacher] Delete a class material and its associated content permanently."
+ *     description: "[Teacher] Delete a class material and its associated content permanently. All related progress records are automatically deleted."
  *     security:
  *       - cookieAuth: []
  *     parameters:
