@@ -56,19 +56,8 @@ const RegisterPage = () => {
     try {
       await register(email, password, name);
 
-      // Get the registered user's role to determine redirect
-      const user = JSON.parse(localStorage.getItem('user') || '{}');
-
-      // Navigate based on user role from backend
-      const roleRoutes: Record<string, string> = {
-        [UserRole.STUDENT]: '/student/dashboard',
-        [UserRole.TEACHER]: '/teacher/dashboard',
-        [UserRole.MODERATOR]: '/moderator/dashboard',
-        [UserRole.ADMIN]: '/admin/dashboard',
-        [UserRole.GUEST]: '/dashboard',
-      };
-
-      navigate(roleRoutes[user.role] || '/dashboard');
+      // Redirect to login page after successful registration
+      navigate('/auth/login');
     } catch (err: any) {
       setError(err.message || 'Đăng ký thất bại. Vui lòng thử lại.');
     } finally {
