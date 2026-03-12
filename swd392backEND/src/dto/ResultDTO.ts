@@ -28,7 +28,6 @@ const submitQuizAnswersSchema = z.object({
     text: z.string().optional(),
     options: z.any().optional(),
     options_picked_index: z.number().int().min(0).optional(),
-    isCorrect: z.boolean(),
 });
 
 const submitQuizAttemptSchema = z.object({

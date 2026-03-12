@@ -1,6 +1,7 @@
 import QuizAttemptRepo from "../repository/QuizAttemptRepo.ts";
 import ResultRepo from "../repository/ResultRepo.ts";
 import QuizRepo from "../repository/QuizRepo.ts";
+import QuestionRepo from "../repository/QuestionRepo.ts";
 import type { CreateQuizAttemptDTO } from "../dto/QuizDTO.ts";
 import type { CreateResultDTO } from "../dto/ResultDTO.ts";
 
@@ -41,7 +42,7 @@ class QuizAttemptService {
 
             // Check attempt limits
             const currentAttempts = await QuizAttemptRepo.getQuizAttemptCount(
-                attemptData.quiz_id, 
+                attemptData.quiz_id,
                 attemptData.user_id
             );
 
@@ -75,10 +76,10 @@ class QuizAttemptService {
         if (!attempt) {
             return { error: "Quiz attempt not found" };
         }
-        
+
         // Delete associated results first
         await ResultRepo.deleteResultsByQuizAttemptId(id);
-        
+
         return await QuizAttemptRepo.deleteQuizAttempt(id);
     }
 
@@ -168,7 +169,7 @@ class QuizAttemptService {
     async getQuizAttemptsWithResultsByQuizId(quizId: string, page: number = 1) {
         try {
             const attempts = await QuizAttemptRepo.getQuizAttemptsByQuizId(quizId, page);
-            
+
             const attemptsWithResults = await Promise.all(
                 attempts.map(async (attempt: any) => {
                     const attemptId = attempt._id?.toString() || attempt.id?.toString();
@@ -189,7 +190,7 @@ class QuizAttemptService {
                     };
                 })
             );
-            
+
             return attemptsWithResults;
         } catch (error) {
             return { error: "Failed to fetch quiz attempts with results" };
@@ -210,7 +211,7 @@ class QuizAttemptService {
 
             const results = await this.getResultsForQuizAttempt(attemptId);
             const score = await this.getQuizAttemptScore(attemptId);
-            
+
             return {
                 attempt: latestAttempt,
                 results: 'error' in results ? [] : results,
@@ -222,11 +223,29 @@ class QuizAttemptService {
     }
 
     async createAndSubmitQuizAttempt(
-        attemptData: CreateQuizAttemptDTO & { user_id: string }, 
-        answers: Omit<CreateResultDTO, 'quiz_attempt_id'>[]
+        attemptData: CreateQuizAttemptDTO & { user_id: string },
+        answers: Omit<CreateResultDTO, 'quiz_attempt_id' | 'isCorrect'>[]
     ) {
         try {
-            // Create the quiz attempt first
+            // Fetch questions for this quiz to grade answers server-side
+            const questions = await QuestionRepo.getQuestionsByQuizId(attemptData.quiz_id);
+            if (!questions || questions.length === 0) {
+                return { error: "No questions found for this quiz" };
+            }
+
+            // Grade each answer by comparing options_picked_index with correct_index
+            const gradedAnswers: Omit<CreateResultDTO, 'quiz_attempt_id'>[] = answers.map((answer, index) => {
+                const question = questions[index];
+                const isCorrect = question
+                    ? answer.options_picked_index === question.correct_index
+                    : false;
+                return {
+                    ...answer,
+                    isCorrect
+                };
+            });
+
+            // Create the quiz attempt
             const newAttempt = await this.createQuizAttempt(attemptData);
             if ('error' in newAttempt) {
                 return newAttempt;
@@ -238,8 +257,8 @@ class QuizAttemptService {
                 return { error: "Failed to get created attempt ID" };
             }
 
-            // Submit the answers
-            const submissionResult = await this.submitQuizAttempt(attemptId, answers);
+            // Submit the graded answers
+            const submissionResult = await this.submitQuizAttempt(attemptId, gradedAnswers);
             if ('error' in submissionResult) {
                 // Clean up the attempt if submission failed
                 await QuizAttemptRepo.deleteQuizAttempt(attemptId);
@@ -266,7 +285,7 @@ class QuizAttemptService {
 
             // Calculate and return the final score
             const score = await this.getQuizAttemptScore(quizAttemptId);
-            
+
             return {
                 message: "Quiz attempt submitted successfully",
                 results: results,
