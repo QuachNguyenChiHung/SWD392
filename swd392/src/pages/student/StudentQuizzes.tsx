@@ -44,7 +44,8 @@ const StudentQuizzes = () => {
   const [attempts, setAttempts] = useState<QuizAttempt[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
-  const userId = localStorage.getItem('userId') || '';
+  const userStr = localStorage.getItem('user');
+  const userId = userStr ? JSON.parse(userStr).id : '';
 
   useEffect(() => {
     const fetchData = async () => {
@@ -93,7 +94,10 @@ const StudentQuizzes = () => {
   }, [userId]);
 
   const getAttemptForQuiz = (contentId: string): QuizAttempt | undefined =>
-    attempts.find(a => a.quiz_id === contentId);
+    attempts.find(a => {
+      const qId = typeof a.quiz_id === 'object' ? (a.quiz_id as any)._id : a.quiz_id;
+      return qId === contentId;
+    });
 
   const totalQuizzes = classesWithQuizzes.reduce((sum, c) => sum + c.quizzes.length, 0);
   const completedQuizzes = classesWithQuizzes.reduce((sum, c) => {
@@ -160,7 +164,7 @@ const StudentQuizzes = () => {
           const doneCount = quizzes.filter(q => getAttemptForQuiz(q.content_id)).length;
 
           return (
-            <Accordion key={cls._id} defaultExpanded variant="outlined" sx={{ borderRadius: '8px !important', '&:before': { display: 'none' } }}>
+            <Accordion key={cls._id} defaultExpanded={false} variant="outlined" sx={{ borderRadius: '8px !important', '&:before': { display: 'none' } }}>
               <AccordionSummary expandIcon={<ExpandMore />} sx={{ borderRadius: 2 }}>
                 <Stack direction="row" alignItems="center" spacing={2} sx={{ width: '100%', pr: 1 }}>
                   <Avatar sx={{ bgcolor: `${color}20`, color: color, width: 36, height: 36 }}>
@@ -189,6 +193,9 @@ const StudentQuizzes = () => {
                   {quizzes.map((quiz) => {
                     const attempt = getAttemptForQuiz(quiz.content_id);
                     const isDone = !!attempt;
+                    console.log('attempts:', attempts.map(a => a.quiz_id));
+console.log('quizzes content_ids:', classesWithQuizzes.flatMap(c => c.quizzes.map(q => q.content_id)));
+console.log('attempt quiz_ids:', attempts.map(a => typeof a.quiz_id === 'object' ? (a.quiz_id as any)._id : a.quiz_id));
 
                     return (
                       <Paper

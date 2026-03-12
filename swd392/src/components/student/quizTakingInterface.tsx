@@ -37,7 +37,7 @@ interface QuizInfo {
 }
 
 const QuizTakingInterface = () => {
-  const { id } = useParams<{ id: string }>(); // class material ID
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
   const [quizInfo, setQuizInfo] = useState<QuizInfo | null>(null);
@@ -53,15 +53,14 @@ const QuizTakingInterface = () => {
   const [submitting, setSubmitting] = useState(false);
   const [openConfirm, setOpenConfirm] = useState(false);
 
-  const userId = localStorage.getItem('userId') || '';
+  const userStr = localStorage.getItem('user');
+  const userId = userStr ? JSON.parse(userStr).id : '';
 
-  // Fetch quiz data
   useEffect(() => {
     const fetchQuiz = async () => {
       setLoading(true);
       setError(null);
       try {
-        // 1. Get class material to find content_id (quiz_id)
         const materialRes: any = await apiService.get(`/class-materials/${id}`);
         const material = materialRes?.data || materialRes;
         const quizId = material?.content_id;
@@ -71,14 +70,12 @@ const QuizTakingInterface = () => {
           return;
         }
 
-        // 2. Get quiz info
         const quiz: QuizInfo = await apiService.get(`/quizzes/${quizId}`);
         setQuizInfo(quiz);
 
-        // 3. Get questions
         const qs: Question[] = await apiService.get(`/quizzes/${quizId}/questions`);
         setQuestions(qs);
-        setTimeLeft(1800); // 30 mins default
+        setTimeLeft(1800);
       } catch (err: any) {
         setError(err.message || 'Không thể tải bài kiểm tra');
       } finally {
@@ -93,29 +90,31 @@ const QuizTakingInterface = () => {
     setOpenConfirm(false);
     setSubmitting(true);
     try {
-      const answersArray = questions.map((_, idx) =>
-        answers[idx] !== undefined ? answers[idx] : -1
-      );
+      // Build answers array theo format API
+      const answersPayload = questions.map((question, idx) => ({
+        question_id: question._id,
+        options_picked_index: answers[idx] !== undefined ? answers[idx] : -1,
+        text: '',
+        option: {}
+      }));
 
-      await apiService.post(`/quizzes/${quizInfo?._id}/attempts/${userId}`, {
+      await apiService.post('/quiz-attempts/submit', {
         quiz_id: quizInfo?._id,
         record_json: {
-          answers: answersArray,
           time_taken: 1800 - timeLeft
-        }
+        },
+        answers: answersPayload
       });
 
       setIsFinished(true);
     } catch (err: any) {
       console.error('Submit error:', err);
-      // Still mark as finished even if API fails
       setIsFinished(true);
     } finally {
       setSubmitting(false);
     }
-  }, [answers, quizInfo, userId, questions, timeLeft]);
+  }, [answers, quizInfo, questions, timeLeft]);
 
-  // Timer
   useEffect(() => {
     if (loading || isFinished || questions.length === 0) return;
 
@@ -150,7 +149,6 @@ const QuizTakingInterface = () => {
   const answeredCount = Object.keys(answers).length;
   const progress = questions.length > 0 ? (answeredCount / questions.length) * 100 : 0;
 
-  // Loading state
   if (loading) {
     return (
       <Box sx={{ p: 4 }}>
@@ -163,7 +161,6 @@ const QuizTakingInterface = () => {
     );
   }
 
-  // Error state
   if (error) {
     return (
       <Box sx={{ p: 4 }}>
@@ -173,7 +170,6 @@ const QuizTakingInterface = () => {
     );
   }
 
-  // Finished state
   if (isFinished) {
     return (
       <Box sx={{ p: 5, textAlign: 'center', mt: 10 }}>
@@ -228,11 +224,7 @@ const QuizTakingInterface = () => {
             </Button>
           </Grid>
         </Grid>
-        <LinearProgress
-          variant="determinate"
-          value={progress}
-          sx={{ mt: 2, height: 6, borderRadius: 3 }}
-        />
+        <LinearProgress variant="determinate" value={progress} sx={{ mt: 2, height: 6, borderRadius: 3 }} />
         <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block', textAlign: 'right' }}>
           {answeredCount}/{questions.length} câu đã trả lời
         </Typography>
@@ -258,14 +250,12 @@ const QuizTakingInterface = () => {
               </IconButton>
             </Stack>
 
-            {/* Question text placeholder */}
             <Paper variant="outlined" sx={{ p: 2, mb: 4, bgcolor: '#f8fafc', borderRadius: 2 }}>
               <Typography variant="body2" color="text.secondary">
                 Câu hỏi số {currentIdx + 1}
               </Typography>
             </Paper>
 
-            {/* Options */}
             <RadioGroup
               value={answers[currentIdx] !== undefined ? answers[currentIdx].toString() : ''}
               onChange={(e) => setAnswers({ ...answers, [currentIdx]: parseInt(e.target.value) })}
@@ -340,7 +330,7 @@ const QuizTakingInterface = () => {
           </Paper>
         </Grid>
 
-        {/* Navigation Sidebar */}
+        {/* Sidebar */}
         <Grid size={{ xs: 12, md: 4 }}>
           <Paper sx={{ p: 3, borderRadius: 4, position: 'sticky', top: 160 }}>
             <Typography fontWeight="bold" mb={2}>Bảng câu hỏi</Typography>

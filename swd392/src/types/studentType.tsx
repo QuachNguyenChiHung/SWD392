@@ -28,12 +28,15 @@ export interface Enrollment {
   date_completed?: string;
 }
 
-export interface ProgressData {
-  completed: number;
-  total: number;
-  percentage: number;
-  last_updated?: string;
+export interface ProgressRecord {
+  _id: string;
+  enroll_id: string;
+  classmaterial_id: string;
+  completion_status: 'in_progress' | 'completed';
+  date_completed: string | null;
 }
+
+export type ProgressData = ProgressRecord[];
 
 export interface ClassMaterial {
   _id: string;
@@ -51,31 +54,34 @@ export interface ClassMaterial {
 
 export interface QuizAttempt {
   _id: string;
-  quiz_id: string;
+  quiz_id: string | { _id: string; title: string; type: string };
   user_id?: string;
-  score: number;
-  total_points: number;
-  status: 'in_progress' | 'submitted' | 'graded';
-  date_attempt: string;
-  date_completed?: string;
+  attempt_number: number;
+  date: string;
+  quizTitle?: string;
+  record_json: {
+    score?: number;
+    time_taken?: number;
+    answers?: number[];
+  };
 }
 
 export interface DashboardStats {
-  total_classes: number;
-  total_quizzes: number;
-  average_score: number;
-  completed_materials: number;
+  role: string;
+  currentStudyingClasses: number;
+  averageScore: number;
+  achievements: any[];
+  enrollments: Enrollment[];
 }
 
 export interface Quiz {
   _id: string;
-  class_id: string;
   title: string;
-  description?: string;
-  total_points: number;
-  question_count?: number;
-  time_limit?: number;
-  status: 'draft' | 'published' | 'archived';
+  type: string;
+  max_attempt_number: number;
+  available_date: string;
+  end_date: string;
+  status: boolean;
 }
 
 export interface EnhancedClassItem extends ClassItem {
@@ -207,13 +213,6 @@ export interface ClassCardProps {
   onView?: (classId: string) => void;
   color: string;
   index: number;
-}
-
-export interface ProgressBarProps {
-  progress: ProgressData;
-  showPercentage?: boolean;
-  height?: number;
-  color?: string;
 }
 
 export interface TabPanelProps {

@@ -168,7 +168,7 @@ const StudentClasses = () => {
               const status = getClassStatus(cls);
 
               return (
-                <Grid key={cls._id} size={{ xs: 12, sm: 6, md: 4 }}>
+                <Grid key={cls._id} size={{ xs: 12, sm: 6, md: 3 }}>
                   <Paper
                     variant="outlined"
                     sx={{

@@ -37,7 +37,7 @@ import TeacherClassDetail from "../pages/teacher/teacherClassDetail";
 import MaterialDetailPage from "../pages/teacher/MaterialDetailPage";
 import StudentClassDetail from "../pages/student/StudentClassDetail";
 import QuizTakingInterface from "../components/student/quizTakingInterface";
-import { QuizResultView } from "../pages/student/QuizResultView";
+import QuizResultView from "../pages/student/QuizResultView";
 
 export const routes: RouteObject[] = [
   {

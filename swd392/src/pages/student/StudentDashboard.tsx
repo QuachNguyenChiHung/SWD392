@@ -24,11 +24,22 @@ interface Enrollment {
 
 interface QuizAttempt {
   _id: string;
-  quiz_id: string;
-  score: number;
-  total_points: number;
-  status: string;
-  date_attempt: string;
+  quiz_id: string | { _id: string; title: string; type: string };
+  user_id: string;
+  attempt_number: number;
+  date: string;
+  quizTitle?: string;
+  record_json: {
+    score?: number;
+    time_taken?: number;
+    answers?: number[];
+  };
+  score?: {
+    total: number;
+    correct: number;
+    score: number;
+    percentage: number;
+  };
 }
 
 interface DashboardStats {
@@ -54,16 +65,20 @@ const StudentDashboard = () => {
   const [error, setError] = useState<string | null>(null);
   const [classPage, setClassPage] = useState(1);
   const navigate = useNavigate();
-  const userId = localStorage.getItem('userId') || '';
+
+  const userStr = localStorage.getItem('user');
+  const userId = userStr ? JSON.parse(userStr).id : '';
 
   useEffect(() => {
     const fetchAllData = async () => {
       setLoading(true);
       setError(null);
       try {
+        // 1. Fetch classes
         const classesData: ClassItem[] = await apiService.get('/student/class?page=1');
         setClasses(classesData);
 
+        // 2. Fetch enrollments - deduplicate by keeping latest per class
         const enrollmentsData: Enrollment[] = await apiService.get('/enroll/student');
         const latestEnrollmentMap = new Map<string, Enrollment>();
         for (const enrollment of enrollmentsData) {
@@ -75,15 +90,22 @@ const StudentDashboard = () => {
         }
         setEnrollments(Array.from(latestEnrollmentMap.values()));
 
-        if (userId) {
-          try {
-            const attemptsData: QuizAttempt[] = await apiService.get(`/users/${userId}/quiz-attempts`);
-            setQuizAttempts(attemptsData.slice(0, 5));
-          } catch (err) {
-            console.warn('Failed to fetch quiz attempts');
-          }
+        // 3. Fetch quiz attempts from /my-quiz-attempts (includes score)
+        try {
+          const myAttempts: any[] = await apiService.get('/my-quiz-attempts');
+          const mapped: QuizAttempt[] = myAttempts.slice(0, 5).map((item) => ({
+            ...item.attempt,
+            score: item.score,
+            quizTitle: typeof item.attempt?.quiz_id === 'object'
+              ? item.attempt.quiz_id.title
+              : 'Quiz'
+          }));
+          setQuizAttempts(mapped);
+        } catch (err) {
+          console.warn('Failed to fetch quiz attempts');
         }
 
+        // 4. Fetch dashboard stats
         try {
           const statsData: DashboardStats = await apiService.get('/dashboard');
           setDashboardStats(statsData);
@@ -108,11 +130,12 @@ const StudentDashboard = () => {
     enrollments.find(e => getEnrollClassId(e) === classId);
 
   const calculateAverageScore = (): string => {
-    if (quizAttempts.length === 0) return 'N/A';
-    const avg = quizAttempts.reduce((sum, attempt) => {
-      return sum + (attempt.score / attempt.total_points) * 100;
-    }, 0) / quizAttempts.length;
-    return avg.toFixed(1);
+    const withScore = quizAttempts.filter(a => a.score?.percentage !== undefined);
+    if (withScore.length === 0) return 'N/A';
+    const avg = Math.round(
+      withScore.reduce((sum, a) => sum + (a.score?.percentage || 0), 0) / withScore.length
+    );
+    return avg + '%';
   };
 
   const totalPages = Math.ceil(classes.length / CLASSES_PER_PAGE);
@@ -136,7 +159,7 @@ const StudentDashboard = () => {
           <Grid size={{ xs: 12, md: 8 }}>
             <Grid container direction="column" spacing={3}>
 
-              {/* Recent Classes */}
+              {/* Classes */}
               <Grid size={{ xs: 12 }}>
                 <Paper sx={{ p: 3 }}>
                   <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
@@ -199,17 +222,13 @@ const StudentDashboard = () => {
                                   />
                                   <PlayArrow sx={{ color: '#cbd5e1' }} />
                                 </Box>
-
                                 <Typography variant="subtitle1" fontWeight="bold" noWrap>
                                   {cls.class_name}
                                 </Typography>
-
                                 <Typography variant="body2" color="text.secondary" noWrap sx={{ height: 20 }}>
                                   {cls.keywords || 'Chưa có mô tả'}
                                 </Typography>
-
                                 <Divider />
-
                                 <Typography variant="caption" color="text.secondary">
                                   Tạo ngày: <b>{formatDate(cls.date_create)}</b>
                                 </Typography>
@@ -229,7 +248,6 @@ const StudentDashboard = () => {
                     )}
                   </Grid>
 
-                  {/* Pagination */}
                   {!loading && totalPages > 1 && (
                     <Stack alignItems="center" mt={3}>
                       <Pagination
@@ -244,7 +262,7 @@ const StudentDashboard = () => {
                 </Paper>
               </Grid>
 
-              {/* Recent Quiz Attempts */}
+              {/* Quiz Attempts */}
               <Grid size={{ xs: 12 }}>
                 <Paper sx={{ p: 3 }}>
                   <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
@@ -263,10 +281,15 @@ const StudentDashboard = () => {
                   ) : quizAttempts.length > 0 ? (
                     <Stack spacing={1.5}>
                       {quizAttempts.map((attempt) => {
-                        const percentage = (attempt.score / attempt.total_points) * 100;
-                        let scoreColor = '#ef4444';
-                        if (percentage >= 70) scoreColor = '#10b981';
-                        else if (percentage >= 50) scoreColor = '#f59e0b';
+                        const score = attempt.score?.percentage;
+                        const scoreColor = score === undefined ? '#94a3b8'
+                          : score >= 70 ? '#059669'
+                            : score >= 50 ? '#b45309'
+                              : '#dc2626';
+                        const scoreBg = score === undefined ? '#f1f5f9'
+                          : score >= 70 ? '#d1fae5'
+                            : score >= 50 ? '#fef3c7'
+                              : '#fee2e2';
 
                         return (
                           <Paper
@@ -276,27 +299,17 @@ const StudentDashboard = () => {
                           >
                             <Box>
                               <Typography variant="subtitle2" fontWeight={600}>
-                                Quiz {attempt._id.substring(0, 8)}...
+                                {attempt.quizTitle || 'Quiz'}
                               </Typography>
                               <Typography variant="caption" color="text.secondary">
-                                {formatDate(attempt.date_attempt)}
+                                Lần {attempt.attempt_number} • {formatDate(attempt.date)}
                               </Typography>
                             </Box>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                              <Typography variant="body2" fontWeight="bold" sx={{ color: scoreColor }}>
-                                {attempt.score}/{attempt.total_points}
-                              </Typography>
-                              <Chip
-                                label={`${percentage.toFixed(0)}%`}
-                                size="small"
-                                sx={{
-                                  bgcolor: `${scoreColor}15`,
-                                  color: scoreColor,
-                                  fontWeight: 'bold',
-                                  minWidth: 60,
-                                }}
-                              />
-                            </Box>
+                            <Chip
+                              label={score != null ? `${score}%` : 'Chưa có điểm'}
+                              size="small"
+                              sx={{ bgcolor: scoreBg, color: scoreColor, fontWeight: 'bold' }}
+                            />
                           </Paper>
                         );
                       })}
@@ -327,40 +340,32 @@ const StudentDashboard = () => {
                     <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                       <Typography variant="body2" color="text.secondary">Tổng số lớp:</Typography>
                       {loading ? <Skeleton width={40} /> : (
-                        <Typography variant="body2" fontWeight="bold">
-                          {dashboardStats?.total_classes || classes.length}
-                        </Typography>
+                        <Typography variant="body2" fontWeight="bold">{classes.length}</Typography>
                       )}
                     </Box>
-
                     <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <Typography variant="body2" color="text.secondary">Tổng quiz:</Typography>
+                      <Typography variant="body2" color="text.secondary">Tổng quiz đã làm:</Typography>
                       {loading ? <Skeleton width={40} /> : (
-                        <Typography variant="body2" fontWeight="bold">
-                          {dashboardStats?.total_quizzes || quizAttempts.length}
-                        </Typography>
+                        <Typography variant="body2" fontWeight="bold">{quizAttempts.length}</Typography>
                       )}
                     </Box>
-
                     <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                       <Typography variant="body2" color="text.secondary">Điểm trung bình:</Typography>
                       {loading ? <Skeleton width={40} /> : (
                         <Typography variant="body2" fontWeight="bold" sx={{ color: '#10b981' }}>
-                          {dashboardStats?.average_score?.toFixed(1) || calculateAverageScore()}%
+                          {calculateAverageScore()}
                         </Typography>
                       )}
                     </Box>
-
                     <Divider sx={{ my: 1 }} />
-
                     <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                       <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         <AssignmentTurnedIn fontSize="small" />
-                        Bài tập hoàn thành:
+                        Lớp hoàn thành:
                       </Typography>
                       {loading ? <Skeleton width={40} /> : (
                         <Typography variant="body2" fontWeight="bold">
-                          {dashboardStats?.completed_materials || 0}
+                          {enrollments.filter(e => e.status === 'completed').length}
                         </Typography>
                       )}
                     </Box>
