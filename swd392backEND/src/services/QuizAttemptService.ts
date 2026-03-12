@@ -288,7 +288,6 @@ class QuizAttemptService {
 
             return {
                 message: "Quiz attempt submitted successfully",
-                results: results,
                 score: score
             };
         } catch (error) {
