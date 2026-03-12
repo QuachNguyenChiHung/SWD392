@@ -17,6 +17,7 @@ router.post("/quizzes/:quizId/attempts/:userId", QuizController.createQuizAttemp
 router.post("/quizzes", verifyRole.verifyTeacher, QuizController.createQuiz);
 router.put("/quizzes/:id", verifyRole.verifyTeacher, QuizController.updateQuiz);
 router.delete("/quizzes/:id", verifyRole.verifyTeacher, QuizController.deleteQuiz);
+router.delete("/admin/quizzes/:id", verifyRole.verifyAdmin, QuizController.deleteQuiz);
 router.patch("/quizzes/:id/toggle-status", verifyRole.verifyTeacher, QuizController.toggleQuizStatus);
 
 export default router;

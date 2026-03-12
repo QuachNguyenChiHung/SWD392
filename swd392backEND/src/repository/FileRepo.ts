@@ -1,4 +1,4 @@
-import type { CreateFileDTO } from "../dto/FileDTO";
+import type { CreateFileDTO } from "../dto/FileDTO.ts";
 import { File } from "../entities/File.ts";
 
 class FileRepo {

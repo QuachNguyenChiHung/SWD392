@@ -362,6 +362,204 @@
 
 /**
  * @openapi
+ * /api/topics/{id}:
+ *   delete:
+ *     tags:
+ *       - Topics
+ *     summary: Delete a topic with cascade deletion
+ *     description: |
+ *       [Admin] Delete a topic and all related entities using atomic transaction.
+ *       
+ *       This endpoint performs a complete cascade deletion including:
+ *       - All ClassMaterials associated with the topic
+ *       - All content entities (Quiz, File, Slide, Render2D) via ClassMaterial
+ *       - All AI-generated content (AiContent, AiRequest)
+ *       - All Feedback related to the materials
+ *       - All ProgressClassMaterial records
+ *       - The Topic itself
+ *       
+ *       Uses MongoDB transactions for atomicity - either all entities are deleted or none are.
+ *       Returns detailed deletion counts for auditing and verification.
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: MongoDB ObjectId of the topic to delete
+ *         example: "507f1f77bcf86cd799439011"
+ *     responses:
+ *       200:
+ *         description: Topic deleted successfully with detailed counts
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Topic deleted successfully"
+ *                 deletedCounts:
+ *                   type: object
+ *                   description: Breakdown of deleted entities by type
+ *                   properties:
+ *                     topics:
+ *                       type: integer
+ *                       example: 1
+ *                     classMaterials:
+ *                       type: integer
+ *                       example: 5
+ *                     progressClassMaterial:
+ *                       type: integer
+ *                       example: 12
+ *                     feedback:
+ *                       type: integer
+ *                       example: 8
+ *                     quizzes:
+ *                       type: integer
+ *                       example: 2
+ *                     questions:
+ *                       type: integer
+ *                       example: 15
+ *                     quizAttempts:
+ *                       type: integer
+ *                       example: 23
+ *                     results:
+ *                       type: integer
+ *                       example: 23
+ *                     files:
+ *                       type: integer
+ *                       example: 1
+ *                     slides:
+ *                       type: integer
+ *                       example: 2
+ *                     render2d:
+ *                       type: integer
+ *                       example: 0
+ *                     aiContents:
+ *                       type: integer
+ *                       example: 3
+ *                     aiRequests:
+ *                       type: integer
+ *                       example: 3
+ *             examples:
+ *               withMixedContent:
+ *                 summary: Topic with mixed content types
+ *                 value:
+ *                   success: true
+ *                   message: "Topic deleted successfully"
+ *                   deletedCounts:
+ *                     topics: 1
+ *                     classMaterials: 5
+ *                     progressClassMaterial: 12
+ *                     feedback: 8
+ *                     quizzes: 2
+ *                     questions: 15
+ *                     quizAttempts: 23
+ *                     results: 23
+ *                     files: 1
+ *                     slides: 2
+ *                     render2d: 0
+ *                     aiContents: 3
+ *                     aiRequests: 3
+ *               withAIContent:
+ *                 summary: Topic with AI-generated content
+ *                 value:
+ *                   success: true
+ *                   message: "Topic deleted successfully"
+ *                   deletedCounts:
+ *                     topics: 1
+ *                     classMaterials: 3
+ *                     progressClassMaterial: 6
+ *                     feedback: 4
+ *                     quizzes: 0
+ *                     questions: 0
+ *                     quizAttempts: 0
+ *                     results: 0
+ *                     files: 1
+ *                     slides: 2
+ *                     render2d: 0
+ *                     aiContents: 5
+ *                     aiRequests: 5
+ *               emptyTopic:
+ *                 summary: Topic with no materials
+ *                 value:
+ *                   success: true
+ *                   message: "Topic deleted successfully"
+ *                   deletedCounts:
+ *                     topics: 1
+ *                     classMaterials: 0
+ *                     progressClassMaterial: 0
+ *                     feedback: 0
+ *                     quizzes: 0
+ *                     questions: 0
+ *                     quizAttempts: 0
+ *                     results: 0
+ *                     files: 0
+ *                     slides: 0
+ *                     render2d: 0
+ *                     aiContents: 0
+ *                     aiRequests: 0
+ *       401:
+ *         description: Unauthorized - authentication required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               error: "Authentication required"
+ *       403:
+ *         description: Forbidden - admin role required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               error: "Admin access required"
+ *       404:
+ *         description: Topic not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 error:
+ *                   type: string
+ *                   example: "Topic not found"
+ *                 result:
+ *                   type: null
+ *                   example: null
+ *       500:
+ *         description: Transaction failed - rollback occurred
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 error:
+ *                   type: string
+ *                   example: "delete_failed"
+ *                 details:
+ *                   type: object
+ *                   properties:
+ *                     message:
+ *                       type: string
+ *                       example: "Transaction failed"
+ */
+
+/**
+ * @openapi
  * /api/topics/course/{course_id}:
  *   get:
  *     tags:

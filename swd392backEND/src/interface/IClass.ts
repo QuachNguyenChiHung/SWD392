@@ -8,5 +8,5 @@ export interface IClass extends Document {
     img_cover_link?: string;
     keywords?: string;
     date_create: Date;
-    status: "active" | "inactive" | "archived";
+    status: "active" | "inactive" | "archived" | "deleted";
 }

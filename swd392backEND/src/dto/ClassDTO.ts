@@ -24,7 +24,7 @@ const createClassSchema = z.object({
 const updateClassSchema = z.object({
     keypass: z.string().max(100).optional(),
     class_name: z.string().max(255).optional(),
-    status: z.enum(["active", "inactive", "archived"]).optional(),
+    status: z.enum(["active", "inactive", "archived", "deleted"]).optional(),
     img_cover_link: z.string().optional(),
 });
 export type CreateClassDTO = z.infer<typeof createClassSchema>;

@@ -19,6 +19,156 @@ class ClassController {
         }
     }
 
+    /**
+     * DELETE /classes/:id (Teachers only - with ownership verification)
+     * 
+     * Cascade deletes a class and all related data including:
+     * - Class materials (file, slide, quiz, render2d)
+     * - Enrollments
+     * - Feedback
+     * - Files
+     * - Progress records
+     * - Questions
+     * - Quizzes
+     * - Quiz attempts
+     * - Results
+     * - Render2D objects
+     * - Slides
+     * 
+     * @route DELETE /classes/:id
+     * @middleware verifyTeacher - Ensures authenticated teacher
+     * @param {Request} req - Express request object with class ID in params
+     * @param {Response} res - Express response object
+     * @param {NextFunction} next - Express next middleware function
+     * @returns {Promise<Response>} JSON response with deletion results
+     * 
+     * @response 200 - Success with deletion counts
+     * @response 403 - Forbidden (not class owner or not teacher)
+     * @response 404 - Class not found
+     * @response 500 - Server error (transaction failed)
+     * 
+     * @example
+     * // Success response:
+     * {
+     *   "success": true,
+     *   "message": "Class deleted successfully",
+     *   "deletedCounts": {
+     *     "classes": 1,
+     *     "classMaterials": 5,
+     *     "enrolls": 10,
+     *     "feedback": 3,
+     *     "files": 2,
+     *     "progressClassMaterial": 50,
+     *     "questions": 15,
+     *     "quizzes": 3,
+     *     "quizAttempts": 25,
+     *     "render2d": 1,
+     *     "results": 75,
+     *     "slides": 2
+     *   }
+     * }
+     */
+    async deleteClass(req: Request, res: Response, next: NextFunction) {
+        try {
+            const { id } = req.params;
+            const teacherId = req.teacher?._id?.toString();
+
+            if (!teacherId) {
+                return res.status(403).json({
+                    success: false,
+                    error: "Not allowed",
+                    result: null
+                });
+            }
+
+            const result = await ClassService.deleteClassCascade(id as string, teacherId);
+
+            if (!result.success) {
+                if (result.error === "Class not found") {
+                    return res.status(404).json(result);
+                }
+                if (result.error === "Not allowed") {
+                    return res.status(403).json(result);
+                }
+                return res.status(500).json(result);
+            }
+
+            return res.status(200).json(result);
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    /**
+     * DELETE /admin/classes/:id (Admins only - no ownership check)
+     * 
+     * Admin endpoint to cascade delete any class regardless of ownership.
+     * Deletes all related data including:
+     * - Class materials (file, slide, quiz, render2d)
+     * - Enrollments
+     * - Feedback
+     * - Files
+     * - Progress records
+     * - Questions
+     * - Quizzes
+     * - Quiz attempts
+     * - Results
+     * - Render2D objects
+     * - Slides
+     * 
+     * @route DELETE /admin/classes/:id
+     * @middleware verifyAdmin - Ensures authenticated admin
+     * @param {Request} req - Express request object with class ID in params
+     * @param {Response} res - Express response object
+     * @param {NextFunction} next - Express next middleware function
+     * @returns {Promise<Response>} JSON response with deletion results
+     * 
+     * @response 200 - Success with deletion counts
+     * @response 403 - Forbidden (not admin)
+     * @response 404 - Class not found
+     * @response 500 - Server error (transaction failed)
+     * 
+     * @example
+     * // Success response:
+     * {
+     *   "success": true,
+     *   "message": "Class deleted successfully",
+     *   "deletedCounts": {
+     *     "classes": 1,
+     *     "classMaterials": 5,
+     *     "enrolls": 10,
+     *     "feedback": 3,
+     *     "files": 2,
+     *     "progressClassMaterial": 50,
+     *     "questions": 15,
+     *     "quizzes": 3,
+     *     "quizAttempts": 25,
+     *     "render2d": 1,
+     *     "results": 75,
+     *     "slides": 2
+     *   }
+     * }
+     */
+    async deleteClassForAdmin(req: Request, res: Response, next: NextFunction) {
+        try {
+            const { id } = req.params;
+
+            // Admin can delete any class, so no teacherId check
+            const result = await ClassService.deleteClassCascade(id as string);
+
+            if (!result.success) {
+                if (result.error === "Class not found") {
+                    return res.status(404).json(result);
+                }
+                return res.status(500).json(result);
+            }
+
+            return res.status(200).json(result);
+        } catch (error) {
+            next(error);
+        }
+    }
+
     async getClassesByTeacher(req: Request, res: Response, next: NextFunction) {
         try {
             const teacher_id = req.teacher?._id?.toString();
@@ -139,6 +289,24 @@ class ClassController {
                 return res.status(404).json({ message: "Class not found" });
             }
             return res.status(200).json(updatedClass);
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    async getAdminClassStats(req: Request, res: Response, next: NextFunction) {
+        try {
+            const { timeRange, status } = req.query;
+            const result = await ClassService.getAdminClassStats(
+                timeRange as string,
+                status as string
+            );
+
+            if ((result as any).error) {
+                return res.status(400).json(result);
+            }
+
+            res.status(200).json(result);
         } catch (error) {
             next(error);
         }

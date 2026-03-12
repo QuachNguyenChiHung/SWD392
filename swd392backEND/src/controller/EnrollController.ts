@@ -121,6 +121,24 @@ class EnrollController {
             next(error);
         }
     }
+
+    async getAdminEnrollmentStats(req: Request, res: Response, next: NextFunction) {
+        try {
+            const { timeRange, status } = req.query;
+            const result = await EnrollService.getAdminEnrollmentStats(
+                timeRange as string,
+                status as string
+            );
+
+            if ((result as any).error) {
+                return res.status(400).json(result);
+            }
+
+            res.status(200).json(result);
+        } catch (error) {
+            next(error);
+        }
+    }
 }
 
 export default new EnrollController();

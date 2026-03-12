@@ -28,12 +28,14 @@ class VerifyRole {
             const token = req.signedCookies.Authorization;
             const user = await UserService.getUserByToken(token as string);
             const verified = UserGetFromTokenSchema.parse(user);
-
+            console.log("Verified user from token:", verified);
             // Query Teacher entity to get teacher_id
             const teacher = await Teacher.findOne({ user_id: verified.id });
             if (teacher && verified.role === 'teacher') {
                 req.user = verified;
                 req.teacher = teacher;
+                console.log("Verified teacher:", teacher);
+
                 return next();
             }
             return res.status(403).json({ message: "Forbidden: Teachers only" });

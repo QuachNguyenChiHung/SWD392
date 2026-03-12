@@ -54,6 +54,18 @@ class ClassRepo {
     async updateClass(id: string, updateData: any) {
         return await Class.findByIdAndUpdate(id, updateData, { new: true });
     }
+    /**
+     * Delete a class by ID (simple deletion without cascade).
+     * 
+     * Note: This method performs a simple delete of the Class document only.
+     * For cascade deletion of all related entities, use ClassService.deleteClassCascade().
+     * 
+     * @param {string} id - MongoDB ObjectId of the class to delete
+     * @returns {Promise<IClass | null>} Deleted class document or null if not found
+     * 
+     * @deprecated Consider using ClassService.deleteClassCascade() for production
+     *             to ensure all related entities are properly cleaned up.
+     */
     async deleteClass(id: string) {
         return await Class.findByIdAndDelete(id);
     }
@@ -70,6 +82,99 @@ class ClassRepo {
     }
     async findByImageUrl(url: string) {
         return await Class.findOne({ img_cover_link: url });
+    }
+
+    async getAdminClassStats(timeRange: string, status: string) {
+        const getDateFilter = (range: string) => {
+            const now = new Date();
+            switch (range) {
+                case '7days': return new Date(now.setDate(now.getDate() - 7));
+                case '30days': return new Date(now.setDate(now.getDate() - 30));
+                case '3months': return new Date(now.setMonth(now.getMonth() - 3));
+                case '1year': return new Date(now.setFullYear(now.getFullYear() - 1));
+                default: return null;
+            }
+        };
+
+        const dateFilter = getDateFilter(timeRange);
+        const matchStage: any = {};
+
+        if (dateFilter) matchStage.date_create = { $gte: dateFilter };
+        if (status !== 'all') matchStage.status = status;
+
+        const [stats] = await Class.aggregate([
+            { $match: matchStage },
+            {
+                $facet: {
+                    byStatus: [
+                        { $group: { _id: "$status", count: { $sum: 1 } } }
+                    ],
+                    trend: [
+                        {
+                            $group: {
+                                _id: { $dateToString: { format: "%Y-%m-%d", date: "$date_create" } },
+                                count: { $sum: 1 }
+                            }
+                        },
+                        { $sort: { _id: 1 } }
+                    ],
+                    total: [{ $count: "count" }],
+                    classIds: [
+                        { $project: { _id: 1, class_name: 1 } }
+                    ]
+                }
+            }
+        ]);
+
+        // Get top enrolled classes
+        const topEnrolled = await Enroll.aggregate([
+            {
+                $group: {
+                    _id: "$class_id",
+                    enrollments: { $sum: 1 }
+                }
+            },
+            { $sort: { enrollments: -1 } },
+            { $limit: 5 },
+            {
+                $lookup: {
+                    from: "classes",
+                    localField: "_id",
+                    foreignField: "_id",
+                    as: "classInfo"
+                }
+            },
+            { $unwind: "$classInfo" },
+            {
+                $project: {
+                    classId: "$_id",
+                    className: "$classInfo.class_name",
+                    enrollments: 1,
+                    _id: 0
+                }
+            }
+        ]);
+
+        // Calculate average class size
+        const classEnrollmentStats = await Enroll.aggregate([
+            {
+                $group: {
+                    _id: "$class_id",
+                    count: { $sum: 1 }
+                }
+            },
+            {
+                $group: {
+                    _id: null,
+                    avgSize: { $avg: "$count" },
+                    totalClasses: { $sum: 1 }
+                }
+            }
+        ]);
+
+        const avgClassSize = classEnrollmentStats[0]?.avgSize || 0;
+
+        return { ...stats, topEnrolled, avgClassSize };
     }
 }
 export default new ClassRepo;

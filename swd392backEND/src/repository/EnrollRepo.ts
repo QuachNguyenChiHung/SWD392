@@ -61,6 +61,73 @@ class EnrollRepo {
             class_id: classId
         });
     }
+
+    async getAdminEnrollmentStats(timeRange: string, status: string) {
+        const getDateFilter = (range: string) => {
+            const now = new Date();
+            switch (range) {
+                case '7days': return new Date(now.setDate(now.getDate() - 7));
+                case '30days': return new Date(now.setDate(now.getDate() - 30));
+                case '3months': return new Date(now.setMonth(now.getMonth() - 3));
+                case '1year': return new Date(now.setFullYear(now.getFullYear() - 1));
+                default: return null;
+            }
+        };
+
+        const dateFilter = getDateFilter(timeRange);
+        const matchStage: any = {};
+
+        if (dateFilter) matchStage.enrollment_date = { $gte: dateFilter };
+        if (status !== 'all') matchStage.status = status;
+
+        const [stats] = await Enroll.aggregate([
+            { $match: matchStage },
+            {
+                $facet: {
+                    byStatus: [
+                        { $group: { _id: "$status", count: { $sum: 1 } } }
+                    ],
+                    trend: [
+                        {
+                            $group: {
+                                _id: { $dateToString: { format: "%Y-%m-%d", date: "$enrollment_date" } },
+                                count: { $sum: 1 }
+                            }
+                        },
+                        { $sort: { _id: 1 } }
+                    ],
+                    total: [{ $count: "count" }],
+                    completionData: [
+                        {
+                            $match: {
+                                status: "completed",
+                                date_end: { $ne: null }
+                            }
+                        },
+                        {
+                            $project: {
+                                daysToComplete: {
+                                    $divide: [
+                                        { $subtract: ["$date_end", "$enrollment_date"] },
+                                        1000 * 60 * 60 * 24
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            $group: {
+                                _id: null,
+                                avgDays: { $avg: "$daysToComplete" },
+                                count: { $sum: 1 }
+                            }
+                        }
+                    ]
+                }
+            }
+        ]);
+
+        return stats;
+    }
 }
 
 export default new EnrollRepo();

@@ -447,3 +447,307 @@
  *       403:
  *         description: Forbidden - You can only modify images of your own class
  */
+
+/**
+ * @openapi
+ * components:
+ *   schemas:
+ *     ClassDeleteResponse:
+ *       type: object
+ *       properties:
+ *         success:
+ *           type: boolean
+ *           description: Whether the deletion was successful
+ *           example: true
+ *         message:
+ *           type: string
+ *           description: Success message
+ *           example: "Class deleted successfully"
+ *         deletedCounts:
+ *           type: object
+ *           description: Breakdown of deleted entities
+ *           properties:
+ *             classes:
+ *               type: integer
+ *               example: 1
+ *             classMaterials:
+ *               type: integer
+ *               example: 5
+ *             enrolls:
+ *               type: integer
+ *               example: 10
+ *             feedback:
+ *               type: integer
+ *               example: 3
+ *             files:
+ *               type: integer
+ *               example: 2
+ *             progressClassMaterial:
+ *               type: integer
+ *               example: 50
+ *             questions:
+ *               type: integer
+ *               example: 15
+ *             quizzes:
+ *               type: integer
+ *               example: 3
+ *             quizAttempts:
+ *               type: integer
+ *               example: 25
+ *             render2d:
+ *               type: integer
+ *               example: 1
+ *             results:
+ *               type: integer
+ *               example: 75
+ *             slides:
+ *               type: integer
+ *               example: 2
+ *             aiContents:
+ *               type: integer
+ *               description: Number of AI-generated content records deleted
+ *               example: 3
+ *             aiRequests:
+ *               type: integer
+ *               description: Number of AI request records deleted
+ *               example: 3
+ *     ClassDeleteError:
+ *       type: object
+ *       properties:
+ *         success:
+ *           type: boolean
+ *           example: false
+ *         error:
+ *           type: string
+ *           description: Error type (Class not found, Not allowed, delete_failed)
+ *           example: "Class not found"
+ *         result:
+ *           type: object
+ *           nullable: true
+ *           example: null
+ *         details:
+ *           type: object
+ *           description: Additional error details (present for delete_failed)
+ *           properties:
+ *             message:
+ *               type: string
+ *               example: "Transaction failed"
+ */
+
+/**
+ * @openapi
+ * /api/classes/{id}:
+ *   delete:
+ *     tags:
+ *       - Classes
+ *     summary: Delete class (Teacher)
+ *     description: "[Teacher] Cascade delete a class and all related data. Only the teacher who owns the class can delete it. Deletes: class materials, enrollments, feedback, files, progress records, questions, quizzes, quiz attempts, render2d, results, slides, AI-generated content (AiContent), and AI requests (AiRequest). All deletions are performed atomically in a transaction."
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Class ID to delete
+ *         example: "507f1f77bcf86cd799439011"
+ *     responses:
+ *       200:
+ *         description: Class deleted successfully with deletion counts
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ClassDeleteResponse'
+ *       401:
+ *         description: Unauthorized - Valid authentication required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Forbidden: Invalid token"
+ *       403:
+ *         description: Forbidden - Teacher can only delete own classes
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ClassDeleteError'
+ *             example:
+ *               success: false
+ *               error: "Not allowed"
+ *               result: null
+ *       404:
+ *         description: Class not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ClassDeleteError'
+ *             example:
+ *               success: false
+ *               error: "Class not found"
+ *               result: null
+ *       500:
+ *         description: Server error - Transaction failed
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ClassDeleteError'
+ *             example:
+ *               success: false
+ *               error: "delete_failed"
+ *               details:
+ *                 message: "Transaction failed"
+ */
+
+/**
+ * @openapi
+ * /api/admin/classes/{id}:
+ *   delete:
+ *     tags:
+ *       - Classes
+ *       - Admin
+ *     summary: Delete class (Admin)
+ *     description: "[Admin] Cascade delete any class and all related data. Admins can delete any class regardless of ownership. Deletes: class materials, enrollments, feedback, files, progress records, questions, quizzes, quiz attempts, render2d, results, slides, AI-generated content (AiContent), and AI requests (AiRequest). All deletions are performed atomically in a transaction."
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Class ID to delete
+ *         example: "507f1f77bcf86cd799439011"
+ *     responses:
+ *       200:
+ *         description: Class deleted successfully with deletion counts
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ClassDeleteResponse'
+ *       401:
+ *         description: Unauthorized - Valid authentication required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Forbidden: Invalid token"
+ *       403:
+ *         description: Forbidden - Admin access required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Forbidden: Admins only"
+ *       404:
+ *         description: Class not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ClassDeleteError'
+ *             example:
+ *               success: false
+ *               error: "Class not found"
+ *               result: null
+ *       500:
+ *         description: Server error - Transaction failed
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ClassDeleteError'
+ *             example:
+ *               success: false
+ *               error: "delete_failed"
+ *               details:
+ *                 message: "Transaction failed"
+ */
+
+/**
+ * @openapi
+ * /api/admin/stats/classes:
+ *   get:
+ *     tags:
+ *       - Classes
+ *       - Admin
+ *     summary: Get admin class statistics
+ *     description: "[Admin] Retrieve comprehensive statistics about classes including counts by status, trends over time, top enrolled classes, and average class size."
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: timeRange
+ *         schema:
+ *           type: string
+ *           enum: [7days, 30days, 3months, 1year, all]
+ *           default: "30days"
+ *         description: Time range for statistics
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [active, inactive, all]
+ *           default: "all"
+ *         description: Filter by class status
+ *     responses:
+ *       200:
+ *         description: Class statistics
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 timeRange:
+ *                   type: string
+ *                   example: "30days"
+ *                 status:
+ *                   type: string
+ *                   example: "all"
+ *                 totalClasses:
+ *                   type: integer
+ *                   example: 150
+ *                 byStatus:
+ *                   type: object
+ *                   additionalProperties:
+ *                     type: integer
+ *                   example:
+ *                     active: 120
+ *                     inactive: 30
+ *                 averageClassSize:
+ *                   type: number
+ *                   example: 25.5
+ *                 topEnrolledClasses:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       className:
+ *                         type: string
+ *                       enrollments:
+ *                         type: integer
+ *                       classId:
+ *                         type: string
+ *                 trend:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       date:
+ *                         type: string
+ *                       count:
+ *                         type: integer
+ *       400:
+ *         description: Invalid parameters
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - Admin access required
+ */

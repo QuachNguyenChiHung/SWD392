@@ -48,7 +48,7 @@ class FileController {
 
     async updateFile(req: Request, res: Response, next: NextFunction) {
         try {
-           if (!req.file) {
+            if (!req.file) {
                 console.error('No file uploaded');
                 return res.status(400).json({ message: "File is required" });
             }
