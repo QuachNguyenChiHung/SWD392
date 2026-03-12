@@ -2,6 +2,13 @@ import { Router } from "express";
 import ClassController from "../controller/ClassController.ts";
 import verifyRole from "../ultis/verifyRole.ts";
 const route = Router();
+
+// Admin statistics for classes
+route.get("/admin/stats/classes", verifyRole.verifyAdmin, ClassController.getAdminClassStats);
+
+// Admin delete class (no ownership check)
+route.delete("/admin/classes/:id", verifyRole.verifyAdmin, ClassController.deleteClassForAdmin);
+
 route.get("/class/:id", ClassController.getClassById);
 route.get("/teacher/class", verifyRole.verifyTeacher, ClassController.getClassesByTeacher);
 route.get("/student/class", verifyRole.verifyStudent, ClassController.getClassesByStudent);
@@ -12,4 +19,8 @@ route.post("/class/:classId/generate-keypass", verifyRole.verifyTeacher, ClassCo
 route.post("/teacher/upload-image", verifyRole.verifyTeacher, ClassController.uploadImageCover);
 route.put("/teacher/update-image", verifyRole.verifyTeacher, ClassController.updateImageCover);
 route.delete("/teacher/delete-image", verifyRole.verifyTeacher, ClassController.deleteImageCover);
+
+// Teacher delete class (with ownership check)
+route.delete("/classes/:id", verifyRole.verifyTeacher, ClassController.deleteClass);
+
 export default route;

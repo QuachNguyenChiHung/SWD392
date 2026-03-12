@@ -9,7 +9,7 @@ const ClassSchema: Schema = new Schema(
         class_name: { type: String, required: true, maxlength: 255 },
         img_cover_link: { type: String, default: null },
         date_create: { type: Date, default: Date.now() },
-        status: { type: String, default: "active", enum: ["active", "inactive", "archived"] },
+        status: { type: String, default: "active", enum: ["active", "inactive", "archived", "deleted"] },
     },
     { timestamps: false }
 );

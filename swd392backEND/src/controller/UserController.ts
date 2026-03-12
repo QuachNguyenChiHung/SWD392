@@ -6,6 +6,35 @@ import { loginSchema, registerSchema } from "../dto/AuthDTO.ts";
 import { UserGetFromTokenSchema, UserUpdateSchema, type UserGetFromTokenDTO } from "../dto/UserDTO.ts";
 
 class UserController {
+    async deleteModerator(req: Request, res: Response, next: NextFunction) {
+        try {
+            const user = await UserService.getUserById(req.params.id as string);
+            if (!user) {
+                return res.status(404).json({ message: "User not found" });
+            }
+            if (user.role !== "moderator") {
+                return res.status(400).json({ message: "User is not a moderator" });
+            }
+            const updateBody = UserUpdateSchema.parse({ status: "deleted" });
+            const updated = await UserService.updateUser(req.params.id as string, updateBody);
+            if (!updated) {
+                return res.status(404).json({ message: "User not found" });
+            }
+            return res.status(200).json(updated);
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    async getListModerators(req: Request, res: Response, next: NextFunction) {
+        try {
+            const page = parseInt(req.query.page as string) || 1;
+            const moderators = await UserService.getListUsersByRole("moderator", page);
+            return res.status(200).json(moderators);
+        } catch (error: any) {
+            next(error);
+        }
+    }
     async getAllUsers(req: Request, res: Response, next: NextFunction) {
         try {
             const page = parseInt(req.query.page as string) || 1;
@@ -145,6 +174,24 @@ class UserController {
             const results = await UserService.findByKeyWord(req.query.q as string, page);
             return res.status(200).json(results);
         } catch (error: any) {
+            next(error);
+        }
+    }
+
+    async getAdminUserStats(req: Request, res: Response, next: NextFunction) {
+        try {
+            const { timeRange, role } = req.query;
+            const result = await UserService.getAdminUserStats(
+                timeRange as string,
+                role as string
+            );
+
+            if ((result as any).error) {
+                return res.status(400).json(result);
+            }
+
+            res.status(200).json(result);
+        } catch (error) {
             next(error);
         }
     }

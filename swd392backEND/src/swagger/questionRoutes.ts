@@ -13,6 +13,10 @@
  *           type: string
  *           description: ID of the quiz this question belongs to
  *           example: "507f1f77bcf86cd799439012"
+ *         title:
+ *           type: string
+ *           description: Question title/content
+ *           example: "What is 2 + 2?"
  *         options:
  *           type: array
  *           items:
@@ -34,12 +38,17 @@
  *       type: object
  *       required:
  *         - quiz_id
+ *         - title
  *         - options
  *         - correct_index
  *       properties:
  *         quiz_id:
  *           type: string
  *           example: "507f1f77bcf86cd799439012"
+ *         title:
+ *           type: string
+ *           description: Question title/content
+ *           example: "What is 2 + 2?"
  *         options:
  *           type: array
  *           items:
@@ -56,6 +65,9 @@
  *     QuestionUpdateInput:
  *       type: object
  *       properties:
+ *         title:
+ *           type: string
+ *           description: Question title/content
  *         options:
  *           type: array
  *           items:

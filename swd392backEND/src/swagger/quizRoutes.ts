@@ -105,6 +105,35 @@
  *         record_json:
  *           type: object
  *           nullable: true
+ *     QuizDeletionResponse:
+ *       type: object
+ *       properties:
+ *         message:
+ *           type: string
+ *           example: "Quiz deleted successfully"
+ *         deleted:
+ *           type: object
+ *           properties:
+ *             quiz:
+ *               type: integer
+ *               description: Number of quizzes deleted
+ *               example: 1
+ *             questions:
+ *               type: integer
+ *               description: Number of questions deleted
+ *               example: 10
+ *             quizAttempts:
+ *               type: integer
+ *               description: Number of quiz attempts deleted
+ *               example: 25
+ *             classMaterials:
+ *               type: integer
+ *               description: Number of class materials deleted
+ *               example: 2
+ *             progressClassMaterials:
+ *               type: integer
+ *               description: Number of progress records deleted
+ *               example: 15
  */
 
 /**
@@ -215,8 +244,20 @@
  *   delete:
  *     tags:
  *       - Quizzes
- *     summary: Delete a quiz
- *     description: "[Teacher] Delete a quiz and all its questions."
+ *     summary: Delete a quiz (Teacher)
+ *     description: |
+ *       [Teacher] Delete a quiz with cascade deletion of all related entities.
+ *       
+ *       **Cascade Deletion:**
+ *       - Questions associated with the quiz
+ *       - QuizAttempts (student submissions)
+ *       - ClassMaterials (where type='quiz' and content_id=quizId)
+ *       - ProgressClassMaterials (student progress on quiz materials)
+ *       
+ *       **Permission Restrictions:**
+ *       - Teachers can only delete quizzes assigned to classes they own
+ *       - If quiz is not assigned to any class (orphaned), teacher can delete it
+ *       - Uses atomic transaction to ensure data consistency
  *     security:
  *       - cookieAuth: []
  *     parameters:
@@ -225,15 +266,120 @@
  *         required: true
  *         schema:
  *           type: string
+ *         description: Quiz ID
  *     responses:
  *       200:
- *         description: Quiz deleted successfully
+ *         description: Quiz and all related entities deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/QuizDeletionResponse'
  *       404:
  *         description: Quiz not found
- *       401:
- *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: "Quiz not found"
  *       403:
- *         description: Forbidden - Teacher role required
+ *         description: Permission denied - Teacher can only delete quizzes from their own classes
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: "Permission denied: You can only delete quizzes from your own classes"
+ *       401:
+ *         description: Unauthorized - Authentication required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: "Unauthorized: User not authenticated"
+ */
+
+/**
+ * @openapi
+ * /api/admin/quizzes/{id}:
+ *   delete:
+ *     tags:
+ *       - Quizzes
+ *       - Admin
+ *     summary: Delete a quiz (Admin)
+ *     description: |
+ *       [Admin] Delete any quiz with cascade deletion of all related entities.
+ *       
+ *       **Cascade Deletion:**
+ *       - Questions associated with the quiz
+ *       - QuizAttempts (student submissions)
+ *       - ClassMaterials (where type='quiz' and content_id=quizId)
+ *       - ProgressClassMaterials (student progress on quiz materials)
+ *       
+ *       **Permission:**
+ *       - Admin can delete ANY quiz without restrictions
+ *       - Uses atomic transaction to ensure data consistency
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Quiz ID
+ *     responses:
+ *       200:
+ *         description: Quiz and all related entities deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/QuizDeletionResponse'
+ *             example:
+ *               message: "Quiz deleted successfully"
+ *               deleted:
+ *                 quiz: 1
+ *                 questions: 10
+ *                 quizAttempts: 25
+ *                 classMaterials: 2
+ *                 progressClassMaterials: 15
+ *       404:
+ *         description: Quiz not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: "Quiz not found"
+ *       401:
+ *         description: Unauthorized - Authentication required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: "Unauthorized: User not authenticated"
+ *       403:
+ *         description: Forbidden - Admin role required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Forbidden: Admins only"
  */
 
 /**

@@ -8,9 +8,8 @@
     "outDir": "./dist",
     // Environment Settings
     // See also https://aka.ms/tsconfig/module
-    "module": "esnext",//this shit works?
+    "module": "nodenext", //this shit works?
     "target": "esnext",
-
     "types": [],
     // For nodejs:
     // "lib": ["esnext"],
@@ -19,7 +18,6 @@
     // Other Outputs
     "sourceMap": true,
     "declaration": true,
-
     "declarationMap": true,
     // Stricter Typechecking Options
     "noUncheckedIndexedAccess": true,

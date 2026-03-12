@@ -54,12 +54,29 @@ class QuizController {
 
     async deleteQuiz(req: Request, res: Response, next: NextFunction) {
         try {
-            const result = await QuizService.deleteQuiz(req.params.id as string);
-            if ((result as any)?.error) {
-                return res.status(404).json({ message: (result as any).error });
+            // Extract user info from middleware (verifyAdmin or verifyTeacher)
+            const user = req.user;
+            if (!user || !user.id || !user.role) {
+                return res.status(401).json({ error: "Unauthorized: User not authenticated" });
             }
-            return res.status(200).json({ message: "Quiz deleted successfully" });
+
+            const result = await QuizService.deleteQuiz(req.params.id as string, {
+                id: user.id,
+                role: user.role
+            });
+
+            if (!result) {
+                return res.status(404).json({ error: "Quiz not found" });
+            }
+
+            return res.status(200).json({
+                message: "Quiz deleted successfully",
+                deleted: result
+            });
         } catch (error) {
+            if (error instanceof Error && error.message.includes("Permission denied")) {
+                return res.status(403).json({ error: error.message });
+            }
             next(error);
         }
     }

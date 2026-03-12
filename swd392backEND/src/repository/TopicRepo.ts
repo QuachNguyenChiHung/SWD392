@@ -1,6 +1,7 @@
 import type { TopicCreateDTO, TopicUpdateDTO } from "../dto/TopicDTO.ts";
 import { Topic } from "../entities/Topic.ts";
 import type { ITopic } from "../interface/ITopic.ts";
+import type { ClientSession } from "mongoose";
 
 class TopicRepo {
     async getAllTopics(page: number) {
@@ -26,6 +27,32 @@ class TopicRepo {
 
     async deleteTopic(id: string) {
         return await Topic.findByIdAndDelete(id);
+    }
+
+    /**
+     * Delete a topic within a transaction session.
+     * 
+     * This method is used for cascade deletions within transactions to ensure
+     * atomicity across multiple entity deletions.
+     * 
+     * @param {string} id - MongoDB ObjectId of the topic to delete
+     * @param {ClientSession} session - Mongoose session for transaction
+     * @returns {Promise<ITopic | null>} Deleted topic document or null if not found
+     * 
+     * @example
+     * const session = await mongoose.startSession();
+     * await session.startTransaction();
+     * try {
+     *   const deleted = await TopicRepo.deleteTopicWithSession(topicId, session);
+     *   await session.commitTransaction();
+     * } catch (error) {
+     *   await session.abortTransaction();
+     * } finally {
+     *   session.endSession();
+     * }
+     */
+    async deleteTopicWithSession(id: string, session: ClientSession) {
+        return await Topic.findByIdAndDelete(id, { session });
     }
 
     async getTopicsByCourseId(courseId: string) {

@@ -4,6 +4,9 @@ import verifyRole from "../ultis/verifyRole.ts";
 
 const router = Router();
 
+// Admin statistics for enrollments
+router.get("/admin/stats/enrollments", verifyRole.verifyAdmin, EnrollController.getAdminEnrollmentStats);
+
 // GET: /api/enroll/student - Get all enrollments for the authenticated student
 router.get("/enroll/student", verifyRole.verifyStudent, EnrollController.getMyEnrollments);
 

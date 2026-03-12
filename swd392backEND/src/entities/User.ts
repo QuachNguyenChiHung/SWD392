@@ -8,7 +8,7 @@ const UserSchema: Schema = new Schema(
         email: { type: String, required: true, unique: true, maxlength: 255 },
         password: { type: String, required: true, maxlength: 255 },
         date_create: { type: Date, default: Date.now },
-        status: { type: String, default: "active", enum: ["active", "banned"] },
+        status: { type: String, default: "active", enum: ["active", "banned", "deleted"] },
     },
     { timestamps: false }
 );
