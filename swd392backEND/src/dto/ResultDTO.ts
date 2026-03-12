@@ -26,8 +26,9 @@ const updateResultSchema = z.object({
 
 const submitQuizAnswersSchema = z.object({
     text: z.string().optional(),
-    options: z.any().optional(),
+    question_id: z.string(),
     options_picked_index: z.number().int().min(0).optional(),
+    option: z.any().optional(),
 });
 
 const submitQuizAttemptSchema = z.object({

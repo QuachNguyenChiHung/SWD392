@@ -124,20 +124,24 @@
  *           items:
  *             type: object
  *             required:
- *               - isCorrect
+ *               - question_id
  *             properties:
  *               text:
  *                 type: string
  *                 description: Question text
  *                 example: "What is 2 + 2?"
- *               options:
- *                 type: object
- *                 description: Answer options
+ *               question_id:
+ *                 type: string
+ *                 description: ID of the question being answered
+ *                 example: "312313123123"
  *               options_picked_index:
  *                 type: integer
  *                 minimum: 0
  *                 description: Index of the selected option
  *                 example: 0
+ *               option:
+ *                 type: object
+ *                 description: The option object picked by the student
  *     SubmitQuizAttemptResponse:
  *       type: object
  *       properties:
@@ -460,8 +464,8 @@
  *   get:
  *     tags:
  *       - Quiz Attempts
- *     summary: Get my quiz attempts
- *     description: "[Student] Retrieve paginated list of all quiz attempts for the authenticated student."
+ *     summary: Get my quiz attempts with scores
+ *     description: "[Student] Retrieve paginated list of all quiz attempts with scores for the authenticated student."
  *     security:
  *       - cookieAuth: []
  *     parameters:
@@ -474,13 +478,18 @@
  *         description: Page number for pagination
  *     responses:
  *       200:
- *         description: List of student's quiz attempts
+ *         description: List of student's quiz attempts with scores
  *         content:
  *           application/json:
  *             schema:
  *               type: array
  *               items:
- *                 $ref: '#/components/schemas/QuizAttemptDetail'
+ *                 type: object
+ *                 properties:
+ *                   attempt:
+ *                     $ref: '#/components/schemas/QuizAttemptDetail'
+ *                   score:
+ *                     $ref: '#/components/schemas/Score'
  *       401:
  *         description: Unauthorized - User authentication required
  *         content:

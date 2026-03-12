@@ -3,7 +3,7 @@ import ResultRepo from "../repository/ResultRepo.ts";
 import QuizRepo from "../repository/QuizRepo.ts";
 import QuestionRepo from "../repository/QuestionRepo.ts";
 import type { CreateQuizAttemptDTO } from "../dto/QuizDTO.ts";
-import type { CreateResultDTO } from "../dto/ResultDTO.ts";
+import type { CreateResultDTO, SubmitQuizAnswersDTO } from "../dto/ResultDTO.ts";
 
 class QuizAttemptService {
     // Quiz Attempt Methods
@@ -25,6 +25,30 @@ class QuizAttemptService {
 
     async getQuizAttemptsByUserId(userId: string, page: number = 1) {
         return await QuizAttemptRepo.getQuizAttemptsByUserId(userId, page);
+    }
+
+    async getQuizAttemptsByUserIdWithScores(userId: string, page: number = 1) {
+        try {
+            const attempts = await QuizAttemptRepo.getQuizAttemptsByUserId(userId, page);
+
+            const attemptsWithScores = await Promise.all(
+                attempts.map(async (attempt: any) => {
+                    const attemptId = attempt._id?.toString() || attempt.id?.toString();
+                    if (!attemptId) {
+                        return { attempt, score: null };
+                    }
+                    const score = await this.getQuizAttemptScore(attemptId);
+                    return {
+                        attempt,
+                        score: 'error' in score ? null : score
+                    };
+                })
+            );
+
+            return attemptsWithScores;
+        } catch (error) {
+            return { error: "Failed to fetch quiz attempts with scores" };
+        }
     }
 
     async createQuizAttempt(attemptData: CreateQuizAttemptDTO & { user_id: string }) {
@@ -224,7 +248,7 @@ class QuizAttemptService {
 
     async createAndSubmitQuizAttempt(
         attemptData: CreateQuizAttemptDTO & { user_id: string },
-        answers: Omit<CreateResultDTO, 'quiz_attempt_id' | 'isCorrect'>[]
+        answers: SubmitQuizAnswersDTO[]
     ) {
         try {
             // Fetch questions for this quiz to grade answers server-side
@@ -233,14 +257,21 @@ class QuizAttemptService {
                 return { error: "No questions found for this quiz" };
             }
 
-            // Grade each answer by comparing options_picked_index with correct_index
-            const gradedAnswers: Omit<CreateResultDTO, 'quiz_attempt_id'>[] = answers.map((answer, index) => {
-                const question = questions[index];
+            // Build a map of question_id -> question for efficient lookup
+            const questionMap = new Map(
+                questions.map((q: any) => [(q._id?.toString() || q.id?.toString()), q])
+            );
+
+            // Grade each answer by matching question_id and comparing options_picked_index with correct_index
+            const gradedAnswers: Omit<CreateResultDTO, 'quiz_attempt_id'>[] = answers.map((answer) => {
+                const question = questionMap.get(answer.question_id);
                 const isCorrect = question
                     ? answer.options_picked_index === question.correct_index
                     : false;
                 return {
-                    ...answer,
+                    text: answer.text,
+                    options: answer.option,
+                    options_picked_index: answer.options_picked_index,
                     isCorrect
                 };
             });
