@@ -9,7 +9,6 @@ import {
     InputLabel,
     Select,
     MenuItem,
-    Switch,
     FormControlLabel,
     Radio,
     RadioGroup,
@@ -29,13 +28,11 @@ interface QuestionFormModalProps {
     onSave: (q: Question) => void;
 }
 
-const EMPTY_QUESTION: Omit<Question, "id"> = {
+const EMPTY_QUESTION: Omit<Question, "_id"> = {
     content: "",
     type: "multiple-choice",
     options: ["", ""],
     correctAnswer: "",
-    explanation: "",
-    has2DVisualization: false,
 };
 
 const modalStyle = {
@@ -62,7 +59,6 @@ export default function QuestionFormModal({
 
     const [form, setForm] = useState<Question>({
         ...EMPTY_QUESTION,
-        id: crypto.randomUUID(),
     });
     /** separate state for MC options so we can add/remove rows */
     const [mcOptions, setMcOptions] = useState<string[]>(["", ""]);
@@ -78,8 +74,7 @@ export default function QuestionFormModal({
                 question.type === "multiple-choice" ? String(question.correctAnswer) : ""
             );
         } else {
-            const freshId = crypto.randomUUID();
-            setForm({ ...EMPTY_QUESTION, id: freshId });
+            setForm({ ...EMPTY_QUESTION });
             setMcOptions(["", ""]);
             setMcCorrect("");
         }
@@ -169,7 +164,6 @@ export default function QuestionFormModal({
                         >
                             <MenuItem value="multiple-choice">Trắc nghiệm</MenuItem>
                             <MenuItem value="true-false">Đúng / Sai</MenuItem>
-                            <MenuItem value="short-answer">Tự luận</MenuItem>
                         </Select>
                     </FormControl>
 
@@ -256,48 +250,7 @@ export default function QuestionFormModal({
                         </FormControl>
                     )}
 
-                    {/* ── Short answer ── */}
-                    {form.type === "short-answer" && (
-                        <TextField
-                            label="Câu trả lời mong đợi"
-                            value={String(form.correctAnswer)}
-                            onChange={(e) =>
-                                setForm((p) => ({ ...p, correctAnswer: e.target.value }))
-                            }
-                            fullWidth
-                            required
-                        />
-                    )}
-
                     <Divider />
-
-                    {/* ── Explanation ── */}
-                    <TextField
-                        label="Giải thích (tuỳ chọn)"
-                        value={form.explanation ?? ""}
-                        onChange={(e) =>
-                            setForm((p) => ({ ...p, explanation: e.target.value }))
-                        }
-                        multiline
-                        minRows={2}
-                        fullWidth
-                    />
-
-                    {/* ── 2D visualization flag ── */}
-                    <FormControlLabel
-                        control={
-                            <Switch
-                                checked={form.has2DVisualization ?? false}
-                                onChange={(e) =>
-                                    setForm((p) => ({
-                                        ...p,
-                                        has2DVisualization: e.target.checked,
-                                    }))
-                                }
-                            />
-                        }
-                        label="Có hình ảnh 2D"
-                    />
 
                     {/* ── Actions ── */}
                     <Stack direction="row" spacing={1} justifyContent="flex-end" pt={1}>

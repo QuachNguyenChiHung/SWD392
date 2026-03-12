@@ -155,8 +155,7 @@ export default function QuestionManager({ questions, onChange, quizType }: Quest
                                 <Box sx={{ ml: 'auto', display: 'flex', gap: 1 }}>
                                     <Chip
                                         label={
-                                            question.type === 'multiple-choice' ? 'Trắc nghiệm' :
-                                                question.type === 'true-false' ? 'Đúng/Sai' : 'Tự luận'
+                                            question.type === 'multiple-choice' ? 'Trắc nghiệm' : 'Đúng/Sai'
                                         }
                                         size="small"
                                         color="primary"
@@ -197,13 +196,12 @@ export default function QuestionManager({ questions, onChange, quizType }: Quest
                                         onChange={(e) => updateQuestion(question.tempId, {
                                             type: e.target.value as Question['type'],
                                             options: e.target.value === 'multiple-choice' ? (question.options || ["", "", "", ""]) :
-                                                e.target.value === 'true-false' ? ["Đúng", "Sai"] : undefined,
+                                                ["Đúng", "Sai"],
                                             correctAnswer: ""
                                         })}
                                     >
                                         <MenuItem value="multiple-choice">Trắc nghiệm</MenuItem>
                                         <MenuItem value="true-false">Đúng/Sai</MenuItem>
-                                        <MenuItem value="short-answer">Tự luận ngắn</MenuItem>
                                     </Select>
                                 </FormControl>
 
@@ -221,7 +219,7 @@ export default function QuestionManager({ questions, onChange, quizType }: Quest
                                 )}
 
                                 {/* Options (for multiple choice and true/false) */}
-                                {question.type !== 'short-answer' && question.options && (
+                                {question.options && (
                                     <Box>
                                         <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
                                             <Typography variant="subtitle2">Các lựa chọn</Typography>
@@ -263,17 +261,6 @@ export default function QuestionManager({ questions, onChange, quizType }: Quest
                                             ))}
                                         </Stack>
                                     </Box>
-                                )}
-
-                                {/* Correct Answer for short answer */}
-                                {question.type === 'short-answer' && (
-                                    <TextField
-                                        label="Đáp án mẫu"
-                                        fullWidth
-                                        value={question.correctAnswer}
-                                        onChange={(e) => updateQuestion(question.tempId, { correctAnswer: e.target.value })}
-                                        helperText="Nhập đáp án mẫu hoặc từ khóa chấm điểm"
-                                    />
                                 )}
 
                                 {/* Remove Question Button */}

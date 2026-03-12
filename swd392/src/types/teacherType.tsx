@@ -104,7 +104,7 @@ export interface FileMaterial {
 export interface Question {
   _id?: string;
   content: string;
-  type: "multiple-choice" | "true-false" | "short-answer";
+  type: "multiple-choice" | "true-false";
   options?: string[];
   correctAnswer: string | string[];
   has2DVisualization?: boolean;
@@ -224,6 +224,7 @@ export interface CreateClassMaterialDTO {
   ai_content_id?: string;
   isFlagged?: boolean;
   isFlaggable?: boolean;
+  description: any;
 }
 
 export interface UpdateClassMaterialDTO {
