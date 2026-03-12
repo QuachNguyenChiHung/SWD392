@@ -309,7 +309,7 @@ const StudentClasses = () => {
         open={open}
         onClose={() => !joining && setOpen(false)}
         maxWidth="xs"
-        fullWidth
+        fullWidth 
         PaperProps={{ sx: { borderRadius: 2 } }}
       >
         <DialogTitle sx={{ fontWeight: 'bold', fontSize: '1.3rem' }}>

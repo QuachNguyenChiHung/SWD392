@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import {
-  Box, Typography, Stack, Paper, Chip, Grid, Divider, Skeleton, LinearProgress
+  Box, Typography, Stack, Paper, Chip, Grid, Divider, Skeleton, Pagination
 } from '@mui/material';
 import {
   PlayArrow, ErrorOutline, TrendingUp, AssignmentTurnedIn
@@ -10,21 +10,16 @@ import type { ClassItem } from '../../types/studentType';
 import { useNavigate } from 'react-router-dom';
 
 const CLASS_COLORS = ['#6366f1', '#0ea5e9', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6'];
+const CLASSES_PER_PAGE = 4;
 
 interface Enrollment {
   _id: string;
-  class_id: string | { _id: string; class_name: string }; // ✅ FIX: populated object
+  class_id: string | { _id: string; class_name: string };
   student_id: string;
   status: 'pending' | 'in_progress' | 'completed' | 'rejected';
   completed?: boolean;
-  date_join: string; // ✅ FIX: was date_enroll
+  date_join: string;
   date_end?: string | null;
-}
-
-interface ProgressData {
-  completed: number;
-  total: number;
-  percentage: number;
 }
 
 interface QuizAttempt {
@@ -43,7 +38,6 @@ interface DashboardStats {
   completed_materials: number;
 }
 
-// Helper: extract class_id string from populated or plain enrollment
 const getEnrollClassId = (enrollment: Enrollment): string => {
   if (typeof enrollment.class_id === 'object' && enrollment.class_id !== null) {
     return (enrollment.class_id as any)._id;
@@ -54,11 +48,11 @@ const getEnrollClassId = (enrollment: Enrollment): string => {
 const StudentDashboard = () => {
   const [classes, setClasses] = useState<ClassItem[]>([]);
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
-  const [progressMap, setProgressMap] = useState<Map<string, ProgressData>>(new Map());
   const [quizAttempts, setQuizAttempts] = useState<QuizAttempt[]>([]);
   const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [classPage, setClassPage] = useState(1);
   const navigate = useNavigate();
   const userId = localStorage.getItem('userId') || '';
 
@@ -67,14 +61,10 @@ const StudentDashboard = () => {
       setLoading(true);
       setError(null);
       try {
-        // 1. Fetch classes
         const classesData: ClassItem[] = await apiService.get('/student/class?page=1');
-        setClasses(classesData.slice(0, 4));
+        setClasses(classesData);
 
-        // 2. Fetch enrollments
         const enrollmentsData: Enrollment[] = await apiService.get('/enroll/student');
-
-        // ✅ FIX: Deduplicate - keep latest enrollment per class
         const latestEnrollmentMap = new Map<string, Enrollment>();
         for (const enrollment of enrollmentsData) {
           const classId = getEnrollClassId(enrollment);
@@ -83,40 +73,17 @@ const StudentDashboard = () => {
             latestEnrollmentMap.set(classId, enrollment);
           }
         }
-        const deduplicatedEnrollments = Array.from(latestEnrollmentMap.values());
-        setEnrollments(deduplicatedEnrollments);
+        setEnrollments(Array.from(latestEnrollmentMap.values()));
 
-        // 3. Fetch progress for each enrollment
-        const progressMapData = new Map<string, ProgressData>();
-        for (const enrollment of deduplicatedEnrollments) {
-          try {
-            const progressData: any = await apiService.get(`/progress/${enrollment._id}`);
-            if (progressData) {
-              progressMapData.set(enrollment._id, {
-                completed: progressData.completed || 0,
-                total: progressData.total || 0,
-                percentage: progressData.percentage || 0
-              });
-            }
-          } catch (err) {
-            console.warn(`Failed to fetch progress for enrollment ${enrollment._id}`);
-          }
-        }
-        setProgressMap(progressMapData);
-
-        // 4. Fetch quiz attempts
         if (userId) {
           try {
-            const attemptsData: QuizAttempt[] = await apiService.get(
-              `/users/${userId}/quiz-attempts`
-            );
+            const attemptsData: QuizAttempt[] = await apiService.get(`/users/${userId}/quiz-attempts`);
             setQuizAttempts(attemptsData.slice(0, 5));
           } catch (err) {
             console.warn('Failed to fetch quiz attempts');
           }
         }
 
-        // 5. Fetch dashboard stats
         try {
           const statsData: DashboardStats = await apiService.get('/dashboard');
           setDashboardStats(statsData);
@@ -137,23 +104,22 @@ const StudentDashboard = () => {
   const formatDate = (dateStr: string) =>
     new Date(dateStr).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
-  const getProgressForClass = (classId: string): ProgressData | undefined => {
-    // ✅ FIX: use helper to compare class_id
-    const enrollment = enrollments.find(e => getEnrollClassId(e) === classId);
-    if (enrollment) {
-      return progressMap.get(enrollment._id);
-    }
-    return undefined;
-  };
+  const getEnrollmentForClass = (classId: string): Enrollment | undefined =>
+    enrollments.find(e => getEnrollClassId(e) === classId);
 
   const calculateAverageScore = (): string => {
     if (quizAttempts.length === 0) return 'N/A';
     const avg = quizAttempts.reduce((sum, attempt) => {
-      const score = (attempt.score / attempt.total_points) * 100;
-      return sum + score;
+      return sum + (attempt.score / attempt.total_points) * 100;
     }, 0) / quizAttempts.length;
     return avg.toFixed(1);
   };
+
+  const totalPages = Math.ceil(classes.length / CLASSES_PER_PAGE);
+  const paginatedClasses = classes.slice(
+    (classPage - 1) * CLASSES_PER_PAGE,
+    classPage * CLASSES_PER_PAGE
+  );
 
   return (
     <Box>
@@ -166,15 +132,17 @@ const StudentDashboard = () => {
 
       <Stack spacing={3}>
         <Grid container spacing={3}>
+          {/* Left column */}
           <Grid size={{ xs: 12, md: 8 }}>
             <Grid container direction="column" spacing={3}>
+
               {/* Recent Classes */}
               <Grid size={{ xs: 12 }}>
                 <Paper sx={{ p: 3 }}>
                   <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
-                    <Typography variant="h6">Lớp học gần đây</Typography>
+                    <Typography variant="h6">Lớp học của tôi</Typography>
                     <Typography variant="body2" color="text.secondary">
-                      Các lớp bạn đang tham gia
+                      {classes.length} lớp đang tham gia
                     </Typography>
                   </Stack>
 
@@ -187,96 +155,92 @@ const StudentDashboard = () => {
                     </Paper>
                   )}
 
-                  <Box
-                    sx={{
-                      display: 'grid',
-                      gridAutoFlow: 'column',
-                      gridAutoColumns: 'minmax(280px, 300px)',
-                      gap: 2,
-                      overflowX: 'auto',
-                      width: '100%',
-                      pb: 1,
-                    }}
-                  >
-                    {!loading && classes.map((cls, index) => {
-                      const color = CLASS_COLORS[index % CLASS_COLORS.length];
-                      const progress = getProgressForClass(cls._id);
+                  <Grid container spacing={2}>
+                    {loading
+                      ? [1, 2, 3, 4].map((i) => (
+                        <Grid key={i} size={{ xs: 12, sm: 6 }}>
+                          <Skeleton variant="rounded" height={180} />
+                        </Grid>
+                      ))
+                      : paginatedClasses.map((cls, index) => {
+                        const globalIndex = (classPage - 1) * CLASSES_PER_PAGE + index;
+                        const color = CLASS_COLORS[globalIndex % CLASS_COLORS.length];
+                        const enrollment = getEnrollmentForClass(cls._id);
+                        const isCompleted = enrollment?.status === 'completed';
 
-                      return (
-                        <Paper
-                          key={cls._id}
-                          variant="outlined"
-                          sx={{
-                            p: 2,
-                            cursor: 'pointer',
-                            transition: '0.2s',
-                            '&:hover': {
-                              borderColor: color,
-                              bgcolor: 'rgba(0,0,0,0.01)',
-                              transform: 'translateY(-2px)'
-                            }
-                          }}
-                          onClick={() => navigate(`/student/class/${cls._id}`)}
-                        >
-                          <Stack spacing={1.5}>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <Chip
-                                label={cls.status === 'active' ? 'Đang học' : cls.status}
-                                size="small"
-                                sx={{ bgcolor: `${color}15`, color: color, fontWeight: 'bold' }}
-                              />
-                              <PlayArrow sx={{ color: '#cbd5e1' }} />
-                            </Box>
-                            <Typography variant="subtitle1" fontWeight="bold" noWrap>
-                              {cls.class_name}
-                            </Typography>
-                            <Typography variant="body2" color="text.secondary" noWrap sx={{ height: 20 }}>
-                              {cls.keywords || 'Chưa có mô tả'}
-                            </Typography>
-
-                            {/* Progress Bar */}
-                            {progress && (
-                              <Box>
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                                  <Typography variant="caption" color="text.secondary">
-                                    Tiến độ
-                                  </Typography>
-                                  <Typography variant="caption" fontWeight="bold">
-                                    {progress.completed}/{progress.total}
-                                  </Typography>
+                        return (
+                          <Grid key={cls._id} size={{ xs: 12, sm: 6 }}>
+                            <Paper
+                              variant="outlined"
+                              sx={{
+                                p: 2,
+                                cursor: 'pointer',
+                                transition: '0.2s',
+                                height: '100%',
+                                '&:hover': {
+                                  borderColor: color,
+                                  bgcolor: 'rgba(0,0,0,0.01)',
+                                  transform: 'translateY(-2px)',
+                                  boxShadow: '0 4px 12px rgba(0,0,0,0.08)'
+                                }
+                              }}
+                              onClick={() => navigate(`/student/class/${cls._id}`)}
+                            >
+                              <Stack spacing={1.5}>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                  <Chip
+                                    label={isCompleted ? 'Hoàn thành' : 'Đang học'}
+                                    size="small"
+                                    sx={{
+                                      bgcolor: isCompleted ? '#d1fae5' : `${color}15`,
+                                      color: isCompleted ? '#059669' : color,
+                                      fontWeight: 'bold'
+                                    }}
+                                  />
+                                  <PlayArrow sx={{ color: '#cbd5e1' }} />
                                 </Box>
-                                <LinearProgress
-                                  variant="determinate"
-                                  value={progress.percentage}
-                                  sx={{
-                                    height: 6,
-                                    borderRadius: 3,
-                                    bgcolor: `${color}20`,
-                                    '& .MuiLinearProgress-bar': { bgcolor: color }
-                                  }}
-                                />
-                              </Box>
-                            )}
 
-                            <Divider />
-                            <Typography variant="caption" color="text.secondary">
-                              Tạo ngày: <b>{formatDate(cls.date_create)}</b>
-                            </Typography>
-                          </Stack>
-                        </Paper>
-                      );
-                    })}
+                                <Typography variant="subtitle1" fontWeight="bold" noWrap>
+                                  {cls.class_name}
+                                </Typography>
+
+                                <Typography variant="body2" color="text.secondary" noWrap sx={{ height: 20 }}>
+                                  {cls.keywords || 'Chưa có mô tả'}
+                                </Typography>
+
+                                <Divider />
+
+                                <Typography variant="caption" color="text.secondary">
+                                  Tạo ngày: <b>{formatDate(cls.date_create)}</b>
+                                </Typography>
+                              </Stack>
+                            </Paper>
+                          </Grid>
+                        );
+                      })
+                    }
 
                     {!loading && classes.length === 0 && !error && (
-                      <Typography variant="body2" color="text.secondary" sx={{ py: 4, textAlign: 'center', gridColumn: '1/-1' }}>
-                        Bạn chưa tham gia lớp học nào.
-                      </Typography>
+                      <Grid size={{ xs: 12 }}>
+                        <Typography variant="body2" color="text.secondary" sx={{ py: 4, textAlign: 'center' }}>
+                          Bạn chưa tham gia lớp học nào.
+                        </Typography>
+                      </Grid>
                     )}
+                  </Grid>
 
-                    {loading && [1, 2, 3, 4].map((i) => (
-                      <Skeleton key={i} variant="rounded" width={300} height={200} />
-                    ))}
-                  </Box>
+                  {/* Pagination */}
+                  {!loading && totalPages > 1 && (
+                    <Stack alignItems="center" mt={3}>
+                      <Pagination
+                        count={totalPages}
+                        page={classPage}
+                        onChange={(_, page) => setClassPage(page)}
+                        color="primary"
+                        size="small"
+                      />
+                    </Stack>
+                  )}
                 </Paper>
               </Grid>
 
@@ -344,11 +308,14 @@ const StudentDashboard = () => {
                   )}
                 </Paper>
               </Grid>
+
             </Grid>
           </Grid>
 
+          {/* Right column */}
           <Grid size={{ xs: 12, md: 4 }}>
             <Grid container direction="column" spacing={3}>
+
               {/* Learning Status */}
               <Grid size={{ xs: 12 }}>
                 <Paper sx={{ p: 3, bgcolor: '#f8fafc', border: '1px solid #e2e8f0' }}>
@@ -438,6 +405,7 @@ const StudentDashboard = () => {
                   </Stack>
                 </Paper>
               </Grid>
+
             </Grid>
           </Grid>
         </Grid>
