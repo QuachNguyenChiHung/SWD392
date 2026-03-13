@@ -12,6 +12,7 @@ import {
     Divider,
     IconButton,
     Tooltip,
+    CircularProgress,
 } from "@mui/material";
 import {
     Quiz,
@@ -20,9 +21,12 @@ import {
     EditOutlined,
     DeleteOutline,
 } from "@mui/icons-material";
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import type { Quiz as QuizType, Question } from "../../types/teacherType";
 import QuestionFormModal from "../QuestionFormModal";
+import { questionApiService } from "../../services/teacherApi/materialApi/questionApi";
+import { quizAttemptResultApiService, type QuizAttemptWithResults } from "../../services/teacherApi/materialApi/quizAttemptResultApi";
+import QuizAttemptResultsTable from "./QuizAttemptResultsTable";
 
 interface QuizViewerProps {
     content: QuizType;
@@ -32,7 +36,6 @@ interface QuizViewerProps {
 const TYPE_LABEL: Record<Question["type"], string> = {
     "multiple-choice": "Trắc nghiệm",
     "true-false": "Đúng / Sai",
-    "short-answer": "Tự luận",
 };
 
 export default function QuizViewer({ content, onQuestionsChange }: QuizViewerProps) {
@@ -40,6 +43,37 @@ export default function QuizViewer({ content, onQuestionsChange }: QuizViewerPro
         open: boolean;
         question: Question | null;
     }>({ open: false, question: null });
+    const [questions, setQuestions] = useState<Question[]>(content.questions ?? []);
+    const [saving, setSaving] = useState(false);
+    const [attempts, setAttempts] = useState<QuizAttemptWithResults[]>([]);
+    const [attemptsLoading, setAttemptsLoading] = useState(false);
+
+    // Refresh questions from API
+    const refreshQuestions = useCallback(async () => {
+        if (!content?._id) return;
+        try {
+            const fetched = await questionApiService.getQuestionsByQuizId(content._id);
+            setQuestions(fetched);
+            onQuestionsChange?.(fetched);
+        } catch (err) {
+            console.error('Failed to refresh questions:', err);
+        }
+    }, [content?._id, onQuestionsChange]);
+
+    // Sync questions when content changes
+    useEffect(() => {
+        setQuestions(content.questions ?? []);
+    }, [content.questions]);
+
+    useEffect(() => {
+        if (!content?._id) return;
+        setAttemptsLoading(true);
+        quizAttemptResultApiService
+            .getQuizAttemptsWithResultsByQuizId(content._id)
+            .then(setAttempts)
+            .catch(() => setAttempts([]))
+            .finally(() => setAttemptsLoading(false));
+    }, [content?._id]);
 
     if (!content) {
         return (
@@ -58,7 +92,6 @@ export default function QuizViewer({ content, onQuestionsChange }: QuizViewerPro
     }
 
     const canEdit = !!onQuestionsChange;
-    const questions = content.questions ?? [];
 
     const formatDate = (d: Date | null) =>
         d
@@ -69,15 +102,46 @@ export default function QuizViewer({ content, onQuestionsChange }: QuizViewerPro
             })
             : "\u2014";
 
-    const handleSaveQuestion = (saved: Question) => {
-        const updated = questions.some((q) => q._id === saved._id)
-            ? questions.map((q) => (q._id === saved._id ? saved : q))
-            : [...questions, saved];
-        onQuestionsChange?.(updated);
+    const handleSaveQuestion = async (saved: Question) => {
+        if (!content._id) return;
+        setSaving(true);
+        try {
+            const frontendData = {
+                content: saved.content,
+                type: saved.type,
+                options: saved.options,
+                correctAnswer: saved.correctAnswer,
+            };
+
+            if (saved._id && questions.some((q) => q._id === saved._id)) {
+                // Update existing question
+                await questionApiService.updateQuestionFromFrontend(saved._id, frontendData);
+            } else {
+                // Create new question
+                await questionApiService.createQuestion(frontendData, content._id);
+            }
+            await refreshQuestions();
+        } catch (err) {
+            console.error('Failed to save question:', err);
+            alert('Có lỗi xảy ra khi lưu câu hỏi');
+        } finally {
+            setSaving(false);
+        }
     };
 
-    const handleDeleteQuestion = (id: string) =>
-        onQuestionsChange?.(questions.filter((q) => q._id !== id));
+    const handleDeleteQuestion = async (id: string) => {
+        if (!window.confirm('Bạn có chắc muốn xoá câu hỏi này?')) return;
+        setSaving(true);
+        try {
+            await questionApiService.deleteQuestion(id);
+            await refreshQuestions();
+        } catch (err) {
+            console.error('Failed to delete question:', err);
+            alert('Có lỗi xảy ra khi xoá câu hỏi');
+        } finally {
+            setSaving(false);
+        }
+    };
 
     return (
         <Box>
@@ -196,6 +260,14 @@ export default function QuizViewer({ content, onQuestionsChange }: QuizViewerPro
                     ))}
                 </Stack>
             )}
+
+            {saving && (
+                <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
+                    <CircularProgress size={24} />
+                </Box>
+            )}
+
+            <QuizAttemptResultsTable attempts={attempts} loading={attemptsLoading} />
 
             <QuestionFormModal
                 open={modalState.open}
