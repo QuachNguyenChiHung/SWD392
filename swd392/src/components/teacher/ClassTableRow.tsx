@@ -19,15 +19,34 @@ const formatDate = (value: Date | string) => {
   return Number.isNaN(date.getTime()) ? "-" : date.toLocaleDateString();
 };
 
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case 'active': return 'success.main';
+    case 'inactive': return 'warning.main';
+    case 'archived': return 'error.main';
+    default: return 'text.secondary';
+  }
+};
+
+const getStatusLabel = (status: string) => {
+  switch (status) {
+    case 'active': return 'Hoạt động';
+    case 'inactive': return 'Tạm dừng';
+    case 'archived': return 'Đã lưu trữ';
+    default: return status;
+  }
+};
+
 const ClassTableRow = ({
   class_name,
   course_id,
   course_name,
-  studentCount,
+  description,
+  status,
   date_create,
   keypass,
-  class_id,
-}: Class & { studentCount: number }) => {
+  _id,
+}: Class) => {
   const [showKey, setShowKey] = useState(false);
   const createdAt = formatDate(date_create);
 
@@ -39,7 +58,27 @@ const ClassTableRow = ({
           {course_name || course_id}
         </Typography>
       </TableCell>
-      <TableCell>{studentCount}</TableCell>
+      <TableCell>
+        <Typography variant="body2">
+          {description || "N/A"}
+        </Typography>
+      </TableCell>
+      <TableCell>
+        <Typography variant="body2" sx={{ fontFamily: "monospace" }}>
+          {course_id}
+        </Typography>
+      </TableCell>
+      <TableCell>
+        <Typography
+          variant="body2"
+          sx={{
+            color: getStatusColor(status),
+            fontWeight: 'medium'
+          }}
+        >
+          {getStatusLabel(status)}
+        </Typography>
+      </TableCell>
       <TableCell>{createdAt}</TableCell>
       <TableCell>
         <Stack direction="row" spacing={1} alignItems="center">
@@ -66,7 +105,7 @@ const ClassTableRow = ({
           <Button
             size="small"
             component={RouterLink}
-            to={`/teacher/class/${class_id}`}
+            to={`/teacher/class/${_id}`}
           >
             Xem chi tiết
           </Button>

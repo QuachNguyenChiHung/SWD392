@@ -1,287 +1,379 @@
-import {
-  Box, Typography, Button, Stack, Card,
-  CardContent, CardActions, Alert,
-  Chip,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  TextField,
-  DialogActions
-} from '@mui/material';
-import { Add, ErrorOutline, PlayArrow, Schedule } from '@mui/icons-material';
 import { useEffect, useState } from 'react';
-import { apiService } from '../../services/api';
-import type { ClassItem } from '../../types/studentType';
 import { useNavigate } from 'react-router-dom';
+import {
+  Box, Typography, Button, Stack, Paper, Chip, Grid, TextField, Dialog, DialogTitle,
+  DialogContent, DialogActions, Skeleton, Alert, CircularProgress, InputAdornment
+} from '@mui/material';
+import { Add, PlayArrow, Schedule, ErrorOutline, CheckCircle, Lock } from '@mui/icons-material';
+import { apiService } from '../../services/api';
+import type { ClassItem, Enrollment } from '../../types/studentType';
 
-const CLASS_COLORS = ['#6366f1', '#0ea5e9', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6'];
+const COLORS = ['#6366f1', '#0ea5e9', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6'];
+
+interface EnhancedClassItem extends ClassItem {
+  enrollment?: Enrollment;
+}
 
 const StudentClasses = () => {
-
-  const [classes, setClasses] = useState<ClassItem[]>([]);
-  const [error, setError] = useState<string | null>(null);
+  const [classes, setClasses] = useState<EnhancedClassItem[]>([]);
+  const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState(1);
-
-  // Join class modal states
-  const [openModal, setOpenModal] = useState(false);
-  const [classId, setClassId] = useState('');
+  const [open, setOpen] = useState(false);
   const [keypass, setKeypass] = useState('');
   const [joining, setJoining] = useState(false);
   const [joinError, setJoinError] = useState<string | null>(null);
   const [joinSuccess, setJoinSuccess] = useState(false);
-
   const navigate = useNavigate();
 
+  const fetchData = async () => {
+    try {
+      const classesData: ClassItem[] = await apiService.get('/student/class?page=1');
+      const enrollmentsData: Enrollment[] = await apiService.get('/enroll/student');
+
+      setEnrollments(enrollmentsData);
+
+      const enhancedClasses = classesData.map(cls => {
+        // Lấy tất cả enrollments của class này
+        const classEnrollments = enrollmentsData.filter(e => {
+          const enrollClassId = typeof e.class_id === 'object'
+            ? (e.class_id as any)._id
+            : e.class_id;
+          return enrollClassId === cls._id;
+        });
+
+        // Lấy enrollment mới nhất theo date_join
+        const enrollment = classEnrollments.sort((a, b) =>
+          new Date(b.date_join).getTime() - new Date(a.date_join).getTime()
+        )[0];
+
+        return { ...cls, enrollment };
+      });
+      setClasses(enhancedClasses);
+      return true;
+    } catch (err: any) {
+      console.error('Error fetching classes:', err);
+      return false;
+    }
+  };
+
   useEffect(() => {
-    const fetchClasses = async () => {
+    const loadData = async () => {
       setLoading(true);
-      try {
-        const data: ClassItem[] = await apiService.get(`/student/class?page=${page}`);
-        setClasses(prev => page === 1 ? data : [...prev, ...data]);
-      } catch (err: any) {
-        setError(err.message || 'Không thể tải danh sách lớp học');
-      } finally {
-        setLoading(false);
-      }
+      await fetchData();
+      setLoading(false);
     };
-    fetchClasses();
-  }, [page]);
+    loadData();
+  }, []);
 
   const handleJoinClass = async () => {
-    if (!classId.trim() || !keypass.trim()) {
-      setJoinError('Vui lòng nhập đầy đủ thông tin');
+    if (!keypass.trim()) {
+      setJoinError('Vui lòng nhập mã keypass');
       return;
     }
 
     setJoining(true);
     setJoinError(null);
+    setJoinSuccess(false);
 
     try {
-      await apiService.post(`/enroll/${classId.trim()}`, { keypass: keypass.trim() });
-      setJoinSuccess(true);
+      const enrollResponse = await apiService.post('/enroll/keypass', {
+        keypass: keypass.trim()
+      });
 
-      setPage(1);
-      const data: ClassItem[] = await apiService.get('/student/class?page=1');
-      setClasses(data);
-      setTimeout(() => {
-        setOpenModal(false);
-        setClassId('');
+      if (enrollResponse) {
+        setJoinSuccess(true);
         setKeypass('');
-        setJoinSuccess(false);
-      }, 1500);
-    } catch (err: any) {
-      setJoinError(err.message || 'Tham gia lớp học thất bại');
-    }
-    setJoining(false);
-  }
 
-  const handleCloseModal = () => {
-    setOpenModal(false);
-    setClassId('');
-    setKeypass('');
-    setJoinError(null);
-    setJoinSuccess(false);
+        setTimeout(async () => {
+          const success = await fetchData();
+          if (success) {
+            setTimeout(() => {
+              setOpen(false);
+              setJoinSuccess(false);
+            }, 500);
+          }
+        }, 1500);
+      }
+    } catch (err: any) {
+      console.error('Join error:', err);
+      setJoinError(err.message || 'Mã keypass không hợp lệ hoặc lớp không tồn tại');
+    } finally {
+      setJoining(false);
+    }
   };
 
   const formatDate = (dateStr: string) =>
-    new Date(dateStr).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    new Date(dateStr).toLocaleDateString('vi-VN', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+
+  const getClassStatus = (cls: EnhancedClassItem) => {
+    if (!cls.enrollment) {
+      return { label: 'Chưa tham gia', color: '#6b7280', bg: '#f3f4f6' };
+    }
+    switch (cls.enrollment.status) {
+      case 'completed':
+        return { label: 'Hoàn thành', color: '#059669', bg: '#d1fae5' };
+      case 'in_progress':
+        return { label: 'Đang học', color: '#065f46', bg: '#d1fae5' };
+      case 'pending':
+        return { label: 'Chờ duyệt', color: '#b45309', bg: '#fef3c7' };
+      default:
+        return { label: 'Đang học', color: '#065f46', bg: '#d1fae5' };
+    }
+  };
 
   return (
-    <Box sx={{ p: { xs: 2, md: 4 }, minHeight: '100vh', background: '#f8fafc' }}>
+    <Box>
       {/* Header */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+      <Stack direction="row" justifyContent="space-between" alignItems="center" mb={4}>
         <Box>
-          <Typography sx={{ fontWeight: 700, fontSize: { xs: 20, md: 26 }, color: '#0f172a' }}>
+          <Typography variant="h4" fontWeight="bold">
             Lớp học của tôi
           </Typography>
-          <Typography sx={{ color: '#64748b', fontSize: 14, mt: 0.3 }}>
-            {loading ? '...' : `${classes.length} lớp đã tham gia`}
+          <Typography color="text.secondary">
+            Bạn đang tham gia {classes.length} lớp học
           </Typography>
         </Box>
-        <Button
-          variant="contained"
-          startIcon={<Add />}
-          onClick={() => setOpenModal(true)}
-          sx={{
-            background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-            borderRadius: 2.5, textTransform: 'none', fontWeight: 700,
-            boxShadow: '0 4px 14px rgba(99,102,241,0.35)',
-            '&:hover': { boxShadow: '0 6px 20px rgba(99,102,241,0.5)' }
-          }}
-        >
-          Tham gia lớp học
-        </Button>
-      </Box>
-
-      {error && (
-        <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }} icon={<ErrorOutline />}>
-          {error}
-        </Alert>
-      )}
-
-      {/* Class cards */}
-      <Stack direction="row" flexWrap="wrap" gap={3}>
-        {classes.map((cls, index) => {
-          const color = CLASS_COLORS[index % CLASS_COLORS.length];
-          return (
-            <Box key={cls._id} sx={{ flex: '1 1 300px', minWidth: 280, maxWidth: 380 }}>
-              <Card elevation={0} sx={{
-                border: '1px solid #e2e8f0', borderRadius: 3,
-                transition: 'all 0.2s',
-                '&:hover': { transform: 'translateY(-4px)', boxShadow: '0 12px 28px rgba(0,0,0,0.1)', borderColor: color }
-              }}>
-                {/* Cover image */}
-                <Box sx={{
-                  height: 140, background: `linear-gradient(135deg, ${color}22, ${color}44)`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  position: 'relative', overflow: 'hidden',
-                  borderRadius: '12px 12px 0 0',
-                }}>
-                  <img
-                    src={cls.img_cover_link}
-                    alt={cls.class_name}
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                    onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                  />
-                  <Chip
-                    label={cls.status === 'active' ? 'Đang học' : cls.status}
-                    size="small"
-                    sx={{
-                      position: 'absolute', top: 10, right: 10,
-                      background: cls.status === 'active' ? '#d1fae5' : '#f1f5f9',
-                      color: cls.status === 'active' ? '#065f46' : '#64748b',
-                      fontWeight: 700, fontSize: 11,
-                    }}
-                  />
-                </Box>
-
-                <CardContent sx={{ pb: 1 }}>
-                  <Typography sx={{ fontWeight: 700, fontSize: 16, color: '#0f172a', mb: 0.5 }}>
-                    {cls.class_name}
-                  </Typography>
-
-                  {cls.keywords && (
-                    <Stack direction="row" flexWrap="wrap" gap={0.5} sx={{ mb: 1.5 }}>
-                      {cls.keywords.split(',').slice(0, 3).map((kw, i) => (
-                        <Chip key={i} label={kw.trim()} size="small" sx={{
-                          background: `${color}15`, color, fontWeight: 600, fontSize: 11,
-                        }} />
-                      ))}
-                    </Stack>
-                  )}
-
-                  <Stack direction="row" spacing={0.5} alignItems="center">
-                    <Schedule sx={{ fontSize: 13, color: '#94a3b8' }} />
-                    <Typography sx={{ fontSize: 12, color: '#94a3b8' }}>
-                      Tham gia: {formatDate(cls.date_create)}
-                    </Typography>
-                  </Stack>
-                </CardContent>
-
-                <CardActions sx={{ px: 2, pb: 2 }}>
-                  <Button
-                    onClick={() => navigate(`/student/class/${cls._id}`)}
-                    fullWidth variant="contained" size="small"
-                    startIcon={<PlayArrow />}
-                    sx={{
-                      background: color, borderRadius: 2,
-                      textTransform: 'none', fontWeight: 700,
-                      boxShadow: 'none',
-                      '&:hover': { background: color, filter: 'brightness(0.9)', boxShadow: 'none' }
-                    }}
-                  >
-                    Vào lớp
-                  </Button>
-                </CardActions>
-              </Card>
-            </Box>
-          );
-        })}
+        <Stack direction="row" spacing={1}>
+          <Button
+            variant="contained"
+            startIcon={<Add />}
+            onClick={() => {
+              setOpen(true);
+              setJoinError(null);
+              setJoinSuccess(false);
+              setKeypass('');
+            }}
+            sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 700 }}
+          >
+            Tham gia lớp
+          </Button>
+        </Stack>
       </Stack>
 
-      {/* Empty state */}
-      {!loading && classes.length === 0 && !error && (
-        <Box sx={{ textAlign: 'center', py: 8 }}>
-          <Typography sx={{ fontWeight: 700, fontSize: 18, color: '#475569' }}>
-            Bạn chưa tham gia lớp học nào
-          </Typography>
-          <Typography sx={{ color: '#94a3b8', mt: 1, mb: 3 }}>
-            Nhấn nút bên dưới và nhập keypass để tham gia lớp học
-          </Typography>
-          <Button
-            variant="contained" startIcon={<Add />}
-            onClick={() => setOpenModal(true)}
-            sx={{
-              background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-              borderRadius: 2.5, textTransform: 'none', fontWeight: 700,
-            }}
-          >
-            Tham gia lớp học
-          </Button>
-        </Box>
-      )}
+      {/* Classes Grid */}
+      <Grid container spacing={3}>
+        {loading
+          ? [1, 2, 3, 4, 5, 6].map((i) => (
+            <Grid key={i} size={{ xs: 12, sm: 6, md: 4 }}>
+              <Skeleton variant="rectangular" height={250} sx={{ borderRadius: 2 }} />
+            </Grid>
+          ))
+          : classes.length > 0
+            ? classes.map((cls, index) => {
+              const color = COLORS[index % 6];
+              const status = getClassStatus(cls);
 
-      {/* Join Class Modal */}
-      <Dialog open={openModal} onClose={handleCloseModal} maxWidth="xs" fullWidth
-        slotProps={{ paper: { sx: { borderRadius: 3, p: 1 } } }}
+              return (
+                <Grid key={cls._id} size={{ xs: 12, sm: 6, md: 3 }}>
+                  <Paper
+                    variant="outlined"
+                    sx={{
+                      p: 2,
+                      transition: '0.3s',
+                      height: '100%',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      '&:hover': {
+                        transform: 'translateY(-5px)',
+                        borderColor: color,
+                        boxShadow: '0 10px 20px rgba(0,0,0,0.05)'
+                      }
+                    }}
+                  >
+                    {/* Cover Image */}
+                    <Box
+                      sx={{
+                        height: 120,
+                        bgcolor: `${color}15`,
+                        borderRadius: 1,
+                        mb: 2,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        overflow: 'hidden'
+                      }}
+                    >
+                      {cls.img_cover_link ? (
+                        <img
+                          title={cls.class_name}
+                          src={cls.img_cover_link}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '4px' }}
+                        />
+                      ) : (
+                        <PlayArrow sx={{ fontSize: 50, color: color }} />
+                      )}
+                    </Box>
+
+                    {/* Status Chip */}
+                    <Chip
+                      label={status.label}
+                      size="small"
+                      sx={{
+                        mb: 1,
+                        bgcolor: status.bg,
+                        color: status.color,
+                        fontWeight: 'bold'
+                      }}
+                    />
+
+                    {/* Class Name */}
+                    <Typography variant="h6" fontWeight="bold" noWrap sx={{ mb: 1 }}>
+                      {cls.class_name}
+                    </Typography>
+
+                    {/* Description */}
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{
+                        mb: 2,
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden'
+                      }}
+                    >
+                      {cls.keywords || 'Chưa có mô tả'}
+                    </Typography>
+
+                    {/* Date */}
+                    <Stack
+                      direction="row"
+                      spacing={1}
+                      alignItems="center"
+                      sx={{ mt: 'auto', mb: 2, color: 'text.secondary' }}
+                    >
+                      <Schedule sx={{ fontSize: 16 }} />
+                      <Typography variant="caption">
+                        {formatDate(cls.date_create)}
+                      </Typography>
+                    </Stack>
+
+                    {/* Enrollment date */}
+                    {cls.enrollment && (
+                      <Typography variant="caption" color="success.main" sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        <CheckCircle sx={{ fontSize: 14 }} />
+                        Ghi danh: {formatDate(cls.enrollment.date_join)}
+                      </Typography>
+                    )}
+
+                    {/* Action Button */}
+                    <Button
+                      fullWidth
+                      variant={cls.enrollment ? 'outlined' : 'contained'}
+                      onClick={() => navigate(`/student/class/${cls._id}`)}
+                      sx={{
+                        borderColor: color,
+                        color: cls.enrollment ? color : 'white',
+                        bgcolor: cls.enrollment ? 'transparent' : color,
+                        '&:hover': {
+                          bgcolor: cls.enrollment ? `${color}05` : undefined,
+                          borderColor: color
+                        }
+                      }}
+                    >
+                      {cls.enrollment ? 'Tiếp tục học' : 'Xem chi tiết'}
+                    </Button>
+                  </Paper>
+                </Grid>
+              );
+            })
+            : (
+              <Grid size={{ xs: 12 }}>
+                <Paper sx={{ p: 4, textAlign: 'center' }}>
+                  <Lock sx={{ fontSize: 48, color: 'text.disabled', mb: 2 }} />
+                  <Typography variant="h6" gutterBottom>
+                    Chưa tham gia lớp học nào
+                  </Typography>
+                  <Typography color="text.secondary" paragraph>
+                    Hãy nhập mã keypass để tham gia một lớp học
+                  </Typography>
+                  <Button
+                    variant="contained"
+                    startIcon={<Add />}
+                    onClick={() => setOpen(true)}
+                  >
+                    Tham gia lớp
+                  </Button>
+                </Paper>
+              </Grid>
+            )}
+      </Grid>
+
+      {/* Join Class Dialog */}
+      <Dialog
+        open={open}
+        onClose={() => !joining && setOpen(false)}
+        maxWidth="xs"
+        fullWidth 
+        PaperProps={{ sx: { borderRadius: 2 } }}
       >
-        <DialogTitle sx={{ fontWeight: 700, fontSize: 18, color: '#0f172a', pb: 1 }}>
-          Tham gia lớp học
+        <DialogTitle sx={{ fontWeight: 'bold', fontSize: '1.3rem' }}>
+          Tham gia lớp mới
         </DialogTitle>
+
         <DialogContent>
-          <Typography sx={{ color: '#64748b', fontSize: 14, mb: 2.5 }}>
-            Nhập Class ID và Keypass do giáo viên cung cấp để tham gia lớp học.
-          </Typography>
+          <Stack spacing={2} mt={1}>
+            {joinSuccess && (
+              <Alert severity="success" icon={<CheckCircle />}>
+                Tham gia lớp học thành công! Đang cập nhật dữ liệu...
+              </Alert>
+            )}
 
-          {joinSuccess && (
-            <Alert severity="success" sx={{ mb: 2, borderRadius: 2 }}>
-              Tham gia lớp học thành công!
-            </Alert>
-          )}
+            {joinError && (
+              <Alert severity="error" icon={<ErrorOutline />}>
+                {joinError}
+              </Alert>
+            )}
 
-          {joinError && (
-            <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>
-              {joinError}
-            </Alert>
-          )}
+            {!joinSuccess && (
+              <TextField
+                fullWidth
+                label="Mã keypass"
+                placeholder="Nhập mã keypass của lớp học"
+                size="small"
+                value={keypass}
+                onChange={(e) => setKeypass(e.target.value)}
+                disabled={joining}
+                InputProps={{
+                  endAdornment: joining && (
+                    <InputAdornment position="end">
+                      <CircularProgress size={20} />
+                    </InputAdornment>
+                  )
+                }}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter' && !joining) {
+                    handleJoinClass();
+                  }
+                }}
+              />
+            )}
 
-          <TextField
-            fullWidth
-            label="Class ID"
-            placeholder="VD: 6991511f642a83223fd0a5a5"
-            value={classId}
-            onChange={e => setClassId(e.target.value)}
-            sx={{ mb: 2 }}
-            size="small"
-            onKeyDown={e => e.key === 'Enter' && handleJoinClass()}
-
-          />
-          <TextField
-            fullWidth
-            label="Keypass"
-            placeholder="VD: CLASSKEY_5_xxx"
-            value={keypass}
-            onChange={e => setKeypass(e.target.value)}
-            size="small"
-            onKeyDown={e => e.key === 'Enter' && handleJoinClass()}
-          />
+            <Typography variant="caption" color="text.secondary">
+              Mã keypass được cung cấp bởi giáo viên. Kiểm tra lại nếu bạn không chắc chắn.
+            </Typography>
+          </Stack>
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
-          <Button onClick={handleCloseModal} sx={{ borderRadius: 2, textTransform: 'none', color: '#64748b' }}>
+
+        <DialogActions sx={{ p: 2.5, gap: 1 }}>
+          <Button
+            onClick={() => setOpen(false)}
+            disabled={joining}
+            color="inherit"
+          >
             Hủy
           </Button>
           <Button
             variant="contained"
             onClick={handleJoinClass}
-            disabled={joining || joinSuccess}
-            sx={{
-              background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-              borderRadius: 2, textTransform: 'none', fontWeight: 700,
-              boxShadow: 'none',
-            }}
+            disabled={!keypass.trim() || joining || joinSuccess}
           >
-            {joining ? 'Đang xử lý...' : 'Tham gia'}
+            {joining ? 'Đang xử lý...' : 'Xác nhận'}
           </Button>
         </DialogActions>
       </Dialog>

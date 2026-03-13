@@ -1,38 +1,99 @@
-import { Box, Typography, Stack, Paper, Grid, Tabs, Tab } from "@mui/material";
-import type { Class } from "../../types/teacherType";
+import { Box, Typography, Stack, Paper, Grid, Tabs, Tab, CircularProgress, Alert } from "@mui/material";
+import type { Class, Topic, Student } from "../../types/teacherType";
 import ClassMaterial from "./teacherClassDetailTabs/classMaterial";
 import StudentList from "./teacherClassDetailTabs/studentList";
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { mockTopicsByClass, mockStudents, teacherClasses } from "../../../data/teacherMockData";
+import teacherClassApi from "../../services/teacherApi/teacherClassApi";
+import { topicApi } from "../../services/teacherApi/topicApi";
 
 const TeacherClassDetail = () => {
   const [tabValue, setTabValue] = useState(0);
   const { classId } = useParams<{ classId: string }>();
-  const mockClassData: Class = teacherClasses.find(c => c.class_id === classId) || teacherClasses[0]; // Assuming we are showing details for the first class
 
+  // State for actual data
+  const [classData, setClassData] = useState<Class | null>(null);
+  const [topics, setTopics] = useState<Topic[]>([]);
+  const [students, setStudents] = useState<Student[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (classId) {
-      //TEMP:
-      const mockClassData = teacherClasses.find(c => c.class_id === classId);
-      if (!mockClassData) {
-        console.warn(`Class with id ${classId} not found in mock data`);
+    const fetchClassData = async () => {
+      if (!classId) {
+        setError("Class ID is required");
+        setLoading(false);
+        return;
       }
-    }
-  }, [])
+
+      try {
+        setLoading(true);
+        setError(null);
+
+        // Fetch class details
+        const classResponse = await teacherClassApi.getClassById(classId);
+        setClassData(classResponse);
+
+        // Fetch students for this class
+        const studentsResponse = await teacherClassApi.getStudentsByClass(classId);
+        setStudents(studentsResponse);
+
+        // Fetch topics for this course
+        if (classResponse.course_id) {
+          const topicsResponse = await topicApi.getTopicsByCourse(classResponse.course_id);
+          setTopics(topicsResponse.topics || []);
+        }
+
+      } catch (err) {
+        console.error('Error fetching class data:', err);
+        setError(err instanceof Error ? err.message : 'Failed to fetch class data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchClassData();
+  }, [classId]);
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
   };
 
+  if (loading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Box>
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      </Box>
+    );
+  }
+
+  if (!classData) {
+    return (
+      <Box>
+        <Alert severity="warning" sx={{ mb: 2 }}>
+          Class not found
+        </Alert>
+      </Box>
+    );
+  }
+
   return (
     <Box>
       <Typography variant="h4" gutterBottom fontWeight="bold">
-        {mockClassData?.class_name || "Chi tiết lớp học"}
+        {classData.class_name}
       </Typography>
       <Typography variant="body1" color="text.secondary" paragraph>
-        Quản lý tài liệu học tập theo từng chủ đề, lịch phát hành và tài nguyên hỗ trợ.
+        {classData.description || "Quản lý tài liệu học tập theo từng chủ đề, lịch phát hành và tài nguyên hỗ trợ."}
       </Typography>
 
       <Grid container spacing={3}>
@@ -47,9 +108,9 @@ const TeacherClassDetail = () => {
 
         <Grid size={{ xs: 12, md: 8 }}>
           <Stack spacing={3}>
-            {tabValue === 0 && <ClassMaterial topics={mockTopicsByClass[mockClassData?.class_id || ""] || []} classId={mockClassData?.class_id || ""} />}
+            {tabValue === 0 && <ClassMaterial topics={topics} classId={classData._id} />}
             {tabValue === 1 && (
-              <StudentList students={mockStudents} classData={mockClassData} />
+              <StudentList students={students} classData={classData} />
             )}
           </Stack>
         </Grid>
@@ -61,13 +122,16 @@ const TeacherClassDetail = () => {
             </Typography>
             <Stack spacing={1}>
               <Typography variant="body2">
-                <strong>Mã khoá học:</strong> {mockClassData?.course_name || "Chemistry 9 - 2022"}
+                <strong>Mã khoá học:</strong> {classData.course_name}
               </Typography>
               <Typography variant="body2">
-                <strong>Học sinh đã đăng ký:</strong> {mockStudents.filter(s => s.student_id.includes(mockClassData?.class_id || "")).length || 0}
+                <strong>Học sinh đã đăng ký:</strong> {students.length}
               </Typography>
               <Typography variant="body2">
-                <strong>Ngày tạo:</strong> {mockClassData?.date_create?.toLocaleDateString() || "12/09/2025"}
+                <strong>Ngày tạo:</strong> {new Date(classData.date_create).toLocaleDateString()}
+              </Typography>
+              <Typography variant="body2">
+                <strong>Trạng thái:</strong> {classData.status}
               </Typography>
             </Stack>
           </Paper>

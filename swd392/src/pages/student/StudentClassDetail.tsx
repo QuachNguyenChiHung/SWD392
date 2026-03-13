@@ -1,14 +1,53 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-    Box, Typography, Stack, Paper, Button, Chip, Skeleton, Avatar
+    Box, Typography, Stack, Paper, Button, Chip, Skeleton, Grid, Divider,
+    LinearProgress, Alert, Tab, Tabs, Dialog, DialogTitle, DialogContent, DialogActions
 } from '@mui/material';
-import { ArrowBack, MenuBook, ErrorOutline, CalendarToday } from '@mui/icons-material';
+import {
+    ArrowBack, MenuBook, CalendarToday, CheckCircle
+} from '@mui/icons-material';
 import { apiService } from '../../services/api';
-import type { ClassItem, Topic } from '../../types/studentType';
+import type { ClassItem, Topic, Enrollment, ProgressData } from '../../types/studentType';
+import ClassTopicsTab from '../../components/student/ClassTopicsTab';
+import ClassMaterialsTab from '../../components/student/ClassMaterialsTab';
 
+interface ClassMaterial {
+    _id: string;
+    title: string;
+    type: string;
+    file_url?: string;
+    description?: string;
+    order?: number;
+}
 
-const TOPIC_COLORS = ['#6366f1', '#0ea5e9', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6'];
+interface TabPanelProps {
+    children?: React.ReactNode;
+    index: number;
+    value: number;
+}
+
+function TabPanel({ children, value, index }: TabPanelProps) {
+    return (
+        <div role="tabpanel" hidden={value !== index}>
+            {value === index && <Box>{children}</Box>}
+        </div>
+    );
+}
+
+const getEnrollClassId = (enrollment: Enrollment): string => {
+    if (typeof enrollment.class_id === 'object' && enrollment.class_id !== null) {
+        return (enrollment.class_id as any)._id;
+    }
+    return enrollment.class_id as string;
+};
+
+const calcProgress = (progress: ProgressData) => {
+    const total = progress.length;
+    const completed = progress.filter(p => p.completion_status === 'completed').length;
+    const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
+    return { total, completed, percentage };
+};
 
 export default function StudentClassDetail() {
     const { classId } = useParams<{ classId: string }>();
@@ -16,202 +55,318 @@ export default function StudentClassDetail() {
 
     const [cls, setCls] = useState<ClassItem | null>(null);
     const [topics, setTopics] = useState<Topic[]>([]);
-    const [loadingClass, setLoadingClass] = useState(true);
-    const [loadingTopics, setLoadingTopics] = useState(true);
+    const [courseName, setCourseName] = useState('');
+    const [gradeLevel, setGradeLevel] = useState<number | undefined>(undefined);
+    const [materials, setMaterials] = useState<ClassMaterial[]>([]);
+    const [enrollment, setEnrollment] = useState<Enrollment | null>(null);
+    const [progress, setProgress] = useState<ProgressData | null>(null);
+    const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [tabValue, setTabValue] = useState(0);
+    const [expandedTopic, setExpandedTopic] = useState<string | false>(false);
+    const [previewMaterial, setPreviewMaterial] = useState<ClassMaterial | null>(null);
 
-    // Fetch class detail
     useEffect(() => {
         if (!classId) return;
-        const fetchClass = async () => {
-            setLoadingClass(true);
+
+        const fetchData = async () => {
+            setLoading(true);
+            setError(null);
             try {
-                const data: ClassItem = await apiService.get(`/class/${classId}`);
-                setCls(data);
+                const classData: ClassItem = await apiService.get(`/class/${classId}`);
+                setCls(classData);
+
+                if (classData.course_id) {
+                    const courseData: any = await apiService.get(
+                        `/topics/course/${classData.course_id}?page=1`
+                    );
+                    setTopics(courseData?.topics || []);
+                    setCourseName(courseData?.course_name || '');
+                    setGradeLevel(courseData?.grade_level);
+                }
+
+                try {
+                    const materialsData: ClassMaterial[] = await apiService.get(
+                        `/class-materials?class_id=${classId}`
+                    );
+                    setMaterials(materialsData);
+                } catch {
+                    console.warn('Failed to fetch materials');
+                }
+
+                try {
+                    const enrollmentsData: Enrollment[] = await apiService.get('/enroll/student');
+                    const classEnrollment = enrollmentsData.find(
+                        e => getEnrollClassId(e) === classId
+                    );
+                    if (classEnrollment) {
+                        setEnrollment(classEnrollment);
+                        try {
+                            const progressData: ProgressData = await apiService.get(
+                                `/progress/${classEnrollment._id}`
+                            );
+                            setProgress(progressData);
+                        } catch {
+                            console.warn('Failed to fetch progress');
+                        }
+                    }
+                } catch {
+                    console.warn('Failed to fetch enrollment');
+                }
             } catch (err: any) {
-                setError(err.message || 'Không thể tải thông tin lớp học');
+                setError(err.message || 'Không thể tải dữ liệu');
             } finally {
-                setLoadingClass(false);
+                setLoading(false);
             }
         };
-        fetchClass();
+
+        fetchData();
     }, [classId]);
 
-    // Fetch topics after class loaded
-    useEffect(() => {
-        if (!cls?.course_id) return;
-        const fetchTopics = async () => {
-            setLoadingTopics(true);
-            try {
-                const data: Topic[] = await apiService.get(`/topics/course/${cls.course_id}?page=1`);
-                setTopics(data);
-            } catch (err: any) {
-                setError(err.message || 'Không thể tải danh sách chủ đề');
-            } finally {
-                setLoadingTopics(false);
-            }
-        };
-        fetchTopics();
-    }, [cls?.course_id]);
-
     const formatDate = (dateStr: string) =>
-        new Date(dateStr).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        new Date(dateStr).toLocaleDateString('vi-VN', {
+            day: '2-digit', month: '2-digit', year: 'numeric'
+        });
 
-    return (
-        <Box sx={{
-            minHeight: '100vh',
-            background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
-            p: { xs: 2, md: 4 },
-        }}>
-            {/* Back button */}
-            <Button
-                startIcon={<ArrowBack />}
-                onClick={() => navigate('/student/classes')}
-                sx={{
-                    mb: 3, textTransform: 'none', color: '#64748b', fontWeight: 600,
-                    '&:hover': { background: '#f1f5f9' }
-                }}
-            >
-                Quay lại
-            </Button>
+    const handleExpandTopic = (topicId: string) => {
+        setExpandedTopic(prev => prev === topicId ? false : topicId);
+    };
 
-            {/* Error */}
-            {error && (
-                <Paper elevation={0} sx={{ p: 3, borderRadius: 3, border: '1px solid #fecaca', background: '#fff5f5', mb: 3 }}>
-                    <Stack direction="row" spacing={1} alignItems="center">
-                        <ErrorOutline sx={{ color: '#ef4444' }} />
-                        <Typography sx={{ color: '#ef4444', fontWeight: 600 }}>{error}</Typography>
-                    </Stack>
-                </Paper>
-            )}
-
-            {/* Class header */}
-            {loadingClass ? (
-                <Paper elevation={0} sx={{ p: 3, borderRadius: 3, border: '1px solid #e2e8f0', background: 'white', mb: 3 }}>
+    if (loading) {
+        return (
+            <Box>
+                <Skeleton variant="text" height={40} width="20%" sx={{ mb: 3 }} />
+                <Paper sx={{ p: 3, mb: 3 }}>
                     <Stack direction="row" spacing={2}>
                         <Skeleton variant="rounded" width={80} height={80} />
                         <Box sx={{ flex: 1 }}>
-                            <Skeleton width="50%" height={28} />
-                            <Skeleton width="30%" height={20} sx={{ mt: 1 }} />
+                            <Skeleton width="60%" />
+                            <Skeleton width="40%" />
                         </Box>
                     </Stack>
                 </Paper>
-            ) : cls && (
-                <Paper elevation={0} sx={{ p: 3, borderRadius: 3, border: '1px solid #e2e8f0', background: 'white', mb: 3 }}>
-                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3} alignItems={{ sm: 'center' }}>
-                        <Box sx={{
-                            width: 80, height: 80, borderRadius: 3, overflow: 'hidden', flexShrink: 0,
-                            background: '#eef2ff', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        }}>
-                            {cls.img_cover_link ? (
-                                <img src={cls.img_cover_link} alt={cls.class_name}
-                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                                    onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                                />
-                            ) : (
-                                <MenuBook sx={{ fontSize: 36, color: '#6366f1' }} />
-                            )}
-                        </Box>
-                        <Box sx={{ flex: 1 }}>
-                            <Stack direction="row" alignItems="center" spacing={1.5} sx={{ mb: 0.5 }}>
-                                <Typography sx={{ fontWeight: 700, fontSize: { xs: 18, md: 22 }, color: '#0f172a' }}>
-                                    {cls.class_name}
-                                </Typography>
-                                <Chip
-                                    label={cls.status === 'active' ? 'Đang học' : cls.status}
-                                    size="small"
-                                    sx={{
-                                        background: cls.status === 'active' ? '#d1fae5' : '#f1f5f9',
-                                        color: cls.status === 'active' ? '#065f46' : '#64748b',
-                                        fontWeight: 700, fontSize: 11,
-                                    }}
-                                />
-                            </Stack>
-                            <Stack direction="row" spacing={0.5} alignItems="center">
-                                <CalendarToday sx={{ fontSize: 13, color: '#94a3b8' }} />
-                                <Typography sx={{ fontSize: 13, color: '#94a3b8' }}>
-                                    Tham gia: {formatDate(cls.date_create)}
-                                </Typography>
-                            </Stack>
-                        </Box>
-                    </Stack>
-                </Paper>
-            )}
+                {[1, 2, 3].map(i => (
+                    <Skeleton key={i} variant="rectangular" height={80} sx={{ mb: 2, borderRadius: 2 }} />
+                ))}
+            </Box>
+        );
+    }
 
-            {/* Topics */}
-            <Typography sx={{ fontWeight: 700, fontSize: 18, color: '#0f172a', mb: 2 }}>
-                Chủ đề học ({loadingTopics ? '...' : topics.length})
-            </Typography>
+    if (error) {
+        return (
+            <Box>
+                <Button startIcon={<ArrowBack />} onClick={() => navigate('/student/classes')} sx={{ mb: 3 }}>
+                    Quay lại
+                </Button>
+                <Alert severity="error">{error}</Alert>
+            </Box>
+        );
+    }
 
-            {/* Topic skeletons */}
-            {loadingTopics && (
-                <Stack spacing={2}>
-                    {[1, 2, 3, 4].map(i => (
-                        <Paper key={i} elevation={0} sx={{ p: 3, borderRadius: 3, border: '1px solid #e2e8f0' }}>
-                            <Stack direction="row" spacing={2} alignItems="center">
-                                <Skeleton variant="circular" width={44} height={44} />
+    const isCompleted = enrollment?.status === 'completed';
+    const progressStats = progress ? calcProgress(progress) : null;
+
+    return (
+        <Box>
+            <Stack direction="row" alignItems="center" mb={3}>
+                <Button
+                    startIcon={<ArrowBack />}
+                    onClick={() => navigate('/student/classes')}
+                    sx={{ textTransform: 'none', fontWeight: 600, color: 'text.secondary' }}
+                >
+                    Quay lại
+                </Button>
+            </Stack>
+
+            <Grid container spacing={3}>
+                <Grid size={{ xs: 12, md: 8 }}>
+                    {cls && (
+                        <Paper sx={{ p: 3, mb: 3 }}>
+                            <Stack direction="row" spacing={3} alignItems="center">
+                                <Box sx={{
+                                    width: 100, height: 100, borderRadius: 2,
+                                    bgcolor: '#f1f5f9', display: 'flex',
+                                    alignItems: 'center', justifyContent: 'center',
+                                    overflow: 'hidden', flexShrink: 0
+                                }}>
+                                    {cls.img_cover_link ? (
+                                        <img
+                                            title={cls.class_name}
+                                            src={cls.img_cover_link}
+                                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                        />
+                                    ) : (
+                                        <MenuBook sx={{ fontSize: 50, color: '#6366f1' }} />
+                                    )}
+                                </Box>
+
                                 <Box sx={{ flex: 1 }}>
-                                    <Skeleton width="55%" height={20} />
-                                    <Skeleton width="80%" height={16} sx={{ mt: 0.5 }} />
+                                    <Typography variant="h5" fontWeight="bold" gutterBottom>
+                                        {cls.class_name}
+                                    </Typography>
+                                    <Stack direction="row" spacing={1} mb={1} flexWrap="wrap" alignItems="center">
+                                        <Chip
+                                            label={isCompleted ? 'Hoàn thành' : 'Đang học'}
+                                            size="small"
+                                            sx={{
+                                                bgcolor: isCompleted ? '#d1fae5' : '#dbeafe',
+                                                color: isCompleted ? '#065f46' : '#1d4ed8',
+                                                fontWeight: 700
+                                            }}
+                                        />
+                                        <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center' }}>
+                                            <CalendarToday sx={{ fontSize: 14, mr: 0.5 }} />
+                                            {formatDate(cls.date_create)}
+                                        </Typography>
+                                    </Stack>
+                                    {cls.keywords && (
+                                        <Typography variant="body2" color="text.secondary">
+                                            {cls.keywords}
+                                        </Typography>
+                                    )}
                                 </Box>
                             </Stack>
-                        </Paper>
-                    ))}
-                </Stack>
-            )}
 
-            {/* Topic cards */}
-            {!loadingTopics && (
-                <Stack spacing={2}>
-                    {topics.map((topic, index) => {
-                        const color = TOPIC_COLORS[index % TOPIC_COLORS.length];
-                        return (
-                            <Paper key={topic._id} elevation={0} sx={{
-                                p: 3, borderRadius: 3,
-                                border: '1px solid #e2e8f0', background: 'white',
-                                transition: 'all 0.2s', cursor: 'pointer',
-                                '&:hover': { transform: 'translateX(4px)', boxShadow: '0 8px 24px rgba(0,0,0,0.08)', borderColor: color },
-                            }}>
-                                <Stack direction="row" spacing={2} alignItems="center">
-                                    <Avatar sx={{
-                                        width: 44, height: 44, borderRadius: 2,
-                                        background: `${color}18`,
-                                        color, fontWeight: 700, fontSize: 16,
-                                        flexShrink: 0,
-                                    }}>
-                                        {index + 1}
-                                    </Avatar>
-                                    <Box sx={{ flex: 1, minWidth: 0 }}>
-                                        <Typography sx={{ fontWeight: 700, fontSize: 15, color: '#0f172a' }}>
-                                            {topic.title}
+                            {progressStats && (
+                                <Box sx={{ mt: 3 }}>
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                                        <Typography variant="subtitle2" fontWeight="bold">Tiến độ học tập</Typography>
+                                        <Typography variant="subtitle2" fontWeight="bold" color="primary">
+                                            {progressStats.percentage}% ({progressStats.completed}/{progressStats.total})
                                         </Typography>
-                                        {topic.description && (
-                                            <Typography sx={{
-                                                fontSize: 13, color: '#94a3b8', mt: 0.3,
-                                                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                                            }}>
-                                                {topic.description}
-                                            </Typography>
-                                        )}
                                     </Box>
-                                    <MenuBook sx={{ color: '#cbd5e1', fontSize: 20, flexShrink: 0 }} />
-                                </Stack>
-                            </Paper>
-                        );
-                    })}
-                </Stack>
-            )}
+                                    <LinearProgress
+                                        variant="determinate"
+                                        value={progressStats.percentage}
+                                        sx={{
+                                            height: 8, borderRadius: 4, bgcolor: '#e5e7eb',
+                                            '& .MuiLinearProgress-bar': {
+                                                bgcolor: progressStats.percentage === 100 ? '#10b981' : '#6366f1'
+                                            }
+                                        }}
+                                    />
+                                </Box>
+                            )}
+                        </Paper>
+                    )}
 
-            {/* Empty topics */}
-            {!loadingTopics && topics.length === 0 && !error && (
-                <Paper elevation={0} sx={{ p: 5, borderRadius: 3, border: '1px solid #e2e8f0', textAlign: 'center' }}>
-                    <MenuBook sx={{ fontSize: 48, color: '#cbd5e1', mb: 1 }} />
-                    <Typography sx={{ fontWeight: 600, color: '#64748b' }}>Chưa có chủ đề nào</Typography>
-                    <Typography sx={{ color: '#94a3b8', fontSize: 13, mt: 0.5 }}>
-                        Giáo viên chưa thêm nội dung cho lớp này
-                    </Typography>
-                </Paper>
-            )}
+                    <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+                        <Tabs value={tabValue} onChange={(_, val) => setTabValue(val)}>
+                            <Tab label={`Nội dung khóa học (${topics.length})`} />
+                            <Tab label={`Tài liệu (${materials.length})`} />
+                        </Tabs>
+                    </Box>
+
+                    <TabPanel value={tabValue} index={0}>
+                        <ClassTopicsTab
+                            courseName={courseName}
+                            gradeLevel={gradeLevel}
+                            topics={topics}
+                            expandedTopic={expandedTopic}
+                            onExpandTopic={handleExpandTopic}
+                        />
+                    </TabPanel>
+
+                    <TabPanel value={tabValue} index={1}>
+                        <ClassMaterialsTab
+                            materials={materials}
+                            onPreviewMaterial={setPreviewMaterial}
+                        />
+                    </TabPanel>
+                </Grid>
+
+                <Grid size={{ xs: 12, md: 4 }}>
+                    <Paper sx={{ p: 3, mb: 2, bgcolor: '#f8fafc' }}>
+                        <Typography fontWeight="bold" gutterBottom sx={{ mb: 2 }}>
+                            Thông tin lớp học
+                        </Typography>
+                        <Divider sx={{ mb: 2 }} />
+                        <Stack spacing={2}>
+                            <Box>
+                                <Typography variant="caption" color="text.secondary">Mã lớp</Typography>
+                                <Typography variant="body2" fontWeight="600" sx={{ wordBreak: 'break-all' }}>
+                                    {classId}
+                                </Typography>
+                            </Box>
+                            <Box>
+                                <Typography variant="caption" color="text.secondary">Chủ đề</Typography>
+                                <Typography variant="body2" fontWeight="600">{topics.length} chủ đề</Typography>
+                            </Box>
+                            <Box>
+                                <Typography variant="caption" color="text.secondary">Tài liệu</Typography>
+                                <Typography variant="body2" fontWeight="600">{materials.length} tài liệu</Typography>
+                            </Box>
+
+                            {enrollment && (
+                                <>
+                                    <Divider />
+                                    <Box>
+                                        <Typography variant="caption" color="text.secondary">Ngày tham gia</Typography>
+                                        <Typography variant="body2" fontWeight="600">
+                                            {formatDate(enrollment.date_join)}
+                                        </Typography>
+                                    </Box>
+                                </>
+                            )}
+                        </Stack>
+                    </Paper>
+
+                    <Stack spacing={2}>
+                        <Button
+                            fullWidth variant="contained" size="large"
+                            sx={{ textTransform: 'none', fontWeight: 600 }}
+                            onClick={() => setTabValue(0)}
+                        >
+                            Bắt đầu học
+                        </Button>
+                        <Button
+                            fullWidth variant="outlined" color="inherit"
+                            onClick={() => navigate('/student/classes')}
+                        >
+                            Quay về danh sách lớp
+                        </Button>
+                    </Stack>
+                </Grid>
+            </Grid>
+
+            <Dialog
+                open={!!previewMaterial}
+                onClose={() => setPreviewMaterial(null)}
+                maxWidth="md"
+                fullWidth
+            >
+                <DialogTitle fontWeight="bold">{previewMaterial?.title}</DialogTitle>
+                <DialogContent>
+                    <Box sx={{ mt: 2 }}>
+                        <Typography variant="subtitle2" gutterBottom>Loại: {previewMaterial?.type}</Typography>
+                        <Typography variant="body2" color="text.secondary" paragraph>
+                            {previewMaterial?.description || 'Chưa có mô tả'}
+                        </Typography>
+                        {previewMaterial?.file_url && (
+                            <Box sx={{ mt: 3, p: 2, bgcolor: '#f3f4f6', borderRadius: 1 }}>
+                                <Typography variant="body2" gutterBottom>Liên kết tài liệu:</Typography>
+                                <Typography
+                                    component="a"
+                                    href={previewMaterial.file_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    sx={{ color: '#6366f1', textDecoration: 'none', wordBreak: 'break-all', '&:hover': { textDecoration: 'underline' } }}
+                                >
+                                    {previewMaterial.file_url}
+                                </Typography>
+                            </Box>
+                        )}
+                    </Box>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setPreviewMaterial(null)}>Đóng</Button>
+                    {previewMaterial?.file_url && (
+                        <Button variant="contained" component="a" href={previewMaterial.file_url} download target="_blank">
+                            Tải về
+                        </Button>
+                    )}
+                </DialogActions>
+            </Dialog>
         </Box>
     );
 }
