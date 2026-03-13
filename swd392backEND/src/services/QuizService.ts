@@ -3,6 +3,7 @@ import QuizRepo from "../repository/QuizRepo.ts";
 import QuestionRepo from "../repository/QuestionRepo.ts";
 import ClassRepo from "../repository/ClassRepo.ts";
 import type { CreateQuizDTO, UpdateQuizDTO, CreateQuizAttemptDTO } from "../dto/QuizDTO.ts";
+import TopicService from "./TopicService.ts";
 
 class QuizService {
     async getQuizById(id: string) {
@@ -82,10 +83,28 @@ class QuizService {
         const quiz = await QuizRepo.getQuizById(quizId);
         if (!quiz) {
             return { error: "Quiz not found" };
+
         }
         return await QuizRepo.getQuizAttemptsByQuizId(quizId, page);
     }
+    async createQuizWithAI(topicId: string) {
+        const topic = await TopicService.getTopicById(topicId);
+        if (!topic) {
+            return { error: "Topic not found" };
+        }
+        // const createQuizSchema = z.object({
+        //     title: z.string().max(255),
+        //     type: z.string().max(50),
+        //     available_date: z.coerce.date().optional(),
+        //     max_attempt_number: z.number().int().min(1).optional(),
+        //     end_date: z.coerce.date().optional(),
+        //     status: z.boolean().optional(),
+        // });
+        const title = topic.title;
+        const desc = topic.description;
+        let prompt = '';
 
+    }
     async getQuizAttemptsByUserId(userId: string, page: number = 1) {
         return await QuizRepo.getQuizAttemptsByUserId(userId, page);
     }
