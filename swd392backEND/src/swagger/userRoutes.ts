@@ -118,12 +118,6 @@
  *           type: integer
  *           default: 1
  *         description: Page number
- *       - in: query
- *         name: limit
- *         schema:
- *           type: integer
- *           default: 10
- *         description: Results per page
  *     responses:
  *       200:
  *         description: List of users matching the keyword
