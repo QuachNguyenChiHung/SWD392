@@ -22,15 +22,17 @@ interface ClassMaterial {
   content_id: string;
   status: string;
   order_num?: number;
+  quizTitle?: string; // fetched from /quizzes/{content_id}
 }
 
 interface QuizAttempt {
   _id: string;
-  quiz_id: string;
+  quiz_id: string | { _id: string; title: string; type: string };
   user_id: string;
   attempt_number: number;
   date: string;
   record_json: any;
+  score?: { total: number; correct: number; score: number; percentage: number };
 }
 
 interface ClassWithQuizzes {
@@ -44,8 +46,7 @@ const StudentQuizzes = () => {
   const [attempts, setAttempts] = useState<QuizAttempt[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
-  const userStr = localStorage.getItem('user');
-  const userId = userStr ? JSON.parse(userStr).id : '';
+  const userId = localStorage.getItem('userId') || '';
 
   useEffect(() => {
     const fetchData = async () => {
@@ -63,8 +64,18 @@ const StudentQuizzes = () => {
               `/class-materials?class_id=${cls._id}`
             );
             const quizzes = materials.filter(m => m.type === 'quiz');
-            if (quizzes.length > 0) {
-              results.push({ cls, quizzes, colorIndex: i });
+            // Fetch quiz title for each quiz material
+            const quizzesWithTitle = await Promise.all(quizzes.map(async (q) => {
+              if (!q.content_id) return q;
+              try {
+                const quizData: any = await apiService.get(`/quizzes/${q.content_id}`);
+                return { ...q, quizTitle: quizData?.title || q.title };
+              } catch {
+                return q;
+              }
+            }));
+            if (quizzesWithTitle.length > 0) {
+              results.push({ cls, quizzes: quizzesWithTitle, colorIndex: i });
             }
           } catch (err) {
             console.warn(`Failed to fetch materials for class ${cls._id}`);
@@ -72,16 +83,16 @@ const StudentQuizzes = () => {
         }
         setClassesWithQuizzes(results);
 
-        // 3. Get user's quiz attempts
-        if (userId) {
-          try {
-            const attemptsData: QuizAttempt[] = await apiService.get(
-              `/users/${userId}/quiz-attempts`
-            );
-            setAttempts(attemptsData);
-          } catch (err) {
-            console.warn('Failed to fetch quiz attempts');
-          }
+        // 3. Get user's quiz attempts via /my-quiz-attempts (quiz_id is populated)
+        try {
+          const myAttempts: any[] = await apiService.get('/my-quiz-attempts');
+          const mapped: QuizAttempt[] = myAttempts.map((item) => ({
+            ...item.attempt,
+            score: item.score,
+          }));
+          setAttempts(mapped);
+        } catch (err) {
+          console.warn('Failed to fetch quiz attempts');
         }
       } catch (err) {
         console.error('Failed to fetch data:', err);
@@ -164,7 +175,7 @@ const StudentQuizzes = () => {
           const doneCount = quizzes.filter(q => getAttemptForQuiz(q.content_id)).length;
 
           return (
-            <Accordion key={cls._id} defaultExpanded={false} variant="outlined" sx={{ borderRadius: '8px !important', '&:before': { display: 'none' } }}>
+            <Accordion key={cls._id} defaultExpanded variant="outlined" sx={{ borderRadius: '8px !important', '&:before': { display: 'none' } }}>
               <AccordionSummary expandIcon={<ExpandMore />} sx={{ borderRadius: 2 }}>
                 <Stack direction="row" alignItems="center" spacing={2} sx={{ width: '100%', pr: 1 }}>
                   <Avatar sx={{ bgcolor: `${color}20`, color: color, width: 36, height: 36 }}>
@@ -193,9 +204,6 @@ const StudentQuizzes = () => {
                   {quizzes.map((quiz) => {
                     const attempt = getAttemptForQuiz(quiz.content_id);
                     const isDone = !!attempt;
-                    console.log('attempts:', attempts.map(a => a.quiz_id));
-console.log('quizzes content_ids:', classesWithQuizzes.flatMap(c => c.quizzes.map(q => q.content_id)));
-console.log('attempt quiz_ids:', attempts.map(a => typeof a.quiz_id === 'object' ? (a.quiz_id as any)._id : a.quiz_id));
 
                     return (
                       <Paper
@@ -219,7 +227,7 @@ console.log('attempt quiz_ids:', attempts.map(a => typeof a.quiz_id === 'object'
                             </Box>
                             <Box>
                               <Stack direction="row" spacing={1} alignItems="center">
-                                <Typography fontWeight="700">{quiz.title}</Typography>
+                                <Typography fontWeight="700">{quiz.quizTitle || quiz.title}</Typography>
                                 {isDone && (
                                   <Chip label="Đã làm" size="small" color="success" sx={{ height: 20, fontSize: '0.65rem', fontWeight: 900 }} />
                                 )}

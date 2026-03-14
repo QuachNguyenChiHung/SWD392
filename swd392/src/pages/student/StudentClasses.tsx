@@ -113,6 +113,7 @@ const StudentClasses = () => {
     if (!cls.enrollment) {
       return { label: 'Chưa tham gia', color: '#6b7280', bg: '#f3f4f6' };
     }
+    console.log('enrollment status:', cls.enrollment?.status);
     switch (cls.enrollment.status) {
       case 'completed':
         return { label: 'Hoàn thành', color: '#059669', bg: '#d1fae5' };

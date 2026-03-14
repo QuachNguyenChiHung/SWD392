@@ -172,7 +172,7 @@ const QuizResultView = () => {
             }}>
               <EmojiEvents sx={{ fontSize: 48, color: scoreColor, mb: 1 }} />
               <Typography variant="h2" fontWeight="900" sx={{ color: scoreColor }}>
-                {score?.percentage ?? 0}%
+                {score?.score ?? 0}
               </Typography>
               <Chip
                 label={getScoreLabel(score?.percentage ?? 0)}
@@ -250,7 +250,6 @@ const QuizResultView = () => {
             <Stack spacing={2}>
               {results.map((result, index) => {
                 const options = Array.isArray(result.options) ? result.options : [];
-                console.log('result options:', JSON.stringify(result.options));
 
                 return (
                   <Paper
@@ -289,7 +288,7 @@ const QuizResultView = () => {
                           {result.text || `Câu hỏi ${index + 1}`}
                         </Typography>
 
-                        {options.length > 0 && (
+                        {options.length > 0 ? (
                           <Stack spacing={0.75}>
                             {options.map((opt: any, optIdx: number) => {
                               const optText = typeof opt === 'string' ? opt : opt.text;
@@ -333,6 +332,15 @@ const QuizResultView = () => {
                               );
                             })}
                           </Stack>
+                        ) : (
+                          <Box sx={{ px: 1.5, py: 1, borderRadius: 1.5, bgcolor: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                            <Typography variant="body2" color="text.secondary">
+                              Đã chọn đáp án #{result.options_picked_index + 1} •{' '}
+                              <b style={{ color: result.isCorrect ? '#059669' : '#dc2626' }}>
+                                {result.isCorrect ? 'Đúng' : 'Sai'}
+                              </b>
+                            </Typography>
+                          </Box>
                         )}
                       </Box>
                     </Stack>

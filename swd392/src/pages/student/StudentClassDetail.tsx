@@ -1,24 +1,35 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
     Box, Typography, Stack, Paper, Button, Chip, Skeleton, Grid, Divider,
     LinearProgress, Alert, Tab, Tabs, Dialog, DialogTitle, DialogContent, DialogActions
 } from '@mui/material';
 import {
-    ArrowBack, MenuBook, CalendarToday, CheckCircle
+    ArrowBack, MenuBook, CalendarToday, CheckCircle,
 } from '@mui/icons-material';
 import { apiService } from '../../services/api';
-import type { ClassItem, Topic, Enrollment, ProgressData } from '../../types/studentType';
+import type { ClassItem, Topic, Enrollment } from '../../types/studentType';
 import ClassTopicsTab from '../../components/student/ClassTopicsTab';
 import ClassMaterialsTab from '../../components/student/ClassMaterialsTab';
 
-interface ClassMaterial {
+interface FileItem {
     _id: string;
-    title: string;
-    type: string;
-    file_url?: string;
-    description?: string;
-    order?: number;
+    file_name: string;
+    file_path: string;
+}
+
+interface Slide {
+    _id: string;
+    slide_name: string;
+    file_path: string;
+}
+
+interface ProgressRecord {
+    _id: string;
+    enroll_id: string;
+    classmaterial_id: string;
+    completion_status: 'completed' | 'in_progress';
+    date_completed: string | null;
 }
 
 interface TabPanelProps {
@@ -42,13 +53,6 @@ const getEnrollClassId = (enrollment: Enrollment): string => {
     return enrollment.class_id as string;
 };
 
-const calcProgress = (progress: ProgressData) => {
-    const total = progress.length;
-    const completed = progress.filter(p => p.completion_status === 'completed').length;
-    const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
-    return { total, completed, percentage };
-};
-
 export default function StudentClassDetail() {
     const { classId } = useParams<{ classId: string }>();
     const navigate = useNavigate();
@@ -57,14 +61,30 @@ export default function StudentClassDetail() {
     const [topics, setTopics] = useState<Topic[]>([]);
     const [courseName, setCourseName] = useState('');
     const [gradeLevel, setGradeLevel] = useState<number | undefined>(undefined);
-    const [materials, setMaterials] = useState<ClassMaterial[]>([]);
+    const [files, setFiles] = useState<FileItem[]>([]);
+    const [slides, setSlides] = useState<Slide[]>([]);
     const [enrollment, setEnrollment] = useState<Enrollment | null>(null);
-    const [progress, setProgress] = useState<ProgressData | null>(null);
+    const [progressRecords, setProgressRecords] = useState<ProgressRecord[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [tabValue, setTabValue] = useState(0);
     const [expandedTopic, setExpandedTopic] = useState<string | false>(false);
-    const [previewMaterial, setPreviewMaterial] = useState<ClassMaterial | null>(null);
+    const [previewItem, setPreviewItem] = useState<{ file: FileItem | Slide; type: 'file' | 'slide' } | null>(null);
+
+    // completedMaterials = list of classmaterial_id that are completed
+    const completedMaterials = useMemo(() => {
+        return progressRecords
+            .filter(p => p.completion_status === 'completed')
+            .map(p => p.classmaterial_id);
+    }, [progressRecords]);
+
+    // Progress stats
+    const progressStats = useMemo(() => {
+        const total = files.length + slides.length;
+        const completed = completedMaterials.length;
+        const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
+        return { total, completed, percentage };
+    }, [completedMaterials, files, slides]);
 
     useEffect(() => {
         if (!classId) return;
@@ -73,27 +93,77 @@ export default function StudentClassDetail() {
             setLoading(true);
             setError(null);
             try {
+                // 1. Get class details
                 const classData: ClassItem = await apiService.get(`/class/${classId}`);
                 setCls(classData);
 
+                // 2. Get topics
                 if (classData.course_id) {
-                    const courseData: any = await apiService.get(
-                        `/topics/course/${classData.course_id}?page=1`
-                    );
-                    setTopics(courseData?.topics || []);
-                    setCourseName(courseData?.course_name || '');
-                    setGradeLevel(courseData?.grade_level);
+                    try {
+                        const courseData: any = await apiService.get(
+                            `/topics/course/${classData.course_id}?page=1`
+                        );
+                        setTopics(courseData?.topics || []);
+                        setCourseName(courseData?.course_name || '');
+                        setGradeLevel(courseData?.grade_level);
+                    } catch (err) {
+                        console.warn('Failed to fetch topics:', err);
+                    }
                 }
 
+                // 3. Get materials + fetch file_path from /files or /slides
                 try {
-                    const materialsData: ClassMaterial[] = await apiService.get(
+                    const materialsData: any[] = await apiService.get(
                         `/class-materials?class_id=${classId}`
                     );
-                    setMaterials(materialsData);
-                } catch {
-                    console.warn('Failed to fetch materials');
+
+                    const fileItems: FileItem[] = [];
+                    const slideItems: Slide[] = [];
+
+                    await Promise.all(materialsData.map(async (m) => {
+                        const isSlide = m.type === 'slide' || m.type === 'slides';
+                        // Skip nếu content_id là null
+                        if (!m.content_id) {
+                            if (isSlide) {
+                                slideItems.push({ _id: m._id, slide_name: m.title, file_path: '' });
+                            } else {
+                                fileItems.push({ _id: m._id, file_name: m.title, file_path: '' });
+                            }
+                            return;
+                        }
+                        try {
+                            if (isSlide) {
+                                const slideData: any = await apiService.get(`/slides/${m.content_id}`);
+                                slideItems.push({
+                                    _id: m._id,
+                                    slide_name: m.title,
+                                    file_path: slideData?.file_path || ''
+                                });
+                            } else {
+                                const fileData: any = await apiService.get(`/files/${m.content_id}`);
+                                fileItems.push({
+                                    _id: m._id,
+                                    file_name: m.title,
+                                    file_path: fileData?.file_path || ''
+                                });
+                            }
+                        } catch {
+                            // fallback nếu fetch content thất bại (404, etc)
+                            if (isSlide) {
+                                slideItems.push({ _id: m._id, slide_name: m.title, file_path: '' });
+                            } else {
+                                fileItems.push({ _id: m._id, file_name: m.title, file_path: '' });
+                            }
+                        }
+                    }));
+
+                    setFiles(fileItems);
+                    setSlides(slideItems);
+                } catch (err) {
+                    console.warn('Failed to fetch materials:', err);
                 }
 
+                // 4. Get enrollment
                 try {
                     const enrollmentsData: Enrollment[] = await apiService.get('/enroll/student');
                     const classEnrollment = enrollmentsData.find(
@@ -101,17 +171,34 @@ export default function StudentClassDetail() {
                     );
                     if (classEnrollment) {
                         setEnrollment(classEnrollment);
+
+                        // 5. Get progress — API returns array directly
                         try {
-                            const progressData: ProgressData = await apiService.get(
+                            const progressData: ProgressRecord[] = await apiService.get(
                                 `/progress/${classEnrollment._id}`
                             );
-                            setProgress(progressData);
-                        } catch {
-                            console.warn('Failed to fetch progress');
+                            const records = Array.isArray(progressData) ? progressData : [];
+                            setProgressRecords(records);
+
+                            // Auto-complete enrollment nếu tất cả progress đã completed
+                            if (classEnrollment.status !== 'completed') {
+                                const completedMats = records.filter((p: ProgressRecord) => p.completion_status === 'completed').length;
+                                const totalMats = records.length;
+                                if (totalMats > 0 && completedMats >= totalMats) {
+                                    try {
+                                        await apiService.patch(`/enroll/${classEnrollment._id}/completed`);
+                                        setEnrollment({ ...classEnrollment, status: 'completed' });
+                                    } catch (err) {
+                                        console.warn('Failed to auto-complete enrollment:', err);
+                                    }
+                                }
+                            }
+                        } catch (err) {
+                            console.warn('Failed to fetch progress:', err);
                         }
                     }
-                } catch {
-                    console.warn('Failed to fetch enrollment');
+                } catch (err) {
+                    console.warn('Failed to fetch enrollment:', err);
                 }
             } catch (err: any) {
                 setError(err.message || 'Không thể tải dữ liệu');
@@ -130,6 +217,50 @@ export default function StudentClassDetail() {
 
     const handleExpandTopic = (topicId: string) => {
         setExpandedTopic(prev => prev === topicId ? false : topicId);
+    };
+
+    const handleMarkMaterialCompleted = async (item: FileItem | Slide, type: 'file' | 'slide') => {
+        if (!classId || !enrollment) return;
+
+        // Đã completed rồi thì không làm gì
+        if (completedMaterials.includes(item._id)) return;
+
+        try {
+            // Create progress record (ignore if already exists)
+            try {
+                await apiService.post(`/progress/${classId}/${item._id}`, {});
+            } catch (err: any) {
+                const errorMessage = err.response?.data?.error || '';
+                if (!errorMessage.includes('already exists')) throw err;
+            }
+
+            // Mark as completed
+            await apiService.patch(`/progress/${classId}/${item._id}/completed`);
+
+            // Refresh progress
+            const freshRecords: ProgressRecord[] = await apiService.get(
+                `/progress/${enrollment._id}`
+            );
+            const records = Array.isArray(freshRecords) ? freshRecords : [];
+            setProgressRecords(records);
+
+            // Auto-complete enrollment nếu tất cả materials đã hoàn thành
+            const total = files.length + slides.length;
+            const completed = records.filter(p => p.completion_status === 'completed').length;
+            if (total > 0 && completed >= total) {
+                try {
+                    await apiService.patch(`/enroll/${enrollment._id}/completed`);
+                    // Refresh enrollment status
+                    const enrollmentsData: Enrollment[] = await apiService.get('/enroll/student');
+                    const updated = enrollmentsData.find(e => e._id === enrollment._id);
+                    if (updated) setEnrollment(updated);
+                } catch (err) {
+                    console.warn('Failed to mark enrollment completed:', err);
+                }
+            }
+        } catch (err: any) {
+            console.error('Failed to mark material as completed:', err);
+        }
     };
 
     if (loading) {
@@ -164,7 +295,6 @@ export default function StudentClassDetail() {
     }
 
     const isCompleted = enrollment?.status === 'completed';
-    const progressStats = progress ? calcProgress(progress) : null;
 
     return (
         <Box>
@@ -227,7 +357,7 @@ export default function StudentClassDetail() {
                                 </Box>
                             </Stack>
 
-                            {progressStats && (
+                            {progressStats.total > 0 && (
                                 <Box sx={{ mt: 3 }}>
                                     <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                                         <Typography variant="subtitle2" fontWeight="bold">Tiến độ học tập</Typography>
@@ -253,7 +383,7 @@ export default function StudentClassDetail() {
                     <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
                         <Tabs value={tabValue} onChange={(_, val) => setTabValue(val)}>
                             <Tab label={`Nội dung khóa học (${topics.length})`} />
-                            <Tab label={`Tài liệu (${materials.length})`} />
+                            <Tab label={`Tài liệu & Slide (${files.length + slides.length})`} />
                         </Tabs>
                     </Box>
 
@@ -269,8 +399,12 @@ export default function StudentClassDetail() {
 
                     <TabPanel value={tabValue} index={1}>
                         <ClassMaterialsTab
-                            materials={materials}
-                            onPreviewMaterial={setPreviewMaterial}
+                            files={files}
+                            slides={slides}
+                            onPreview={(item, type) => setPreviewItem({ file: item, type })}
+                            onMarkCompleted={handleMarkMaterialCompleted}
+                            completedMaterials={completedMaterials}
+                            isLoading={false}
                         />
                     </TabPanel>
                 </Grid>
@@ -293,8 +427,8 @@ export default function StudentClassDetail() {
                                 <Typography variant="body2" fontWeight="600">{topics.length} chủ đề</Typography>
                             </Box>
                             <Box>
-                                <Typography variant="caption" color="text.secondary">Tài liệu</Typography>
-                                <Typography variant="body2" fontWeight="600">{materials.length} tài liệu</Typography>
+                                <Typography variant="caption" color="text.secondary">Tài liệu & Slide</Typography>
+                                <Typography variant="body2" fontWeight="600">{files.length + slides.length} tài liệu</Typography>
                             </Box>
 
                             {enrollment && (
@@ -306,6 +440,48 @@ export default function StudentClassDetail() {
                                             {formatDate(enrollment.date_join)}
                                         </Typography>
                                     </Box>
+                                    <Box>
+                                        <Typography variant="caption" color="text.secondary">Trạng thái</Typography>
+                                        <Box sx={{ mt: 0.5 }}>
+                                            <Chip
+                                                label={isCompleted ? 'Hoàn thành' : 'Đang học'}
+                                                size="small"
+                                                sx={{
+                                                    bgcolor: isCompleted ? '#d1fae5' : '#dbeafe',
+                                                    color: isCompleted ? '#065f46' : '#1d4ed8'
+                                                }}
+                                                icon={isCompleted ? <CheckCircle /> : undefined}
+                                            />
+                                        </Box>
+                                    </Box>
+                                </>
+                            )}
+
+                            {progressStats.total > 0 && (
+                                <>
+                                    <Divider />
+                                    <Box>
+                                        <Typography variant="caption" color="text.secondary">Tiến độ</Typography>
+                                        <Box sx={{ mt: 1 }}>
+                                            <LinearProgress
+                                                variant="determinate"
+                                                value={progressStats.percentage}
+                                                sx={{ height: 6, borderRadius: 3, mb: 0.5 }}
+                                            />
+                                            {progressStats.percentage === 100 ? (
+                                                <Stack direction="row" spacing={0.5} alignItems="center">
+                                                    <CheckCircle sx={{ fontSize: 13, color: '#10b981' }} />
+                                                    <Typography variant="caption" color="success.main">
+                                                        Đã hoàn thành!
+                                                    </Typography>
+                                                </Stack>
+                                            ) : (
+                                                <Typography variant="caption" color="text.secondary">
+                                                    {progressStats.completed}/{progressStats.total} • {progressStats.percentage}%
+                                                </Typography>
+                                            )}
+                                        </Box>
+                                    </Box>
                                 </>
                             )}
                         </Stack>
@@ -313,7 +489,7 @@ export default function StudentClassDetail() {
 
                     <Stack spacing={2}>
                         <Button
-                            fullWidth variant="contained" size="large"
+                            fullWidth variant="outlined" color="inherit"
                             sx={{ textTransform: 'none', fontWeight: 600 }}
                             onClick={() => setTabValue(0)}
                         >
@@ -329,39 +505,56 @@ export default function StudentClassDetail() {
                 </Grid>
             </Grid>
 
+            {/* Preview Dialog */}
             <Dialog
-                open={!!previewMaterial}
-                onClose={() => setPreviewMaterial(null)}
+                open={!!previewItem}
+                onClose={() => setPreviewItem(null)}
                 maxWidth="md"
                 fullWidth
             >
-                <DialogTitle fontWeight="bold">{previewMaterial?.title}</DialogTitle>
+                <DialogTitle fontWeight="bold">
+                    {previewItem ? (
+                        previewItem.type === 'file'
+                            ? (previewItem.file as FileItem).file_name
+                            : (previewItem.file as Slide).slide_name
+                    ) : 'Preview'}
+                </DialogTitle>
                 <DialogContent>
                     <Box sx={{ mt: 2 }}>
-                        <Typography variant="subtitle2" gutterBottom>Loại: {previewMaterial?.type}</Typography>
-                        <Typography variant="body2" color="text.secondary" paragraph>
-                            {previewMaterial?.description || 'Chưa có mô tả'}
+                        <Typography variant="subtitle2" gutterBottom>
+                            Loại: {previewItem?.type === 'file' ? 'Tài liệu' : 'Slide'}
                         </Typography>
-                        {previewMaterial?.file_url && (
+                        {previewItem && previewItem.file.file_path && (
                             <Box sx={{ mt: 3, p: 2, bgcolor: '#f3f4f6', borderRadius: 1 }}>
-                                <Typography variant="body2" gutterBottom>Liên kết tài liệu:</Typography>
+                                <Typography variant="body2" gutterBottom>Liên kết:</Typography>
                                 <Typography
                                     component="a"
-                                    href={previewMaterial.file_url}
+                                    href={previewItem.file.file_path}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     sx={{ color: '#6366f1', textDecoration: 'none', wordBreak: 'break-all', '&:hover': { textDecoration: 'underline' } }}
                                 >
-                                    {previewMaterial.file_url}
+                                    {previewItem.file.file_path}
                                 </Typography>
                             </Box>
+                        )}
+                        {previewItem && !previewItem.file.file_path && (
+                            <Alert severity="warning" sx={{ mt: 2 }}>
+                                Tài liệu này chưa có file đính kèm
+                            </Alert>
                         )}
                     </Box>
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => setPreviewMaterial(null)}>Đóng</Button>
-                    {previewMaterial?.file_url && (
-                        <Button variant="contained" component="a" href={previewMaterial.file_url} download target="_blank">
+                    <Button onClick={() => setPreviewItem(null)}>Đóng</Button>
+                    {previewItem?.file.file_path && (
+                        <Button
+                            variant="contained"
+                            component="a"
+                            href={previewItem.file.file_path}
+                            download
+                            target="_blank"
+                        >
                             Tải về
                         </Button>
                     )}

@@ -21,8 +21,9 @@ interface QuestionOption {
 interface Question {
   _id: string;
   quiz_id: string;
+  title: string;
   type: 'multiple_choice' | 'true_false';
-  options: QuestionOption[];
+  options: QuestionOption[] | string[];
   correct_index: number;
 }
 
@@ -182,7 +183,7 @@ const QuizTakingInterface = () => {
           <Typography color="text.secondary" mb={3}>
             Bài làm của bạn đã được ghi nhận thành công.
           </Typography>
-          <Button variant="contained" size="large" onClick={() => navigate('/student/quizzes')}>
+          <Button variant="contained" size="large" onClick={() => navigate('/student/quizzes', { replace: true })}>
             Quay lại danh sách
           </Button>
         </Paper>
@@ -198,8 +199,20 @@ const QuizTakingInterface = () => {
       <Paper elevation={0} sx={{ p: 2, mb: 3, borderRadius: 3, border: '1px solid #e2e8f0', position: 'sticky', top: 10, zIndex: 10 }}>
         <Grid container alignItems="center">
           <Grid size={{ xs: 4 }}>
-            <Typography variant="caption" color="text.secondary">Bài kiểm tra</Typography>
-            <Typography fontWeight="bold" noWrap>{quizInfo?.title || 'Quiz'}</Typography>
+            <Stack direction="row" spacing={1} alignItems="center">
+              <Button
+                size="small"
+                color="inherit"
+                onClick={() => navigate(-1)}
+                sx={{ minWidth: 0, p: 0.5, color: 'text.secondary' }}
+              >
+                ✕
+              </Button>
+              <Box>
+                <Typography variant="caption" color="text.secondary">Bài kiểm tra</Typography>
+                <Typography fontWeight="bold" noWrap>{quizInfo?.title || 'Quiz'}</Typography>
+              </Box>
+            </Stack>
           </Grid>
           <Grid size={{ xs: 4 }} sx={{ textAlign: 'center' }}>
             <Stack direction="row" spacing={1} justifyContent="center" alignItems="center">
@@ -251,8 +264,8 @@ const QuizTakingInterface = () => {
             </Stack>
 
             <Paper variant="outlined" sx={{ p: 2, mb: 4, bgcolor: '#f8fafc', borderRadius: 2 }}>
-              <Typography variant="body2" color="text.secondary">
-                Câu hỏi số {currentIdx + 1}
+              <Typography variant="body1" fontWeight="600">
+                {currentQuestion?.title || `Câu hỏi số ${currentIdx + 1}`}
               </Typography>
             </Paper>
 
