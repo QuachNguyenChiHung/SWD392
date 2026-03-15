@@ -94,7 +94,7 @@ const QuizTakingInterface = () => {
       // Build answers array theo format API
       const answersPayload = questions.map((question, idx) => ({
         question_id: question._id,
-        options_picked_index: answers[idx] !== undefined ? answers[idx] : -1,
+        options_picked_index: answers[idx] !== undefined ? answers[idx] : 0,
         text: '',
         option: {}
       }));
@@ -107,10 +107,10 @@ const QuizTakingInterface = () => {
         answers: answersPayload
       });
 
-      setIsFinished(true);
+      navigate(`/student/quiz-result/${id}?t=${Date.now()}`, { replace: true });
     } catch (err: any) {
       console.error('Submit error:', err);
-      setIsFinished(true);
+      navigate(`/student/quiz-result/${id}?t=${Date.now()}`, { replace: true });
     } finally {
       setSubmitting(false);
     }
@@ -183,9 +183,14 @@ const QuizTakingInterface = () => {
           <Typography color="text.secondary" mb={3}>
             Bài làm của bạn đã được ghi nhận thành công.
           </Typography>
-          <Button variant="contained" size="large" onClick={() => navigate('/student/quizzes', { replace: true })}>
-            Quay lại danh sách
-          </Button>
+          <Stack direction="row" spacing={2} justifyContent="center">
+            <Button variant="outlined" size="large" onClick={() => navigate(`/student/take-quiz/${id}`, { replace: true })}>
+              Làm lại
+            </Button>
+            <Button variant="contained" size="large" onClick={() => navigate('/student/quizzes', { replace: true })}>
+              Quay lại danh sách
+            </Button>
+          </Stack>
         </Paper>
       </Box>
     );

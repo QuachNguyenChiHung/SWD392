@@ -131,13 +131,10 @@ const StudentClasses = () => {
       {/* Header */}
       <Stack direction="row" justifyContent="space-between" alignItems="center" mb={4}>
         <Box>
-          <Typography variant="h4" fontWeight="bold">
-            Lớp học của tôi
-          </Typography>
           <Typography color="text.secondary">
             Bạn đang tham gia {classes.length} lớp học
           </Typography>
-        </Box>
+        </Box>  
         <Stack direction="row" spacing={1}>
           <Button
             variant="contained"

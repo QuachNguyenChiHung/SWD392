@@ -82,6 +82,7 @@ const StudentQuizzes = () => {
           }
         }
         setClassesWithQuizzes(results);
+        console.log('quiz content_ids:', results.flatMap(c => c.quizzes.map(q => q.content_id)));
 
         // 3. Get user's quiz attempts via /my-quiz-attempts (quiz_id is populated)
         try {
@@ -91,6 +92,7 @@ const StudentQuizzes = () => {
             score: item.score,
           }));
           setAttempts(mapped);
+          console.log('attempts quiz_ids:', mapped.map(a => typeof a.quiz_id === 'object' ? (a.quiz_id as any)._id : a.quiz_id));
         } catch (err) {
           console.warn('Failed to fetch quiz attempts');
         }
@@ -119,7 +121,6 @@ const StudentQuizzes = () => {
     <Box>
       <Stack direction="row" justifyContent="space-between" alignItems="flex-end" mb={4}>
         <Box>
-          <Typography variant="h4" fontWeight="bold">Bài kiểm tra</Typography>
           <Typography color="text.secondary">Hoàn thành các bài đánh giá để tích lũy điểm số</Typography>
         </Box>
       </Stack>

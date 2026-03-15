@@ -134,9 +134,6 @@ const StudentDashboard = () => {
 
   return (
     <Box>
-      <Typography variant="h4" gutterBottom fontWeight="bold">
-        Dashboard Học sinh
-      </Typography>
       <Typography variant="body1" color="text.secondary" paragraph>
         Quản lý lớp học và theo dõi lộ trình học tập của bạn
       </Typography>

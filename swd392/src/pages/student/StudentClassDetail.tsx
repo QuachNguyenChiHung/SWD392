@@ -2,15 +2,18 @@ import { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
     Box, Typography, Stack, Paper, Button, Chip, Skeleton, Grid, Divider,
-    LinearProgress, Alert, Tab, Tabs, Dialog, DialogTitle, DialogContent, DialogActions
+    LinearProgress, Alert, Tab, Tabs, Dialog, DialogTitle, DialogContent, DialogActions,
+    Fab, IconButton
 } from '@mui/material';
 import {
-    ArrowBack, MenuBook, CalendarToday, CheckCircle,
+    ArrowBack, MenuBook, CalendarToday, CheckCircle, SmartToy, Close
 } from '@mui/icons-material';
 import { apiService } from '../../services/api';
 import type { ClassItem, Topic, Enrollment } from '../../types/studentType';
 import ClassTopicsTab from '../../components/student/ClassTopicsTab';
 import ClassMaterialsTab from '../../components/student/ClassMaterialsTab';
+import ClassRender2D from '../../components/student/ClassRender2D';
+import StudentAIChat from '../../components/student/StudentAIChatBox';
 
 interface FileItem {
     _id: string;
@@ -65,11 +68,13 @@ export default function StudentClassDetail() {
     const [slides, setSlides] = useState<Slide[]>([]);
     const [enrollment, setEnrollment] = useState<Enrollment | null>(null);
     const [progressRecords, setProgressRecords] = useState<ProgressRecord[]>([]);
+    const [render2dIds, setRender2dIds] = useState<string[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [tabValue, setTabValue] = useState(0);
     const [expandedTopic, setExpandedTopic] = useState<string | false>(false);
     const [previewItem, setPreviewItem] = useState<{ file: FileItem | Slide; type: 'file' | 'slide' } | null>(null);
+    const [chatOpen, setChatOpen] = useState(false);
 
     // completedMaterials = list of classmaterial_id that are completed
     const completedMaterials = useMemo(() => {
@@ -77,14 +82,23 @@ export default function StudentClassDetail() {
             .filter(p => p.completion_status === 'completed')
             .map(p => p.classmaterial_id);
     }, [progressRecords]);
+    // Note: progressStats uses allMaterialIds to filter correctly
 
-    // Progress stats
+    // Progress stats — only count materials that belong to this class
+    const allMaterialIds = useMemo(() => [
+        ...files.map(f => f._id),
+        ...slides.map(s => s._id),
+        ...render2dIds
+    ], [files, slides, render2dIds]);
+
     const progressStats = useMemo(() => {
-        const total = files.length + slides.length;
-        const completed = completedMaterials.length;
+        const total = allMaterialIds.length;
+        const completed = progressRecords.filter(
+            p => p.completion_status === 'completed' && allMaterialIds.includes(p.classmaterial_id)
+        ).length;
         const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
         return { total, completed, percentage };
-    }, [completedMaterials, files, slides]);
+    }, [progressRecords, allMaterialIds]);
 
     useEffect(() => {
         if (!classId) return;
@@ -119,8 +133,15 @@ export default function StudentClassDetail() {
 
                     const fileItems: FileItem[] = [];
                     const slideItems: Slide[] = [];
+                    const render2dList: string[] = [];
 
                     await Promise.all(materialsData.map(async (m) => {
+                        if (m.type === '2d_render') {
+                            render2dList.push(m._id);
+                            return;
+                        }
+                        // Skip quiz type - handled separately
+                        if (m.type === 'quiz') return;
                         const isSlide = m.type === 'slide' || m.type === 'slides';
                         // Skip nếu content_id là null
                         if (!m.content_id) {
@@ -159,6 +180,7 @@ export default function StudentClassDetail() {
 
                     setFiles(fileItems);
                     setSlides(slideItems);
+                    setRender2dIds(render2dList);
                 } catch (err) {
                     console.warn('Failed to fetch materials:', err);
                 }
@@ -180,19 +202,8 @@ export default function StudentClassDetail() {
                             const records = Array.isArray(progressData) ? progressData : [];
                             setProgressRecords(records);
 
-                            // Auto-complete enrollment nếu tất cả progress đã completed
-                            if (classEnrollment.status !== 'completed') {
-                                const completedMats = records.filter((p: ProgressRecord) => p.completion_status === 'completed').length;
-                                const totalMats = records.length;
-                                if (totalMats > 0 && completedMats >= totalMats) {
-                                    try {
-                                        await apiService.patch(`/enroll/${classEnrollment._id}/completed`);
-                                        setEnrollment({ ...classEnrollment, status: 'completed' });
-                                    } catch (err) {
-                                        console.warn('Failed to auto-complete enrollment:', err);
-                                    }
-                                }
-                            }
+                            // Note: PATCH /enroll/{id}/completed is Teacher-only
+                            // enrollment status update handled by backend
                         } catch (err) {
                             console.warn('Failed to fetch progress:', err);
                         }
@@ -244,20 +255,7 @@ export default function StudentClassDetail() {
             const records = Array.isArray(freshRecords) ? freshRecords : [];
             setProgressRecords(records);
 
-            // Auto-complete enrollment nếu tất cả materials đã hoàn thành
-            const total = files.length + slides.length;
-            const completed = records.filter(p => p.completion_status === 'completed').length;
-            if (total > 0 && completed >= total) {
-                try {
-                    await apiService.patch(`/enroll/${enrollment._id}/completed`);
-                    // Refresh enrollment status
-                    const enrollmentsData: Enrollment[] = await apiService.get('/enroll/student');
-                    const updated = enrollmentsData.find(e => e._id === enrollment._id);
-                    if (updated) setEnrollment(updated);
-                } catch (err) {
-                    console.warn('Failed to mark enrollment completed:', err);
-                }
-            }
+            // Note: enrollment status update is Teacher-only, handled by backend
         } catch (err: any) {
             console.error('Failed to mark material as completed:', err);
         }
@@ -345,8 +343,7 @@ export default function StudentClassDetail() {
                                             }}
                                         />
                                         <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center' }}>
-                                            <CalendarToday sx={{ fontSize: 14, mr: 0.5 }} />
-                                            {formatDate(cls.date_create)}
+                                            <Typography sx={{ mr: 0.5 }}>Ngày tạo:</Typography> {formatDate(cls.date_create)}
                                         </Typography>
                                     </Stack>
                                     {cls.keywords && (
@@ -382,8 +379,9 @@ export default function StudentClassDetail() {
 
                     <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
                         <Tabs value={tabValue} onChange={(_, val) => setTabValue(val)}>
-                            <Tab label={`Nội dung khóa học (${topics.length})`} />
-                            <Tab label={`Tài liệu & Slide (${files.length + slides.length})`} />
+                            <Tab label={`Nội dung khóa học`} />
+                            <Tab label={`Tài liệu & Slide`} />
+                            {render2dIds.length > 0 && <Tab label={`2D Render`} />}
                         </Tabs>
                     </Box>
 
@@ -407,6 +405,12 @@ export default function StudentClassDetail() {
                             isLoading={false}
                         />
                     </TabPanel>
+
+                    {render2dIds.length > 0 && (
+                        <TabPanel value={tabValue} index={2}>
+                            <ClassRender2D materialIds={render2dIds} />
+                        </TabPanel>
+                    )}
                 </Grid>
 
                 <Grid size={{ xs: 12, md: 4 }}>
@@ -440,48 +444,6 @@ export default function StudentClassDetail() {
                                             {formatDate(enrollment.date_join)}
                                         </Typography>
                                     </Box>
-                                    <Box>
-                                        <Typography variant="caption" color="text.secondary">Trạng thái</Typography>
-                                        <Box sx={{ mt: 0.5 }}>
-                                            <Chip
-                                                label={isCompleted ? 'Hoàn thành' : 'Đang học'}
-                                                size="small"
-                                                sx={{
-                                                    bgcolor: isCompleted ? '#d1fae5' : '#dbeafe',
-                                                    color: isCompleted ? '#065f46' : '#1d4ed8'
-                                                }}
-                                                icon={isCompleted ? <CheckCircle /> : undefined}
-                                            />
-                                        </Box>
-                                    </Box>
-                                </>
-                            )}
-
-                            {progressStats.total > 0 && (
-                                <>
-                                    <Divider />
-                                    <Box>
-                                        <Typography variant="caption" color="text.secondary">Tiến độ</Typography>
-                                        <Box sx={{ mt: 1 }}>
-                                            <LinearProgress
-                                                variant="determinate"
-                                                value={progressStats.percentage}
-                                                sx={{ height: 6, borderRadius: 3, mb: 0.5 }}
-                                            />
-                                            {progressStats.percentage === 100 ? (
-                                                <Stack direction="row" spacing={0.5} alignItems="center">
-                                                    <CheckCircle sx={{ fontSize: 13, color: '#10b981' }} />
-                                                    <Typography variant="caption" color="success.main">
-                                                        Đã hoàn thành!
-                                                    </Typography>
-                                                </Stack>
-                                            ) : (
-                                                <Typography variant="caption" color="text.secondary">
-                                                    {progressStats.completed}/{progressStats.total} • {progressStats.percentage}%
-                                                </Typography>
-                                            )}
-                                        </Box>
-                                    </Box>
                                 </>
                             )}
                         </Stack>
@@ -491,7 +453,7 @@ export default function StudentClassDetail() {
                         <Button
                             fullWidth variant="outlined" color="inherit"
                             sx={{ textTransform: 'none', fontWeight: 600 }}
-                            onClick={() => setTabValue(0)}
+                            onClick={() => setTabValue([0,1,2].find(i => i !== tabValue) || 0)}
                         >
                             Bắt đầu học
                         </Button>
@@ -560,6 +522,31 @@ export default function StudentClassDetail() {
                     )}
                 </DialogActions>
             </Dialog>
+
+            {/* Floating AI Chat Button */}
+            <Box sx={{ position: 'fixed', bottom: 24, right: 24, zIndex: 1200 }}>
+                {chatOpen && (
+                    <Paper
+                        elevation={8}
+                        sx={{
+                            position: 'absolute', bottom: 64, right: 0,
+                            width: 380, height: 560, borderRadius: 3,
+                            overflow: 'hidden', display: 'flex', flexDirection: 'column'
+                        }}
+                    >
+                        <Box sx={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                            <StudentAIChat />
+                        </Box>
+                    </Paper>
+                )}
+                <Fab
+                    color="primary"
+                    onClick={() => setChatOpen(prev => !prev)}
+                    sx={{ bgcolor: '#6366f1', '&:hover': { bgcolor: '#4f46e5' } }}
+                >
+                    {chatOpen ? <Close /> : <SmartToy />}
+                </Fab>
+            </Box>
         </Box>
     );
 }
