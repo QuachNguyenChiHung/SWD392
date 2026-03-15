@@ -18,7 +18,7 @@ export const adminUsersApi = {
    */
   searchUsers: async (params: SearchUsersParams): Promise<UsersListResponse> => {
     try {
-      const { keyword, page = 1, limit = 10 } = params;
+      const { keyword, page = 1, limit = 12 } = params;
       const response = await apiService.get(
         `/users/search?keyword=${encodeURIComponent(keyword)}&page=${page}&limit=${limit}`
       );
@@ -43,19 +43,48 @@ export const adminUsersApi = {
    */
   getAllUsers: async (params: PaginationParams = {}): Promise<UsersListResponse> => {
     try {
-      const { page = 1, limit = 10 } = params;
+      const { page = 1, limit = 12 } = params;
       const response = await apiService.get(`/users?page=${page}&limit=${limit}`);
-      
-      // Backend returns array directly, wrap it in expected format
+
+      // Variant 1: response is an array of users
       if (Array.isArray(response)) {
         const hasNext = response.length === limit;
         return {
           users: response,
-          total: hasNext ? page * limit + 1 : (page - 1) * limit + response.length
+          total: hasNext ? page * limit + 1 : (page - 1) * limit + response.length,
         };
       }
-      
-      return response;
+
+      // Variant 2: response is { users, total }
+      if (Array.isArray(response?.users)) {
+        return {
+          users: response.users,
+          total: typeof response.total === 'number' ? response.total : response.users.length,
+        };
+      }
+
+      // Variant 3: response is { data: { users, total } }
+      if (Array.isArray(response?.data?.users)) {
+        return {
+          users: response.data.users,
+          total: typeof response.data.total === 'number' ? response.data.total : response.data.users.length,
+        };
+      }
+
+      // Variant 4: response is { data: [...] }
+      if (Array.isArray(response?.data)) {
+        const users = response.data;
+        const hasNext = users.length === limit;
+        return {
+          users,
+          total: hasNext ? page * limit + 1 : (page - 1) * limit + users.length,
+        };
+      }
+
+      return {
+        users: [],
+        total: 0,
+      };
     } catch (error) {
       console.error('Error fetching all users:', error);
       throw error;
@@ -66,10 +95,12 @@ export const adminUsersApi = {
    * Aggregate total users by role across all pages.
    */
   getUserRoleCounts: async (): Promise<{ students: number; teachers: number; moderators: number; admins: number }> => {
-    const PAGE_SIZE = 50;
+    const PAGE_SIZE = 12;
     const MAX_PAGES = 500;
     let page = 1;
     const seenUserIds = new Set<string>();
+    let lastPageSignature = '';
+    let stagnantPages = 0;
 
     const counts = {
       students: 0,
@@ -86,6 +117,15 @@ export const adminUsersApi = {
       }
 
       let newUsersCount = 0;
+      const currentSignature = users.map((user) => user?._id).filter(Boolean).join('|');
+
+      if (currentSignature && currentSignature === lastPageSignature) {
+        stagnantPages += 1;
+      } else {
+        stagnantPages = 0;
+      }
+
+      lastPageSignature = currentSignature;
 
       for (const user of users) {
         if (!user?._id || seenUserIds.has(user._id)) {
@@ -117,8 +157,8 @@ export const adminUsersApi = {
         break;
       }
 
-      // Prevent infinite loop when backend repeats same page data.
-      if (newUsersCount === 0) {
+      // Prevent infinite loop when backend keeps returning the same page payload.
+      if (stagnantPages >= 2 || newUsersCount === 0) {
         break;
       }
 

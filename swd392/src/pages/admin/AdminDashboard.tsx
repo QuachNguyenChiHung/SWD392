@@ -1,5 +1,5 @@
-import { Box, Typography, Chip, Button, Card, CardContent, Avatar, List, ListItem, ListItemAvatar, ListItemText, Divider, Alert, CircularProgress } from '@mui/material';
-import { People, School, SupervisorAccount, Person, Class as ClassIcon, Description, AdminPanelSettings } from '@mui/icons-material';
+import { Box, Typography, Chip, Button, Card, CardContent, Avatar, List, ListItem, ListItemAvatar, ListItemText, Divider, Alert, CircularProgress, Stack } from '@mui/material';
+import { People, School, SupervisorAccount, Person, Class as ClassIcon, Description, AdminPanelSettings, Timeline, BarChart, AutoGraph, Topic } from '@mui/icons-material';
 import { useState, useEffect } from 'react';
 import type { DashboardStats, AdminClassMaterial } from '../../types/adminType';
 import { adminDashboardApi, adminMaterialsApi, adminUsersApi } from '../../services/adminApi';
@@ -20,6 +20,8 @@ const AdminDashboard = () => {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [roleCounts, setRoleCounts] = useState<{ students: number; teachers: number; moderators: number } | null>(null);
   const [recentMaterials, setRecentMaterials] = useState<MaterialItem[]>([]);
+  const [materialTypeStats, setMaterialTypeStats] = useState<Array<{ type: string; count: number }>>([]);
+  const [lastUpdated, setLastUpdated] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -55,8 +57,19 @@ const AdminDashboard = () => {
           views: 0, // API doesn't provide views, use 0 as placeholder
           dateCreate: material.dateCreate
         }));
-        
+
+        const typeSummary = materialsData.reduce<Record<string, number>>((acc, material) => {
+          acc[material.type] = (acc[material.type] || 0) + 1;
+          return acc;
+        }, {});
+
+        setMaterialTypeStats(
+          Object.entries(typeSummary)
+            .map(([type, count]) => ({ type, count }))
+            .sort((a, b) => b.count - a.count)
+        );
         setRecentMaterials(transformedMaterials);
+        setLastUpdated(new Date().toLocaleString('vi-VN'));
 
         setLoading(false);
       } catch (err) {
@@ -121,6 +134,26 @@ const AdminDashboard = () => {
       icon: <School />, 
       color: '#ed6c02'
     },
+    {
+      label: 'Tổng khóa học',
+      value: stats.totalCourses || 0,
+      icon: <Topic />,
+      color: '#5d4037',
+      onClick: () => navigate('/admin/courses')
+    },
+  ];
+
+  const totalRoleUsers = (roleCounts?.students || 0) + (roleCounts?.teachers || 0) + (roleCounts?.moderators || 0);
+  const roleDistribution = [
+    { label: 'Học sinh', value: roleCounts?.students || 0, color: '#0288d1' },
+    { label: 'Giáo viên', value: roleCounts?.teachers || 0, color: '#2e7d32' },
+    { label: 'Moderator', value: roleCounts?.moderators || 0, color: '#6a1b9a' },
+  ];
+
+  const operationMetrics = [
+    { label: 'Users / Class', value: stats.totalClasses ? (stats.totalUsers / stats.totalClasses).toFixed(1) : '0.0', hint: 'Mật độ người dùng theo lớp' },
+    { label: 'Enrollments / User', value: stats.totalUsers ? (stats.totalEnrollments / stats.totalUsers).toFixed(1) : '0.0', hint: 'Mức tham gia trung bình' },
+    { label: 'Materials (trang hiện tại)', value: String(recentMaterials.length), hint: 'Số tài liệu gần đây đang hiển thị' },
   ];
 
   const getMaterialTypeColor = (type: string) => {
@@ -145,18 +178,29 @@ const AdminDashboard = () => {
 
   return (
     <Box>
-      {/* Header */}
-      <Box sx={{ mb: 4 }}>
+      <Box
+        sx={{
+          mb: 4,
+          p: { xs: 2.5, md: 3 },
+          borderRadius: 3,
+          background: 'linear-gradient(120deg, #0f4c81 0%, #1565c0 52%, #1e88e5 100%)',
+          color: 'white',
+          boxShadow: 4,
+        }}
+      >
         <Typography variant="h4" gutterBottom fontWeight="bold">
           Dashboard Quản trị
         </Typography>
-        <Typography variant="body1" color="text.secondary">
-          Tổng quan hệ thống và hoạt động gần đây
+        <Typography variant="body1" sx={{ opacity: 0.92 }}>
+          Tổng quan hệ thống và hoạt động theo vai trò admin
+        </Typography>
+        <Typography variant="caption" sx={{ opacity: 0.85, mt: 1, display: 'block' }}>
+          Cập nhật lần cuối: {lastUpdated || '-'}
         </Typography>
       </Box>
 
       {/* Stats Cards */}
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(5, 1fr)' }, gap: 3, mb: 4 }}>
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', xl: 'repeat(6, 1fr)' }, gap: 2, mb: 3 }}>
         {statCards.map((stat, index) => (
           <Card
             key={index}
@@ -171,9 +215,9 @@ const AdminDashboard = () => {
             onClick={stat.onClick}
           >
             <CardContent>
-              <Box sx={{ mb: 2 }}>
+              <Box sx={{ mb: 1.5 }}>
                 <Box sx={{ 
-                  p: 1.5, 
+                  p: 1.2,
                   borderRadius: 2, 
                   backgroundColor: stat.color,
                   color: 'white',
@@ -183,7 +227,7 @@ const AdminDashboard = () => {
                   {stat.icon}
                 </Box>
               </Box>
-              <Typography variant="h4" fontWeight="bold" gutterBottom>
+              <Typography variant="h5" fontWeight="bold" gutterBottom>
                 {stat.value.toLocaleString()}
               </Typography>
               <Typography variant="body2" color="text.secondary">
@@ -194,14 +238,89 @@ const AdminDashboard = () => {
         ))}
       </Box>
 
-      {/* Main Content Grid */}
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '1fr' }, gap: 3 }}>
-        
-        {/* Recent Classes - Hidden for now (no API endpoint available) */}
-        {/* <Card>...</Card> */}
+      {/* Analytics Grid */}
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '1.3fr 1fr' }, gap: 3 }}>
+        <Card>
+          <CardContent>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+              <BarChart color="primary" />
+              <Typography variant="h6" fontWeight="bold">
+                Phân bố người dùng theo vai trò
+              </Typography>
+            </Box>
+            <Box sx={{ display: 'grid', gap: 2 }}>
+              {roleDistribution.map((item) => {
+                const percent = totalRoleUsers > 0 ? Math.round((item.value / totalRoleUsers) * 100) : 0;
+                return (
+                  <Box key={item.label}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.7 }}>
+                      <Typography variant="body2" fontWeight={600}>{item.label}</Typography>
+                      <Typography variant="body2" color="text.secondary">{item.value} ({percent}%)</Typography>
+                    </Box>
+                    <Box sx={{ height: 10, borderRadius: 10, backgroundColor: 'grey.200', overflow: 'hidden' }}>
+                      <Box sx={{ width: `${percent}%`, height: '100%', backgroundColor: item.color, transition: 'width 0.3s ease' }} />
+                    </Box>
+                  </Box>
+                );
+              })}
+            </Box>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+              <AutoGraph color="primary" />
+              <Typography variant="h6" fontWeight="bold">
+                Chỉ số vận hành
+              </Typography>
+            </Box>
+            <Stack spacing={1.5}>
+              {operationMetrics.map((metric) => (
+                <Box key={metric.label} sx={{ p: 1.5, borderRadius: 2, backgroundColor: 'grey.100' }}>
+                  <Typography variant="caption" color="text.secondary">{metric.label}</Typography>
+                  <Typography variant="h5" fontWeight="bold">{metric.value}</Typography>
+                  <Typography variant="caption" color="text.secondary">{metric.hint}</Typography>
+                </Box>
+              ))}
+            </Stack>
+          </CardContent>
+        </Card>
+
+        <Card sx={{ gridColumn: { xs: 'span 1', lg: 'span 1' } }}>
+          <CardContent>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+              <Timeline color="primary" />
+              <Typography variant="h6" fontWeight="bold">
+                Cơ cấu loại học liệu
+              </Typography>
+            </Box>
+            {materialTypeStats.length > 0 ? (
+              <Stack spacing={1.2}>
+                {materialTypeStats.map((item) => {
+                  const total = materialTypeStats.reduce((sum, current) => sum + current.count, 0);
+                  const percent = total > 0 ? Math.round((item.count / total) * 100) : 0;
+                  return (
+                    <Box key={item.type} sx={{ p: 1.2, borderRadius: 2, backgroundColor: 'grey.100' }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.7 }}>
+                        <Typography variant="body2" fontWeight={600}>{getMaterialTypeLabel(item.type)}</Typography>
+                        <Typography variant="body2" color="text.secondary">{item.count}</Typography>
+                      </Box>
+                      <Box sx={{ height: 8, borderRadius: 8, backgroundColor: 'grey.300', overflow: 'hidden' }}>
+                        <Box sx={{ width: `${percent}%`, height: '100%', backgroundColor: '#1976d2' }} />
+                      </Box>
+                    </Box>
+                  );
+                })}
+              </Stack>
+            ) : (
+              <Typography variant="body2" color="text.secondary">Chưa có dữ liệu học liệu để phân tích.</Typography>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Recent Materials */}
-        <Card>
+        <Card sx={{ gridColumn: { xs: 'span 1', lg: 'span 1' } }}>
           <CardContent>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -274,7 +393,6 @@ const AdminDashboard = () => {
             )}
           </CardContent>
         </Card>
-
       </Box>
 
       {/* Quick Actions */}
@@ -301,6 +419,24 @@ const AdminDashboard = () => {
               sx={{ py: 1.5 }}
             >
               Quản lý khóa học
+            </Button>
+            <Button
+              variant="outlined"
+              size="large"
+              startIcon={<Topic />}
+              onClick={() => navigate('/admin/topics')}
+              sx={{ py: 1.5 }}
+            >
+              Quản lý chủ đề
+            </Button>
+            <Button
+              variant="outlined"
+              size="large"
+              startIcon={<Description />}
+              onClick={() => navigate('/admin/materials')}
+              sx={{ py: 1.5 }}
+            >
+              Duyệt học liệu
             </Button>
             <Button 
               variant="outlined" 
