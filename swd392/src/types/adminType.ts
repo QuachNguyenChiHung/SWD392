@@ -1,18 +1,11 @@
-// ===============================
-// ADMIN-SPECIFIC TYPES
-// Matching Backend API Swagger Specification
-// ===============================
-
-// Re-export shared types from index.ts
 import { UserRole } from './index';
+
 export { UserRole };
 
-// User status
 export type UserStatus = 'active' | 'banned';
-
-// ===============================
-// USER TYPES (matching /api/users)
-// ===============================
+export type AdminTeacherRequestStatus = 'pending' | 'approved' | 'rejected';
+export type MaterialType = 'file' | 'slide' | '2d_render' | 'quiz';
+export type MaterialStatus = 'draft' | 'published' | 'reviewed' | 'deleted';
 
 export interface AdminUser {
   _id: string;
@@ -20,7 +13,7 @@ export interface AdminUser {
   email: string;
   role: UserRole;
   status: UserStatus;
-  date_create: string; // ISO string from backend
+  date_create: string;
 }
 
 export interface CreateUserRequest {
@@ -47,29 +40,21 @@ export interface SearchUsersParams {
   limit?: number;
 }
 
-// ===============================
-// DASHBOARD TYPES (matching /api/dashboard)
-// ===============================
-
-export interface DashboardStats {
-  totalUsers: number;
-  totalCourses?: number;
-  totalClasses: number;
-  totalEnrollments?: number;
-  activeStudents?: number;
-  activeTeachers?: number;
-  recentActivity?: RecentActivity[];
-}
-
 export interface RecentActivity {
   action: string;
   timestamp: string;
   details: Record<string, any>;
 }
 
-// ===============================
-// COURSE TYPES (matching /api/courses)
-// ===============================
+export interface DashboardStats {
+  totalUsers: number;
+  totalCourses: number;
+  totalClasses: number;
+  totalEnrollments: number;
+  activeStudents: number;
+  activeTeachers: number;
+  recentActivity: RecentActivity[];
+}
 
 export interface AdminCourse {
   _id: string;
@@ -91,9 +76,10 @@ export interface UpdateCourseRequest {
   status?: 'active' | 'inactive';
 }
 
-// ===============================
-// TOPIC TYPES (matching /api/topics)
-// ===============================
+export interface AdminTopicCourseInfo {
+  course_name: string;
+  grade_level: number;
+}
 
 export interface AdminTopic {
   _id: string;
@@ -101,25 +87,33 @@ export interface AdminTopic {
   description?: string;
   course_id: string;
   content_json?: any;
+  course?: AdminTopicCourseInfo;
 }
 
 export interface CreateTopicRequest {
   title: string;
   course_id: string;
   description?: string;
+  content_json?: any;
 }
 
 export interface UpdateTopicRequest {
   title?: string;
   description?: string;
+  content_json?: any;
 }
 
-// ===============================
-// CLASS MATERIAL TYPES (matching /api/class-materials/all)
-// ===============================
+export interface CourseTopicsResponse {
+  course: AdminCourse & {
+    topics: AdminTopic[];
+  };
+}
 
-export type MaterialType = 'file' | 'slide' | '2d_render' | 'quiz';
-export type MaterialStatus = 'draft' | 'published' | 'reviewed' | 'deleted';
+export interface DeleteTopicResponse {
+  success: boolean;
+  message: string;
+  deletedCounts: Record<string, number>;
+}
 
 export interface AdminClassMaterial {
   _id: string;
@@ -138,25 +132,29 @@ export interface AdminClassMaterial {
   dateUpdate: string;
 }
 
-// ===============================
-// QUESTION TYPES (matching /api/questions)
-// ===============================
+export interface AdminClassMaterialDetailResponse {
+  success: boolean;
+  data: AdminClassMaterial & {
+    content?: any;
+  };
+}
 
-export interface AdminQuestion {
-  _id: string;
-  quiz_id: string;
-  options: QuestionOption[];
-  correct_index: number;
-  type: string;
+export interface AdminClassMaterialCountResponse {
+  count: number;
 }
 
 export interface QuestionOption {
   text: string;
 }
 
-// ===============================
-// CLASS TYPES (for system management)
-// ===============================
+export interface AdminQuestion {
+  _id: string;
+  quiz_id: string;
+  title: string;
+  options: QuestionOption[];
+  correct_index: number;
+  type: string;
+}
 
 export interface AdminClass {
   _id: string;
@@ -169,27 +167,90 @@ export interface AdminClass {
   date_create: string;
 }
 
-// ===============================
-// TEACHER REQUEST TYPES
-// ===============================
-
-export interface TeacherRequest {
-  id: string;
-  userId: string;
-  userName: string;
-  userEmail: string;
-  requestDate: Date;
-  status: 'pending' | 'approved' | 'rejected';
-  reason?: string;
-  reviewedBy?: string;
-  reviewedAt?: Date;
+export interface AdminClassStats {
+  timeRange: '7days' | '30days' | '3months' | '1year' | 'all';
+  status: 'active' | 'inactive' | 'all';
+  totalClasses: number;
+  byStatus: {
+    active: number;
+    inactive: number;
+  };
+  averageClassSize: number;
+  topEnrolledClasses: Array<{
+    className: string;
+    enrollments: number;
+    classId: string;
+  }>;
+  trend: Array<{
+    date: string;
+    count: number;
+  }>;
 }
 
-// ===============================
-// UI HELPER TYPES
-// ===============================
+export interface DeleteAdminClassResponse {
+  success: boolean;
+  message: string;
+  deletedCounts: Record<string, number>;
+}
 
-// For displaying recent classes in dashboard
+export interface AdminQuiz {
+  _id: string;
+  title: string;
+  type: string;
+  available_date?: string;
+  max_attempt_number?: number;
+  end_date?: string;
+  status: boolean;
+}
+
+export interface DeleteAdminQuizResponse {
+  message: string;
+  deleted: Record<string, number>;
+}
+
+export interface AdminTeacherRequest {
+  _id: string;
+  user_id: string;
+  full_name: string;
+  email: string;
+  credential?: string;
+  attachments?: string[];
+  status: AdminTeacherRequestStatus;
+  processed_by?: string;
+  processed_at?: string;
+  reason?: string;
+  created_at: string;
+}
+
+export interface TeacherRequestsResponse {
+  total: number;
+  page: number;
+  limit: number;
+  data: AdminTeacherRequest[];
+}
+
+export interface TeacherRequestsParams {
+  page?: number;
+  limit?: number;
+  status?: AdminTeacherRequestStatus | 'all';
+  q?: string;
+}
+
+export interface ProcessTeacherRequestPayload {
+  action: 'approve' | 'reject';
+  reason?: string;
+}
+
+export interface ProcessTeacherRequestResponse {
+  updatedRequest: {
+    _id: string;
+    status: AdminTeacherRequestStatus;
+    processed_by?: string;
+    processed_at?: string;
+  };
+  teacherCreated?: boolean;
+}
+
 export interface RecentClassItem {
   _id: string;
   class_name: string;
@@ -200,7 +261,6 @@ export interface RecentClassItem {
   date_create: string;
 }
 
-// For displaying recent materials in dashboard
 export interface RecentMaterialItem {
   _id: string;
   title: string;
@@ -210,10 +270,6 @@ export interface RecentMaterialItem {
   view_count: number;
   dateCreate: string;
 }
-
-// ===============================
-// PAGINATION TYPES
-// ===============================
 
 export interface PaginationParams {
   page?: number;
@@ -225,4 +281,9 @@ export interface PaginatedResponse<T> {
   total: number;
   page: number;
   totalPages?: number;
+}
+
+export interface ClassStatsParams {
+  timeRange?: AdminClassStats['timeRange'];
+  status?: AdminClassStats['status'];
 }

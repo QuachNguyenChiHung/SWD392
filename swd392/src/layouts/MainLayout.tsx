@@ -29,6 +29,8 @@ import {
   Logout,
   Science,
   AdminPanelSettings,
+  Description,
+  PersonAdd,
 } from '@mui/icons-material';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -81,6 +83,30 @@ const navItems: NavItem[] = [
     text: 'Quản lý người dùng',
     icon: <Group />,
     path: '/admin/users',
+    roles: [UserRole.ADMIN],
+  },
+  {
+    text: 'Quản lý khóa học',
+    icon: <School />,
+    path: '/admin/courses',
+    roles: [UserRole.ADMIN],
+  },
+  {
+    text: 'Quản lý chủ đề',
+    icon: <Class />,
+    path: '/admin/topics',
+    roles: [UserRole.ADMIN],
+  },
+  {
+    text: 'Tài liệu và câu hỏi',
+    icon: <Description />,
+    path: '/admin/materials',
+    roles: [UserRole.ADMIN],
+  },
+  {
+    text: 'Yêu cầu giáo viên',
+    icon: <PersonAdd />,
+    path: '/admin/teacher-requests',
     roles: [UserRole.ADMIN],
   },
   {

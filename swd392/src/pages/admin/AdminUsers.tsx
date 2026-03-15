@@ -1,4 +1,4 @@
-import { Box, Typography, Paper, Tabs, Tab, Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip, IconButton, TextField, InputAdornment, Dialog, DialogTitle, DialogContent, DialogActions, MenuItem, FormControl, InputLabel, Select, Alert, Stack, CircularProgress } from '@mui/material';
+import { Box, Typography, Paper, Tabs, Tab, Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip, IconButton, TextField, InputAdornment, Dialog, DialogTitle, DialogContent, DialogActions, MenuItem, FormControl, InputLabel, Select, Alert, Stack, CircularProgress, Pagination } from '@mui/material';
 import { useState, useEffect } from 'react';
 import { Add, Search, Edit, Delete, PersonAdd, Block, CheckCircle } from '@mui/icons-material';
 import type { AdminUser, CreateUserRequest, UpdateUserRequest } from '../../types/adminType';
@@ -16,6 +16,10 @@ const AdminUsers = () => {
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [totalUsers, setTotalUsers] = useState(0);
+
+  const PAGE_SIZE = 12;
   
   // New user form state
   const [newUser, setNewUser] = useState<CreateUserRequest>({
@@ -32,18 +36,16 @@ const AdminUsers = () => {
     role: UserRole.TEACHER,
   });
 
-  // Fetch users on mount
-  useEffect(() => {
-    fetchUsers();
-  }, []);
-
-  const fetchUsers = async () => {
+  const fetchUsers = async (keyword: string, pageNumber: number) => {
     try {
       setLoading(true);
       setError(null);
-      const response = await adminUsersApi.getAllUsers({ page: 1, limit: 100 });
+      const response = keyword.trim()
+        ? await adminUsersApi.searchUsers({ keyword: keyword.trim(), page: pageNumber, limit: PAGE_SIZE })
+        : await adminUsersApi.getAllUsers({ page: pageNumber, limit: PAGE_SIZE });
       setUsers(response.users);
       setFilteredUsers(response.users);
+      setTotalUsers(response.total ?? 0);
     } catch (err) {
       console.error('Error fetching users:', err);
       setError(err instanceof Error ? err.message : 'Failed to load users');
@@ -51,6 +53,14 @@ const AdminUsers = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      fetchUsers(searchQuery, page);
+    }, 300);
+
+    return () => clearTimeout(timeout);
+  }, [searchQuery, page]);
 
   useEffect(() => {
     let filtered = users;
@@ -67,17 +77,8 @@ const AdminUsers = () => {
         filtered = filtered.filter(u => u.role === UserRole.MODERATOR);
         break;
     }
-
-    // Filter by search
-    if (searchQuery) {
-      filtered = filtered.filter(u => 
-        u.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        u.email.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    }
-
     setFilteredUsers(filtered);
-  }, [tabValue, searchQuery, users]);
+  }, [tabValue, users]);
 
   const handleCreateUser = async () => {
     try {
@@ -91,7 +92,7 @@ const AdminUsers = () => {
         password: '',
         role: UserRole.TEACHER,
       });
-      await fetchUsers();
+      await fetchUsers(searchQuery, page);
     } catch (err) {
       console.error('Error creating user:', err);
       setError(err instanceof Error ? err.message : 'Failed to create user');
@@ -108,7 +109,7 @@ const AdminUsers = () => {
       await adminUsersApi.updateUser(selectedUser._id, editUser);
       setOpenEditDialog(false);
       setSelectedUser(null);
-      await fetchUsers();
+      await fetchUsers(searchQuery, page);
     } catch (err) {
       console.error('Error updating user:', err);
       setError(err instanceof Error ? err.message : 'Failed to update user');
@@ -125,7 +126,7 @@ const AdminUsers = () => {
       await adminUsersApi.deleteUser(selectedUser._id);
       setOpenDeleteDialog(false);
       setSelectedUser(null);
-      await fetchUsers();
+      await fetchUsers(searchQuery, page);
     } catch (err) {
       console.error('Error deleting user:', err);
       setError(err instanceof Error ? err.message : 'Failed to delete user');
@@ -174,7 +175,7 @@ const AdminUsers = () => {
     try {
       setLoading(true);
       await adminUsersApi.toggleUserStatus(user._id);
-      await fetchUsers();
+      await fetchUsers(searchQuery, page);
     } catch (err) {
       console.error('Error toggling user status:', err);
       setError(err instanceof Error ? err.message : 'Failed to toggle user status');
@@ -237,7 +238,10 @@ const AdminUsers = () => {
           fullWidth
           placeholder="Tìm kiếm theo tên hoặc email..."
           value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
+          onChange={(e) => {
+            setSearchQuery(e.target.value);
+            setPage(1);
+          }}
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
@@ -330,6 +334,16 @@ const AdminUsers = () => {
             </TableBody>
           </Table>
         </TableContainer>
+
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
+          <Pagination
+            color="primary"
+            page={page}
+            count={Math.max(1, Math.ceil(totalUsers / PAGE_SIZE))}
+            onChange={(_, nextPage) => setPage(nextPage)}
+            disabled={loading}
+          />
+        </Box>
       </Paper>
 
       {/* Create User Dialog */}

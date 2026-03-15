@@ -57,7 +57,6 @@ const AdminDashboard = () => {
     };
 
     fetchDashboardData();
-    fetchDashboardData();
   }, []);
 
   // Loading state

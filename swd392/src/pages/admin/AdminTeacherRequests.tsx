@@ -1,228 +1,201 @@
-import { Box, Typography, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip, IconButton, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Alert, Stack, Tabs, Tab } from '@mui/material';
-import { useState, useEffect } from 'react';
-import { CheckCircle, Cancel, Visibility, Info } from '@mui/icons-material';
-import type { TeacherRequest } from '../../types';
+import {
+  Alert,
+  Box,
+  Button,
+  Chip,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Paper,
+  Stack,
+  Tab,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Tabs,
+  TextField,
+  Typography,
+} from '@mui/material';
+import { Visibility } from '@mui/icons-material';
+import { useEffect, useState } from 'react';
+import type { AdminTeacherRequest, AdminTeacherRequestStatus } from '../../types/adminType';
+import { adminTeacherRequestsApi } from '../../services/adminApi';
+
+const tabStatuses: Array<AdminTeacherRequestStatus | 'all'> = ['pending', 'approved', 'rejected', 'all'];
 
 const AdminTeacherRequests = () => {
   const [tabValue, setTabValue] = useState(0);
-  const [requests, setRequests] = useState<TeacherRequest[]>([]);
-  const [filteredRequests, setFilteredRequests] = useState<TeacherRequest[]>([]);
-  const [selectedRequest, setSelectedRequest] = useState<TeacherRequest | null>(null);
+  const [requests, setRequests] = useState<AdminTeacherRequest[]>([]);
+  const [selectedRequest, setSelectedRequest] = useState<AdminTeacherRequest | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [rejectReason, setRejectReason] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [openViewDialog, setOpenViewDialog] = useState(false);
   const [openApproveDialog, setOpenApproveDialog] = useState(false);
   const [openRejectDialog, setOpenRejectDialog] = useState(false);
-  const [rejectReason, setRejectReason] = useState('');
+
+  const fetchRequests = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await adminTeacherRequestsApi.getTeacherRequests({
+        page: 1,
+        limit: 50,
+        status: tabStatuses[tabValue],
+        q: searchQuery.trim() || undefined,
+      });
+      setRequests(response.data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load teacher requests');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    // TODO: Fetch teacher requests from API
-    const mockRequests: TeacherRequest[] = [
-      {
-        id: '1',
-        userId: 'u1',
-        userName: 'Nguyễn Văn A',
-        userEmail: 'nguyenvana@example.com',
-        requestDate: new Date('2025-02-20'),
-        status: 'pending',
-        reason: 'Tôi có 5 năm kinh nghiệm giảng dạy lập trình web và muốn chia sẻ kiến thức với học sinh.',
-      },
-      {
-        id: '2',
-        userId: 'u2',
-        userName: 'Trần Thị B',
-        userEmail: 'tranthib@example.com',
-        requestDate: new Date('2025-02-22'),
-        status: 'pending',
-        reason: 'Đã có bằng thạc sĩ trong lĩnh vực công nghệ thông tin và muốn đóng góp vào cộng đồng giáo dục.',
-      },
-      {
-        id: '3',
-        userId: 'u3',
-        userName: 'Lê Văn C',
-        userEmail: 'levanc@example.com',
-        requestDate: new Date('2025-02-15'),
-        status: 'approved',
-        reviewedBy: 'Admin',
-        reviewedAt: new Date('2025-02-16'),
-      },
-      {
-        id: '4',
-        userId: 'u4',
-        userName: 'Phạm Thị D',
-        userEmail: 'phamthid@example.com',
-        requestDate: new Date('2025-02-18'),
-        status: 'rejected',
-        reviewedBy: 'Admin',
-        reviewedAt: new Date('2025-02-19'),
-        reason: 'Không đủ trình độ chuyên môn.',
-      },
-    ];
-    setRequests(mockRequests);
-    setFilteredRequests(mockRequests.filter(r => r.status === 'pending'));
-  }, []);
+    const timeout = setTimeout(() => {
+      fetchRequests();
+    }, 300);
 
-  useEffect(() => {
-    let filtered = requests;
-    
-    switch (tabValue) {
-      case 0: // Pending
-        filtered = filtered.filter(r => r.status === 'pending');
-        break;
-      case 1: // Approved
-        filtered = filtered.filter(r => r.status === 'approved');
-        break;
-      case 2: // Rejected
-        filtered = filtered.filter(r => r.status === 'rejected');
-        break;
-      case 3: // All
-        break;
+    return () => clearTimeout(timeout);
+  }, [tabValue, searchQuery]);
+
+  const handleViewRequest = async (requestId: string) => {
+    try {
+      const detail = await adminTeacherRequestsApi.getTeacherRequestById(requestId);
+      setSelectedRequest(detail);
+      setOpenViewDialog(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load request detail');
     }
-    
-    setFilteredRequests(filtered);
-  }, [tabValue, requests]);
+  };
 
-  const handleApproveRequest = () => {
+  const handleProcessRequest = async (action: 'approve' | 'reject') => {
     if (!selectedRequest) return;
 
-    // TODO: API call to approve request and update user role
-    console.log('Approving request:', selectedRequest.id);
-    const updatedRequest = {
-      ...selectedRequest,
-      status: 'approved' as const,
-      reviewedBy: 'Admin',
-      reviewedAt: new Date(),
-    };
-    
-    setRequests(requests.map(r => r.id === selectedRequest.id ? updatedRequest : r));
-    setOpenApproveDialog(false);
-    setSelectedRequest(null);
-  };
-
-  const handleRejectRequest = () => {
-    if (!selectedRequest) return;
-
-    // TODO: API call to reject request
-    console.log('Rejecting request:', selectedRequest.id, rejectReason);
-    const updatedRequest = {
-      ...selectedRequest,
-      status: 'rejected' as const,
-      reviewedBy: 'Admin',
-      reviewedAt: new Date(),
-      reason: rejectReason,
-    };
-    
-    setRequests(requests.map(r => r.id === selectedRequest.id ? updatedRequest : r));
-    setOpenRejectDialog(false);
-    setSelectedRequest(null);
-    setRejectReason('');
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'pending': return 'warning';
-      case 'approved': return 'success';
-      case 'rejected': return 'error';
-      default: return 'default';
+    try {
+      setActionLoading(true);
+      await adminTeacherRequestsApi.processTeacherRequest(selectedRequest._id, {
+        action,
+        reason: action === 'reject' ? rejectReason || undefined : undefined,
+      });
+      setOpenApproveDialog(false);
+      setOpenRejectDialog(false);
+      setOpenViewDialog(false);
+      setSelectedRequest(null);
+      setRejectReason('');
+      await fetchRequests();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to process request');
+    } finally {
+      setActionLoading(false);
     }
   };
 
-  const getStatusLabel = (status: string) => {
+  const getStatusColor = (status: AdminTeacherRequestStatus) => {
     switch (status) {
-      case 'pending': return 'Chờ duyệt';
-      case 'approved': return 'Đã duyệt';
-      case 'rejected': return 'Từ chối';
-      default: return status;
+      case 'pending':
+        return 'warning';
+      case 'approved':
+        return 'success';
+      case 'rejected':
+        return 'error';
+      default:
+        return 'default';
     }
   };
+
+  const getStatusLabel = (status: AdminTeacherRequestStatus) => {
+    switch (status) {
+      case 'pending':
+        return 'Chờ duyệt';
+      case 'approved':
+        return 'Đã duyệt';
+      case 'rejected':
+        return 'Từ chối';
+      default:
+        return status;
+    }
+  };
+
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400 }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   return (
     <Box>
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
+          {error}
+        </Alert>
+      )}
+
       <Box sx={{ mb: 3 }}>
         <Typography variant="h4" fontWeight="bold" gutterBottom>
-          Duyệt yêu cầu trở thành Giáo viên
+          Duyệt yêu cầu trở thành giáo viên
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          Xem xét và phê duyệt các yêu cầu nâng cấp tài khoản lên vai trò Giáo viên
+          Dùng các API `/api/admin/teacher-requests` để xem, tra cứu và xử lý yêu cầu
         </Typography>
       </Box>
 
+      <Paper sx={{ p: 2, mb: 3 }}>
+        <TextField
+          fullWidth
+          label="Tìm theo họ tên hoặc email"
+          value={searchQuery}
+          onChange={(event) => setSearchQuery(event.target.value)}
+        />
+      </Paper>
+
       <Paper>
-        <Tabs value={tabValue} onChange={(_, v) => setTabValue(v)}>
-          <Tab label={`Chờ duyệt (${requests.filter(r => r.status === 'pending').length})`} />
-          <Tab label={`Đã duyệt (${requests.filter(r => r.status === 'approved').length})`} />
-          <Tab label={`Từ chối (${requests.filter(r => r.status === 'rejected').length})`} />
-          <Tab label={`Tất cả (${requests.length})`} />
+        <Tabs value={tabValue} onChange={(_, value) => setTabValue(value)}>
+          <Tab label="Chờ duyệt" />
+          <Tab label="Đã duyệt" />
+          <Tab label="Từ chối" />
+          <Tab label="Tất cả" />
         </Tabs>
 
         <TableContainer>
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell>Người yêu cầu</TableCell>
+                <TableCell>Họ tên</TableCell>
                 <TableCell>Email</TableCell>
-                <TableCell>Ngày yêu cầu</TableCell>
+                <TableCell>Ngày tạo</TableCell>
                 <TableCell>Trạng thái</TableCell>
-                <TableCell>Người duyệt</TableCell>
-                <TableCell>Ngày duyệt</TableCell>
+                <TableCell>Người xử lý</TableCell>
+                <TableCell>Ngày xử lý</TableCell>
                 <TableCell align="right">Thao tác</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {filteredRequests.length > 0 ? (
-                filteredRequests.map((request) => (
-                  <TableRow key={request.id}>
-                    <TableCell>{request.userName}</TableCell>
-                    <TableCell>{request.userEmail}</TableCell>
+              {requests.length > 0 ? (
+                requests.map((request) => (
+                  <TableRow key={request._id} hover>
+                    <TableCell>{request.full_name}</TableCell>
+                    <TableCell>{request.email}</TableCell>
+                    <TableCell>{new Date(request.created_at).toLocaleDateString('vi-VN')}</TableCell>
                     <TableCell>
-                      {new Date(request.requestDate).toLocaleDateString('vi-VN')}
+                      <Chip label={getStatusLabel(request.status)} size="small" color={getStatusColor(request.status) as any} />
                     </TableCell>
-                    <TableCell>
-                      <Chip 
-                        label={getStatusLabel(request.status)} 
-                        size="small" 
-                        color={getStatusColor(request.status) as any}
-                      />
-                    </TableCell>
-                    <TableCell>{request.reviewedBy || '-'}</TableCell>
-                    <TableCell>
-                      {request.reviewedAt 
-                        ? new Date(request.reviewedAt).toLocaleDateString('vi-VN')
-                        : '-'
-                      }
-                    </TableCell>
+                    <TableCell>{request.processed_by || '-'}</TableCell>
+                    <TableCell>{request.processed_at ? new Date(request.processed_at).toLocaleDateString('vi-VN') : '-'}</TableCell>
                     <TableCell align="right">
-                      <IconButton 
-                        size="small"
-                        onClick={() => {
-                          setSelectedRequest(request);
-                          setOpenViewDialog(true);
-                        }}
-                      >
-                        <Visibility />
-                      </IconButton>
-                      {request.status === 'pending' && (
-                        <>
-                          <IconButton 
-                            size="small" 
-                            color="success"
-                            onClick={() => {
-                              setSelectedRequest(request);
-                              setOpenApproveDialog(true);
-                            }}
-                          >
-                            <CheckCircle />
-                          </IconButton>
-                          <IconButton 
-                            size="small" 
-                            color="error"
-                            onClick={() => {
-                              setSelectedRequest(request);
-                              setOpenRejectDialog(true);
-                            }}
-                          >
-                            <Cancel />
-                          </IconButton>
-                        </>
-                      )}
+                      <Button size="small" startIcon={<Visibility />} onClick={() => handleViewRequest(request._id)}>
+                        Xem
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))
@@ -230,7 +203,7 @@ const AdminTeacherRequests = () => {
                 <TableRow>
                   <TableCell colSpan={7} align="center">
                     <Typography variant="body2" color="text.secondary" sx={{ py: 3 }}>
-                      Không có yêu cầu nào
+                      Không có yêu cầu phù hợp
                     </Typography>
                   </TableCell>
                 </TableRow>
@@ -240,108 +213,36 @@ const AdminTeacherRequests = () => {
         </TableContainer>
       </Paper>
 
-      {/* View Request Dialog */}
-      <Dialog open={openViewDialog} onClose={() => setOpenViewDialog(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>
-          <Stack direction="row" alignItems="center" spacing={1}>
-            <Info />
-            <Typography variant="h6">Chi tiết yêu cầu</Typography>
-          </Stack>
-        </DialogTitle>
+      <Dialog open={openViewDialog} onClose={() => setOpenViewDialog(false)} maxWidth="md" fullWidth>
+        <DialogTitle>Chi tiết yêu cầu</DialogTitle>
         <DialogContent>
-          {selectedRequest && (
-            <Stack spacing={2}>
-              <Box>
-                <Typography variant="caption" color="text.secondary">
-                  Người yêu cầu
-                </Typography>
-                <Typography variant="body1" fontWeight="bold">
-                  {selectedRequest.userName}
-                </Typography>
-              </Box>
-              <Box>
-                <Typography variant="caption" color="text.secondary">
-                  Email
-                </Typography>
-                <Typography variant="body1">
-                  {selectedRequest.userEmail}
-                </Typography>
-              </Box>
-              <Box>
-                <Typography variant="caption" color="text.secondary">
-                  Ngày yêu cầu
-                </Typography>
-                <Typography variant="body1">
-                  {new Date(selectedRequest.requestDate).toLocaleString('vi-VN')}
-                </Typography>
-              </Box>
-              <Box>
-                <Typography variant="caption" color="text.secondary">
-                  Lý do
-                </Typography>
-                <Typography variant="body1">
-                  {selectedRequest.reason || 'Không có lý do'}
-                </Typography>
-              </Box>
-              <Box>
-                <Typography variant="caption" color="text.secondary">
-                  Trạng thái
-                </Typography>
-                <Box sx={{ mt: 0.5 }}>
-                  <Chip 
-                    label={getStatusLabel(selectedRequest.status)} 
-                    color={getStatusColor(selectedRequest.status) as any}
-                  />
-                </Box>
-              </Box>
-              {selectedRequest.reviewedBy && (
-                <>
-                  <Box>
-                    <Typography variant="caption" color="text.secondary">
-                      Người duyệt
-                    </Typography>
-                    <Typography variant="body1">
-                      {selectedRequest.reviewedBy}
-                    </Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="caption" color="text.secondary">
-                      Ngày duyệt
-                    </Typography>
-                    <Typography variant="body1">
-                      {selectedRequest.reviewedAt 
-                        ? new Date(selectedRequest.reviewedAt).toLocaleString('vi-VN')
-                        : '-'
-                      }
-                    </Typography>
-                  </Box>
-                </>
-              )}
+          {selectedRequest ? (
+            <Stack spacing={2} sx={{ mt: 1 }}>
+              <Typography><strong>Họ tên:</strong> {selectedRequest.full_name}</Typography>
+              <Typography><strong>Email:</strong> {selectedRequest.email}</Typography>
+              <Typography><strong>Ngày tạo:</strong> {new Date(selectedRequest.created_at).toLocaleString('vi-VN')}</Typography>
+              <Typography><strong>Trạng thái:</strong> {getStatusLabel(selectedRequest.status)}</Typography>
+              <Typography><strong>Credential:</strong> {selectedRequest.credential || '-'}</Typography>
+              <Typography><strong>Lý do / ghi chú:</strong> {selectedRequest.reason || '-'}</Typography>
+              <TextField
+                label="Attachments"
+                value={(selectedRequest.attachments || []).join('\n')}
+                multiline
+                minRows={4}
+                fullWidth
+                InputProps={{ readOnly: true }}
+              />
             </Stack>
-          )}
+          ) : null}
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenViewDialog(false)}>Đóng</Button>
           {selectedRequest?.status === 'pending' && (
             <>
-              <Button 
-                variant="outlined" 
-                color="error"
-                onClick={() => {
-                  setOpenViewDialog(false);
-                  setOpenRejectDialog(true);
-                }}
-              >
+              <Button color="error" onClick={() => setOpenRejectDialog(true)}>
                 Từ chối
               </Button>
-              <Button 
-                variant="contained" 
-                color="success"
-                onClick={() => {
-                  setOpenViewDialog(false);
-                  setOpenApproveDialog(true);
-                }}
-              >
+              <Button variant="contained" color="success" onClick={() => setOpenApproveDialog(true)}>
                 Phê duyệt
               </Button>
             </>
@@ -349,51 +250,40 @@ const AdminTeacherRequests = () => {
         </DialogActions>
       </Dialog>
 
-      {/* Approve Dialog */}
       <Dialog open={openApproveDialog} onClose={() => setOpenApproveDialog(false)}>
         <DialogTitle>Phê duyệt yêu cầu</DialogTitle>
         <DialogContent>
           <Alert severity="success" sx={{ mb: 2 }}>
-            Người dùng sẽ được nâng cấp lên vai trò Giáo viên
+            Hệ thống sẽ cập nhật role của user sang `teacher` nếu yêu cầu còn ở trạng thái pending.
           </Alert>
           <Typography>
-            Bạn có chắc chắn muốn phê duyệt yêu cầu của <strong>{selectedRequest?.userName}</strong>?
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            Sau khi phê duyệt, người dùng sẽ có quyền tạo và quản lý lớp học.
+            Xác nhận phê duyệt yêu cầu của <strong>{selectedRequest?.full_name}</strong>?
           </Typography>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenApproveDialog(false)}>Hủy</Button>
-          <Button variant="contained" color="success" onClick={handleApproveRequest}>
+          <Button variant="contained" color="success" onClick={() => handleProcessRequest('approve')} disabled={actionLoading}>
             Phê duyệt
           </Button>
         </DialogActions>
       </Dialog>
 
-      {/* Reject Dialog */}
       <Dialog open={openRejectDialog} onClose={() => setOpenRejectDialog(false)} maxWidth="sm" fullWidth>
         <DialogTitle>Từ chối yêu cầu</DialogTitle>
         <DialogContent>
-          <Alert severity="warning" sx={{ mb: 2 }}>
-            Yêu cầu sẽ bị từ chối
-          </Alert>
-          <Typography sx={{ mb: 2 }}>
-            Bạn có chắc chắn muốn từ chối yêu cầu của <strong>{selectedRequest?.userName}</strong>?
-          </Typography>
           <TextField
-            label="Lý do từ chối (tùy chọn)"
-            multiline
-            rows={3}
+            label="Lý do từ chối"
             fullWidth
+            multiline
+            minRows={4}
             value={rejectReason}
-            onChange={(e) => setRejectReason(e.target.value)}
-            placeholder="Nhập lý do từ chối để người dùng biết..."
+            onChange={(event) => setRejectReason(event.target.value)}
+            sx={{ mt: 1 }}
           />
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenRejectDialog(false)}>Hủy</Button>
-          <Button variant="contained" color="error" onClick={handleRejectRequest}>
+          <Button variant="contained" color="error" onClick={() => handleProcessRequest('reject')} disabled={actionLoading}>
             Từ chối
           </Button>
         </DialogActions>

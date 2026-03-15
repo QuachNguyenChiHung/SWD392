@@ -1,293 +1,256 @@
-import { Box, Typography, Paper, Grid, Card, CardContent, CardActions, Button, Dialog, DialogTitle, DialogContent, DialogActions, Alert, TextField, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, IconButton, Chip, Tabs, Tab } from '@mui/material';
-import { useState, useEffect } from 'react';
-import { Delete, Warning, PersonAdd, Search } from '@mui/icons-material';
-import type { User, Class } from '../../types';
-import { UserRole } from '../../types';
-
-interface Quiz {
-  id: string;
-  title: string;
-  className: string;
-  createdDate: Date;
-  status: 'active' | 'inactive';
-}
+import {
+  Alert,
+  Box,
+  Button,
+  Card,
+  CardContent,
+  Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  FormControl,
+  Grid,
+  InputLabel,
+  MenuItem,
+  Paper,
+  Select,
+  Stack,
+  Tab,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Tabs,
+  TextField,
+  Typography,
+} from '@mui/material';
+import { Delete, PersonAdd, Search } from '@mui/icons-material';
+import { useEffect, useMemo, useState } from 'react';
+import type { AdminClass, AdminClassStats, AdminQuiz, AdminUser, CreateUserRequest } from '../../types/adminType';
+import { UserRole } from '../../types/adminType';
+import { adminSystemApi, adminUsersApi } from '../../services/adminApi';
 
 const AdminSystemManagement = () => {
   const [tabValue, setTabValue] = useState(0);
-  
-  // Users state
-  const [users, setUsers] = useState<User[]>([]);
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [openDeleteUserDialog, setOpenDeleteUserDialog] = useState(false);
+  const [users, setUsers] = useState<AdminUser[]>([]);
+  const [quizzes, setQuizzes] = useState<AdminQuiz[]>([]);
+  const [classStats, setClassStats] = useState<AdminClassStats | null>(null);
+  const [classLookupId, setClassLookupId] = useState('');
+  const [classLookupResult, setClassLookupResult] = useState<AdminClass | null>(null);
   const [userSearchQuery, setUserSearchQuery] = useState('');
-
-  // Classes state
-  const [classes, setClasses] = useState<Class[]>([]);
-  const [selectedClass, setSelectedClass] = useState<Class | null>(null);
-  const [openDeleteClassDialog, setOpenDeleteClassDialog] = useState(false);
-  const [classSearchQuery, setClassSearchQuery] = useState('');
-
-  // Quizzes state
-  const [quizzes, setQuizzes] = useState<Quiz[]>([]);
-  const [selectedQuiz, setSelectedQuiz] = useState<Quiz | null>(null);
-  const [openDeleteQuizDialog, setOpenDeleteQuizDialog] = useState(false);
   const [quizSearchQuery, setQuizSearchQuery] = useState('');
-
-  // Create Moderator state
+  const [timeRange, setTimeRange] = useState<AdminClassStats['timeRange']>('30days');
+  const [statusFilter, setStatusFilter] = useState<AdminClassStats['status']>('all');
+  const [error, setError] = useState<string | null>(null);
+  const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
+  const [selectedQuiz, setSelectedQuiz] = useState<AdminQuiz | null>(null);
+  const [openDeleteUserDialog, setOpenDeleteUserDialog] = useState(false);
+  const [openDeleteClassDialog, setOpenDeleteClassDialog] = useState(false);
+  const [openDeleteQuizDialog, setOpenDeleteQuizDialog] = useState(false);
   const [openCreateModeratorDialog, setOpenCreateModeratorDialog] = useState(false);
-  const [newModerator, setNewModerator] = useState({
-    name: '',
+  const [newModerator, setNewModerator] = useState<CreateUserRequest>({
+    username: '',
     email: '',
     password: '',
+    role: UserRole.MODERATOR,
   });
 
+  const fetchUsers = async () => {
+    const response = await adminUsersApi.getAllUsers({ page: 1, limit: 100 });
+    setUsers(response.users);
+  };
+
+  const fetchQuizzes = async () => {
+    const response = await adminSystemApi.getAllQuizzes(1);
+    setQuizzes(response);
+  };
+
+  const fetchClassStats = async () => {
+    const response = await adminSystemApi.getClassStats({ timeRange, status: statusFilter });
+    setClassStats(response);
+  };
+
+  const fetchInitialData = async () => {
+    try {
+      setError(null);
+      await Promise.all([fetchUsers(), fetchQuizzes(), fetchClassStats()]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load system management data');
+    }
+  };
+
   useEffect(() => {
-    // TODO: Fetch data from API
-    const mockUsers: User[] = [
-      { id: '1', name: 'Nguyễn Văn A', email: 'a@example.com', role: UserRole.STUDENT, status: 'active' },
-      { id: '2', name: 'Trần Thị B', email: 'b@example.com', role: UserRole.TEACHER, status: 'active' },
-    ];
-    setUsers(mockUsers);
-
-    const mockClasses: Class[] = [
-      {
-        class_id: '1',
-        class_name: 'Web Development',
-        keypass: 'ABC123',
-        course_id: 'c1',
-        teacher_id: 't1',
-        img_cover_link: '',
-        keywords: 'web,html,css',
-        date_create: new Date('2024-01-15'),
-        status: 'active',
-      },
-      {
-        class_id: '2',
-        class_name: 'Mobile App Development',
-        keypass: 'XYZ789',
-        course_id: 'c2',
-        teacher_id: 't2',
-        img_cover_link: '',
-        keywords: 'mobile,android,ios',
-        date_create: new Date('2024-02-20'),
-        status: 'inactive',
-      },
-    ];
-    setClasses(mockClasses);
-
-    const mockQuizzes: Quiz[] = [
-      { id: '1', title: 'HTML Basics Quiz', className: 'Web Development', createdDate: new Date('2024-03-01'), status: 'active' },
-      { id: '2', title: 'CSS Advanced Test', className: 'Web Development', createdDate: new Date('2024-03-10'), status: 'active' },
-    ];
-    setQuizzes(mockQuizzes);
+    fetchInitialData();
   }, []);
 
-  const handleDeleteUser = () => {
+  useEffect(() => {
+    fetchClassStats().catch((err) => {
+      setError(err instanceof Error ? err.message : 'Failed to load class stats');
+    });
+  }, [timeRange, statusFilter]);
+
+  const filteredUsers = useMemo(
+    () => users.filter((user) => user.username.toLowerCase().includes(userSearchQuery.toLowerCase()) || user.email.toLowerCase().includes(userSearchQuery.toLowerCase())),
+    [userSearchQuery, users],
+  );
+
+  const filteredQuizzes = useMemo(
+    () => quizzes.filter((quiz) => quiz.title.toLowerCase().includes(quizSearchQuery.toLowerCase())),
+    [quizSearchQuery, quizzes],
+  );
+
+  const handleCreateModerator = async () => {
+    try {
+      await adminUsersApi.createUser(newModerator);
+      setOpenCreateModeratorDialog(false);
+      setNewModerator({ username: '', email: '', password: '', role: UserRole.MODERATOR });
+      await fetchUsers();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create moderator');
+    }
+  };
+
+  const handleDeleteUser = async () => {
     if (!selectedUser) return;
-    // TODO: API call to permanently delete user
-    console.log('Permanently deleting user:', selectedUser.id);
-    setUsers(users.filter(u => u.id !== selectedUser.id));
-    setOpenDeleteUserDialog(false);
-    setSelectedUser(null);
+    try {
+      await adminUsersApi.deleteUser(selectedUser._id);
+      setOpenDeleteUserDialog(false);
+      setSelectedUser(null);
+      await fetchUsers();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete user');
+    }
   };
 
-  const handleDeleteClass = () => {
-    if (!selectedClass) return;
-    // TODO: API call to permanently delete class
-    console.log('Permanently deleting class:', selectedClass.class_id);
-    setClasses(classes.filter(c => c.class_id !== selectedClass.class_id));
-    setOpenDeleteClassDialog(false);
-    setSelectedClass(null);
+  const handleLookupClass = async () => {
+    if (!classLookupId.trim()) return;
+    try {
+      const response = await adminSystemApi.getClassById(classLookupId.trim());
+      setClassLookupResult(response);
+    } catch (err) {
+      setClassLookupResult(null);
+      setError(err instanceof Error ? err.message : 'Failed to find class');
+    }
   };
 
-  const handleDeleteQuiz = () => {
+  const handleDeleteClass = async () => {
+    if (!classLookupResult) return;
+    try {
+      await adminSystemApi.deleteClass(classLookupResult._id);
+      setOpenDeleteClassDialog(false);
+      setClassLookupResult(null);
+      setClassLookupId('');
+      await fetchClassStats();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete class');
+    }
+  };
+
+  const handleDeleteQuiz = async () => {
     if (!selectedQuiz) return;
-    // TODO: API call to permanently delete quiz
-    console.log('Permanently deleting quiz:', selectedQuiz.id);
-    setQuizzes(quizzes.filter(q => q.id !== selectedQuiz.id));
-    setOpenDeleteQuizDialog(false);
-    setSelectedQuiz(null);
+    try {
+      await adminSystemApi.deleteQuiz(selectedQuiz._id);
+      setOpenDeleteQuizDialog(false);
+      setSelectedQuiz(null);
+      await fetchQuizzes();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete quiz');
+    }
   };
-
-  const handleCreateModerator = () => {
-    // TODO: API call to create moderator
-    console.log('Creating moderator:', newModerator);
-    const moderator: User = {
-      id: Date.now().toString(),
-      name: newModerator.name,
-      email: newModerator.email,
-      role: UserRole.MODERATOR,
-      status: 'active',
-      createdAt: new Date(),
-    };
-    setUsers([...users, moderator]);
-    setOpenCreateModeratorDialog(false);
-    setNewModerator({ name: '', email: '', password: '' });
-  };
-
-  const filteredUsers = users.filter(u => 
-    u.name.toLowerCase().includes(userSearchQuery.toLowerCase()) ||
-    u.email.toLowerCase().includes(userSearchQuery.toLowerCase())
-  );
-
-  const filteredClasses = classes.filter(c => 
-    c.class_name.toLowerCase().includes(classSearchQuery.toLowerCase())
-  );
-
-  const filteredQuizzes = quizzes.filter(q => 
-    q.title.toLowerCase().includes(quizSearchQuery.toLowerCase())
-  );
 
   return (
     <Box>
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
+          {error}
+        </Alert>
+      )}
+
       <Box sx={{ mb: 3 }}>
         <Typography variant="h4" fontWeight="bold" gutterBottom>
-          Quản lý Hệ thống
+          Quản lý hệ thống
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          Thao tác cơ sở dữ liệu cấp hệ thống - Cần thận trọng khi sử dụng
+          Kết nối API thật cho tạo moderator, xóa user, tra cứu/xóa class và xóa quiz
         </Typography>
       </Box>
 
-      <Alert severity="error" sx={{ mb: 3 }}>
-        <Typography variant="subtitle2" fontWeight="bold">
-          Cảnh báo: Các thao tác xóa trong phần này là vĩnh viễn!
-        </Typography>
-        <Typography variant="body2">
-          Dữ liệu không thể khôi phục sau khi xóa. Vui lòng kiểm tra kỹ trước khi thực hiện.
-        </Typography>
+      <Alert severity="warning" sx={{ mb: 3 }}>
+        Các thao tác trong trang này là thao tác hệ thống, đặc biệt các lệnh xóa là xóa vĩnh viễn.
       </Alert>
 
       <Grid container spacing={3} sx={{ mb: 4 }}>
         <Grid size={{ xs: 12, md: 4 }}>
-          <Card sx={{ height: '100%' }}>
+          <Card>
             <CardContent>
-              <Typography variant="h6" gutterBottom fontWeight="bold">
-                Tạo tài khoản Moderator
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Tạo mới tài khoản Người điều hành trực tiếp
-              </Typography>
-            </CardContent>
-            <CardActions>
-              <Button 
-                variant="contained" 
-                color="primary" 
-                fullWidth
-                startIcon={<PersonAdd />}
-                onClick={() => setOpenCreateModeratorDialog(true)}
-              >
-                Tạo Moderator
+              <Typography variant="h6" fontWeight="bold">Tạo moderator</Typography>
+              <Typography variant="body2" color="text.secondary">Dùng `POST /api/users` với role moderator</Typography>
+              <Button sx={{ mt: 2 }} variant="contained" startIcon={<PersonAdd />} onClick={() => setOpenCreateModeratorDialog(true)}>
+                Tạo moderator
               </Button>
-            </CardActions>
+            </CardContent>
           </Card>
         </Grid>
-
         <Grid size={{ xs: 12, md: 4 }}>
-          <Card sx={{ height: '100%' }}>
+          <Card>
             <CardContent>
-              <Typography variant="h6" gutterBottom fontWeight="bold" color="error">
-                Xóa người dùng
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {users.length} người dùng trong hệ thống
-              </Typography>
+              <Typography variant="h6" fontWeight="bold">Thống kê lớp học</Typography>
+              <Typography variant="body2" color="text.secondary">Tổng lớp: {classStats?.totalClasses ?? 0}</Typography>
+              <Typography variant="body2" color="text.secondary">TB sĩ số: {classStats?.averageClassSize ?? 0}</Typography>
             </CardContent>
-            <CardActions>
-              <Button 
-                variant="outlined" 
-                color="error" 
-                fullWidth
-                onClick={() => setTabValue(0)}
-              >
-                Quản lý
-              </Button>
-            </CardActions>
           </Card>
         </Grid>
-
         <Grid size={{ xs: 12, md: 4 }}>
-          <Card sx={{ height: '100%' }}>
+          <Card>
             <CardContent>
-              <Typography variant="h6" gutterBottom fontWeight="bold" color="error">
-                Xóa lớp học & bài kiểm tra
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {classes.length} lớp học, {quizzes.length} bài kiểm tra
-              </Typography>
+              <Typography variant="h6" fontWeight="bold">Dữ liệu tải sẵn</Typography>
+              <Typography variant="body2" color="text.secondary">Users: {users.length}</Typography>
+              <Typography variant="body2" color="text.secondary">Quizzes: {quizzes.length}</Typography>
             </CardContent>
-            <CardActions>
-              <Button 
-                variant="outlined" 
-                color="error" 
-                fullWidth
-                onClick={() => setTabValue(1)}
-              >
-                Quản lý
-              </Button>
-            </CardActions>
           </Card>
         </Grid>
       </Grid>
 
       <Paper>
-        <Tabs value={tabValue} onChange={(_, v) => setTabValue(v)}>
-          <Tab label="Xóa người dùng" />
-          <Tab label="Xóa lớp học" />
-          <Tab label="Xóa bài kiểm tra" />
+        <Tabs value={tabValue} onChange={(_, value) => setTabValue(value)}>
+          <Tab label="Users" />
+          <Tab label="Classes" />
+          <Tab label="Quizzes" />
         </Tabs>
 
-        {/* Tab 0: Delete Users */}
         {tabValue === 0 && (
           <Box sx={{ p: 3 }}>
-            <TextField
-              fullWidth
-              placeholder="Tìm kiếm người dùng..."
-              value={userSearchQuery}
-              onChange={(e) => setUserSearchQuery(e.target.value)}
-              InputProps={{
-                startAdornment: <Search sx={{ mr: 1, color: 'text.secondary' }} />,
-              }}
-              sx={{ mb: 2 }}
-            />
+            <TextField fullWidth placeholder="Tìm user theo username/email" value={userSearchQuery} onChange={(event) => setUserSearchQuery(event.target.value)} sx={{ mb: 2 }} />
             <TableContainer>
               <Table>
                 <TableHead>
                   <TableRow>
-                    <TableCell>Tên</TableCell>
+                    <TableCell>Username</TableCell>
                     <TableCell>Email</TableCell>
-                    <TableCell>Vai trò</TableCell>
-                    <TableCell>Trạng thái</TableCell>
+                    <TableCell>Role</TableCell>
+                    <TableCell>Status</TableCell>
                     <TableCell align="right">Thao tác</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {filteredUsers.map((user) => (
-                    <TableRow key={user.id}>
-                      <TableCell>{user.name}</TableCell>
+                    <TableRow key={user._id} hover>
+                      <TableCell>{user.username}</TableCell>
                       <TableCell>{user.email}</TableCell>
+                      <TableCell>{user.role}</TableCell>
                       <TableCell>
-                        <Chip label={user.role} size="small" />
-                      </TableCell>
-                      <TableCell>
-                        <Chip 
-                          label={user.status} 
-                          size="small" 
-                          color={user.status === 'active' ? 'success' : 'default'}
-                          variant="outlined"
-                        />
+                        <Chip label={user.status} size="small" color={user.status === 'active' ? 'success' : 'error'} />
                       </TableCell>
                       <TableCell align="right">
-                        <IconButton 
-                          size="small" 
-                          color="error"
-                          onClick={() => {
-                            setSelectedUser(user);
-                            setOpenDeleteUserDialog(true);
-                          }}
-                        >
-                          <Delete />
-                        </IconButton>
+                        <Button color="error" startIcon={<Delete />} onClick={() => {
+                          setSelectedUser(user);
+                          setOpenDeleteUserDialog(true);
+                        }}>
+                          Xóa
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -297,115 +260,91 @@ const AdminSystemManagement = () => {
           </Box>
         )}
 
-        {/* Tab 1: Delete Classes */}
         {tabValue === 1 && (
           <Box sx={{ p: 3 }}>
-            <TextField
-              fullWidth
-              placeholder="Tìm kiếm lớp học..."
-              value={classSearchQuery}
-              onChange={(e) => setClassSearchQuery(e.target.value)}
-              InputProps={{
-                startAdornment: <Search sx={{ mr: 1, color: 'text.secondary' }} />,
-              }}
-              sx={{ mb: 2 }}
-            />
-            <TableContainer>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Tên lớp</TableCell>
-                    <TableCell>Mã lớp</TableCell>
-                    <TableCell>Ngày tạo</TableCell>
-                    <TableCell>Trạng thái</TableCell>
-                    <TableCell align="right">Thao tác</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {filteredClasses.map((classItem) => (
-                    <TableRow key={classItem.class_id}>
-                      <TableCell>{classItem.class_name}</TableCell>
-                      <TableCell>{classItem.keypass}</TableCell>
-                      <TableCell>
-                        {new Date(classItem.date_create).toLocaleDateString('vi-VN')}
-                      </TableCell>
-                      <TableCell>
-                        <Chip 
-                          label={classItem.status} 
-                          size="small" 
-                          color={classItem.status === 'active' ? 'success' : 'default'}
-                        />
-                      </TableCell>
-                      <TableCell align="right">
-                        <IconButton 
-                          size="small" 
-                          color="error"
-                          onClick={() => {
-                            setSelectedClass(classItem);
-                            setOpenDeleteClassDialog(true);
-                          }}
-                        >
-                          <Delete />
-                        </IconButton>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
+            <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} sx={{ mb: 3 }}>
+              <FormControl fullWidth>
+                <InputLabel>Time range</InputLabel>
+                <Select value={timeRange} label="Time range" onChange={(event) => setTimeRange(event.target.value as AdminClassStats['timeRange'])}>
+                  <MenuItem value="7days">7 ngày</MenuItem>
+                  <MenuItem value="30days">30 ngày</MenuItem>
+                  <MenuItem value="3months">3 tháng</MenuItem>
+                  <MenuItem value="1year">1 năm</MenuItem>
+                  <MenuItem value="all">Tất cả</MenuItem>
+                </Select>
+              </FormControl>
+              <FormControl fullWidth>
+                <InputLabel>Trạng thái</InputLabel>
+                <Select value={statusFilter} label="Trạng thái" onChange={(event) => setStatusFilter(event.target.value as AdminClassStats['status'])}>
+                  <MenuItem value="all">Tất cả</MenuItem>
+                  <MenuItem value="active">Active</MenuItem>
+                  <MenuItem value="inactive">Inactive</MenuItem>
+                </Select>
+              </FormControl>
+            </Stack>
+
+            <Grid container spacing={2} sx={{ mb: 3 }}>
+              <Grid size={{ xs: 12, md: 4 }}>
+                <Card><CardContent><Typography variant="h6">Tổng lớp</Typography><Typography variant="h4">{classStats?.totalClasses ?? 0}</Typography></CardContent></Card>
+              </Grid>
+              <Grid size={{ xs: 12, md: 4 }}>
+                <Card><CardContent><Typography variant="h6">Active</Typography><Typography variant="h4">{classStats?.byStatus.active ?? 0}</Typography></CardContent></Card>
+              </Grid>
+              <Grid size={{ xs: 12, md: 4 }}>
+                <Card><CardContent><Typography variant="h6">Inactive</Typography><Typography variant="h4">{classStats?.byStatus.inactive ?? 0}</Typography></CardContent></Card>
+              </Grid>
+            </Grid>
+
+            <Paper variant="outlined" sx={{ p: 2 }}>
+              <Typography variant="h6" sx={{ mb: 2 }}>Tra cứu lớp theo ID để xóa</Typography>
+              <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
+                <TextField fullWidth label="Class ID" value={classLookupId} onChange={(event) => setClassLookupId(event.target.value)} />
+                <Button variant="contained" startIcon={<Search />} onClick={handleLookupClass}>Tra cứu</Button>
+              </Stack>
+              {classLookupResult && (
+                <Box sx={{ mt: 3 }}>
+                  <Typography><strong>Tên lớp:</strong> {classLookupResult.class_name}</Typography>
+                  <Typography><strong>Teacher ID:</strong> {classLookupResult.teacher_id}</Typography>
+                  <Typography><strong>Course ID:</strong> {classLookupResult.course_id}</Typography>
+                  <Typography><strong>Keypass:</strong> {classLookupResult.keypass}</Typography>
+                  <Typography><strong>Ngày tạo:</strong> {new Date(classLookupResult.date_create).toLocaleString('vi-VN')}</Typography>
+                  <Button sx={{ mt: 2 }} color="error" variant="contained" startIcon={<Delete />} onClick={() => setOpenDeleteClassDialog(true)}>
+                    Xóa lớp này
+                  </Button>
+                </Box>
+              )}
+            </Paper>
           </Box>
         )}
 
-        {/* Tab 2: Delete Quizzes */}
         {tabValue === 2 && (
           <Box sx={{ p: 3 }}>
-            <TextField
-              fullWidth
-              placeholder="Tìm kiếm bài kiểm tra..."
-              value={quizSearchQuery}
-              onChange={(e) => setQuizSearchQuery(e.target.value)}
-              InputProps={{
-                startAdornment: <Search sx={{ mr: 1, color: 'text.secondary' }} />,
-              }}
-              sx={{ mb: 2 }}
-            />
+            <TextField fullWidth placeholder="Tìm quiz theo tiêu đề" value={quizSearchQuery} onChange={(event) => setQuizSearchQuery(event.target.value)} sx={{ mb: 2 }} />
             <TableContainer>
               <Table>
                 <TableHead>
                   <TableRow>
                     <TableCell>Tiêu đề</TableCell>
-                    <TableCell>Lớp học</TableCell>
-                    <TableCell>Ngày tạo</TableCell>
+                    <TableCell>Loại</TableCell>
                     <TableCell>Trạng thái</TableCell>
+                    <TableCell>Số lần làm tối đa</TableCell>
                     <TableCell align="right">Thao tác</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {filteredQuizzes.map((quiz) => (
-                    <TableRow key={quiz.id}>
+                    <TableRow key={quiz._id} hover>
                       <TableCell>{quiz.title}</TableCell>
-                      <TableCell>{quiz.className}</TableCell>
-                      <TableCell>
-                        {new Date(quiz.createdDate).toLocaleDateString('vi-VN')}
-                      </TableCell>
-                      <TableCell>
-                        <Chip 
-                          label={quiz.status} 
-                          size="small" 
-                          color={quiz.status === 'active' ? 'success' : 'default'}
-                        />
-                      </TableCell>
+                      <TableCell>{quiz.type}</TableCell>
+                      <TableCell>{quiz.status ? 'Active' : 'Inactive'}</TableCell>
+                      <TableCell>{quiz.max_attempt_number ?? '-'}</TableCell>
                       <TableCell align="right">
-                        <IconButton 
-                          size="small" 
-                          color="error"
-                          onClick={() => {
-                            setSelectedQuiz(quiz);
-                            setOpenDeleteQuizDialog(true);
-                          }}
-                        >
-                          <Delete />
-                        </IconButton>
+                        <Button color="error" startIcon={<Delete />} onClick={() => {
+                          setSelectedQuiz(quiz);
+                          setOpenDeleteQuizDialog(true);
+                        }}>
+                          Xóa
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -416,22 +355,16 @@ const AdminSystemManagement = () => {
         )}
       </Paper>
 
-      {/* Create Moderator Dialog */}
       <Dialog open={openCreateModeratorDialog} onClose={() => setOpenCreateModeratorDialog(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>
-          <Stack direction="row" alignItems="center" spacing={1}>
-            <PersonAdd />
-            <Typography variant="h6">Tạo tài khoản Moderator</Typography>
-          </Stack>
-        </DialogTitle>
+        <DialogTitle>Tạo tài khoản moderator</DialogTitle>
         <DialogContent>
           <Stack spacing={2} sx={{ mt: 1 }}>
             <TextField
-              label="Họ và tên"
+              label="Username"
               fullWidth
               required
-              value={newModerator.name}
-              onChange={(e) => setNewModerator({...newModerator, name: e.target.value})}
+              value={newModerator.username}
+              onChange={(e) => setNewModerator({...newModerator, username: e.target.value})}
             />
             <TextField
               label="Email"
@@ -459,105 +392,60 @@ const AdminSystemManagement = () => {
           <Button 
             variant="contained" 
             onClick={handleCreateModerator}
-            disabled={!newModerator.name || !newModerator.email || !newModerator.password}
+            disabled={!newModerator.username || !newModerator.email || !newModerator.password}
           >
             Tạo
           </Button>
         </DialogActions>
       </Dialog>
 
-      {/* Delete User Dialog */}
       <Dialog open={openDeleteUserDialog} onClose={() => setOpenDeleteUserDialog(false)}>
-        <DialogTitle>
-          <Stack direction="row" alignItems="center" spacing={1} color="error.main">
-            <Warning />
-            <Typography variant="h6">Xác nhận xóa vĩnh viễn</Typography>
-          </Stack>
-        </DialogTitle>
+        <DialogTitle>Xác nhận xóa user</DialogTitle>
         <DialogContent>
-          <Alert severity="error" sx={{ mb: 2 }}>
-            <strong>CẢNH BÁO:</strong> Hành động này không thể hoàn tác!
-          </Alert>
           <Typography>
-            Bạn có chắc chắn muốn xóa vĩnh viễn người dùng <strong>{selectedUser?.name}</strong>?
+            Bạn có chắc chắn muốn xóa user <strong>{selectedUser?.username}</strong>?
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            Tất cả dữ liệu liên quan sẽ bị xóa khỏi hệ thống:
-          </Typography>
-          <ul>
-            <li><Typography variant="body2">Thông tin cá nhân</Typography></li>
-            <li><Typography variant="body2">Lịch sử hoạt động</Typography></li>
-            <li><Typography variant="body2">Dữ liệu học tập/giảng dạy</Typography></li>
-          </ul>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenDeleteUserDialog(false)}>Hủy</Button>
           <Button variant="contained" color="error" onClick={handleDeleteUser}>
-            Xóa vĩnh viễn
+            Xóa
           </Button>
         </DialogActions>
       </Dialog>
 
-      {/* Delete Class Dialog */}
       <Dialog open={openDeleteClassDialog} onClose={() => setOpenDeleteClassDialog(false)}>
-        <DialogTitle>
-          <Stack direction="row" alignItems="center" spacing={1} color="error.main">
-            <Warning />
-            <Typography variant="h6">Xác nhận xóa vĩnh viễn lớp học</Typography>
-          </Stack>
-        </DialogTitle>
+        <DialogTitle>Xác nhận xóa lớp học</DialogTitle>
         <DialogContent>
           <Alert severity="error" sx={{ mb: 2 }}>
-            <strong>CẢNH BÁO:</strong> Hành động này không thể hoàn tác!
+            API admin sẽ xóa cascade toàn bộ dữ liệu liên quan của lớp.
           </Alert>
           <Typography>
-            Bạn có chắc chắn muốn xóa vĩnh viễn lớp học <strong>{selectedClass?.class_name}</strong>?
+            Bạn có chắc chắn muốn xóa lớp <strong>{classLookupResult?.class_name}</strong>?
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            Tất cả dữ liệu liên quan sẽ bị xóa:
-          </Typography>
-          <ul>
-            <li><Typography variant="body2">Danh sách học sinh</Typography></li>
-            <li><Typography variant="body2">Bài giảng và tài liệu</Typography></li>
-            <li><Typography variant="body2">Bài kiểm tra và điểm số</Typography></li>
-          </ul>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenDeleteClassDialog(false)}>Hủy</Button>
           <Button variant="contained" color="error" onClick={handleDeleteClass}>
-            Xóa vĩnh viễn
+            Xóa lớp
           </Button>
         </DialogActions>
       </Dialog>
 
-      {/* Delete Quiz Dialog */}
       <Dialog open={openDeleteQuizDialog} onClose={() => setOpenDeleteQuizDialog(false)}>
-        <DialogTitle>
-          <Stack direction="row" alignItems="center" spacing={1} color="error.main">
-            <Warning />
-            <Typography variant="h6">Xác nhận xóa vĩnh viễn bài kiểm tra</Typography>
-          </Stack>
-        </DialogTitle>
+        <DialogTitle>Xác nhận xóa quiz</DialogTitle>
         <DialogContent>
           <Alert severity="error" sx={{ mb: 2 }}>
-            <strong>CẢNH BÁO:</strong> Hành động này không thể hoàn tác!
+            API admin sẽ xóa quiz, questions, attempts và progress liên quan.
           </Alert>
           <Typography>
-            Bạn có chắc chắn muốn xóa vĩnh viễn bài kiểm tra <strong>{selectedQuiz?.title}</strong>?
+            Bạn có chắc chắn muốn xóa quiz <strong>{selectedQuiz?.title}</strong>?
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            Tất cả dữ liệu liên quan sẽ bị xóa:
-          </Typography>
-          <ul>
-            <li><Typography variant="body2">Câu hỏi và đáp án</Typography></li>
-            <li><Typography variant="body2">Kết quả làm bài của học sinh</Typography></li>
-            <li><Typography variant="body2">Điểm số và nhận xét</Typography></li>
-          </ul>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenDeleteQuizDialog(false)}>Hủy</Button>
           <Button variant="contained" color="error" onClick={handleDeleteQuiz}>
-            Xóa vĩnh viễn
+            Xóa quiz
           </Button>
         </DialogActions>
       </Dialog>

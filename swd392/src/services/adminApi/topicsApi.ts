@@ -1,5 +1,7 @@
 import { apiService } from '../api';
 import type {
+  CourseTopicsResponse,
+  DeleteTopicResponse,
   AdminTopic,
   CreateTopicRequest,
   UpdateTopicRequest
@@ -41,7 +43,7 @@ export const adminTopicsApi = {
   /**
    * GET /api/topics/course/{course_id} - Get topics by course
    */
-  getTopicsByCourse: async (courseId: string, page: number = 1): Promise<any> => {
+  getTopicsByCourse: async (courseId: string, page: number = 1): Promise<CourseTopicsResponse> => {
     try {
       const response = await apiService.get(`/topics/course/${courseId}?page=${page}`);
       return response;
@@ -73,6 +75,16 @@ export const adminTopicsApi = {
       return response;
     } catch (error) {
       console.error(`Error updating topic ${topicId}:`, error);
+      throw error;
+    }
+  },
+
+  deleteTopic: async (topicId: string): Promise<DeleteTopicResponse> => {
+    try {
+      const response = await apiService.delete(`/topics/${topicId}`);
+      return response;
+    } catch (error) {
+      console.error(`Error deleting topic ${topicId}:`, error);
       throw error;
     }
   }

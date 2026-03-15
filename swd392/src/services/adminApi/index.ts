@@ -6,6 +6,8 @@ export { adminDashboardApi } from './dashboardApi';
 export { adminCoursesApi } from './coursesApi';
 export { adminTopicsApi } from './topicsApi';
 export { adminMaterialsApi } from './materialsApi';
+export { adminTeacherRequestsApi } from './teacherRequestsApi';
+export { adminSystemApi } from './systemApi';
 
 // Re-export types for convenience
 export type {
@@ -19,6 +21,19 @@ export type {
   AdminTopic,
   CreateTopicRequest,
   UpdateTopicRequest,
+  CourseTopicsResponse,
+  DeleteTopicResponse,
   AdminClassMaterial,
-  AdminQuestion
+  AdminQuestion,
+  AdminTeacherRequest,
+  TeacherRequestsResponse,
+  TeacherRequestsParams,
+  ProcessTeacherRequestPayload,
+  ProcessTeacherRequestResponse,
+  AdminClassStats,
+  DeleteAdminClassResponse,
+  AdminQuiz,
+  DeleteAdminQuizResponse,
+  AdminClassMaterialDetailResponse,
+  AdminClassMaterialCountResponse
 } from '../../types/adminType';

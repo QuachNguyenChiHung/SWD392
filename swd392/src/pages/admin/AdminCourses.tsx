@@ -29,14 +29,16 @@ const AdminCourses = () => {
 
   // Fetch courses on mount
   useEffect(() => {
-    fetchCourses();
+    fetchCourses('');
   }, []);
 
-  const fetchCourses = async () => {
+  const fetchCourses = async (keyword: string) => {
     try {
       setLoading(true);
       setError(null);
-      const data = await adminCoursesApi.getAllCourses({ page: 1 });
+      const data = keyword.trim()
+        ? await adminCoursesApi.searchCourses(keyword.trim(), 1)
+        : await adminCoursesApi.getAllCourses({ page: 1 });
       setCourses(data);
       setFilteredCourses(data);
     } catch (err) {
@@ -47,19 +49,18 @@ const AdminCourses = () => {
     }
   };
 
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      fetchCourses(searchQuery);
+    }, 300);
+
+    return () => clearTimeout(timeout);
+  }, [searchQuery]);
+
   // Filter function
   useEffect(() => {
-    let filtered = courses;
-
-    // Filter by search
-    if (searchQuery) {
-      filtered = filtered.filter(c => 
-        c.course_name.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    }
-
-    setFilteredCourses(filtered);
-  }, [searchQuery, courses]);
+    setFilteredCourses(courses);
+  }, [courses]);
 
   const handleCreateCourse = async () => {
     try {
@@ -71,7 +72,7 @@ const AdminCourses = () => {
         course_name: '',
         grade_level: 10,
       });
-      await fetchCourses();
+      await fetchCourses(searchQuery);
     } catch (err) {
       console.error('Error creating course:', err);
       setError(err instanceof Error ? err.message : 'Failed to create course');
@@ -89,7 +90,7 @@ const AdminCourses = () => {
       await adminCoursesApi.updateCourse(selectedCourse._id, editCourse);
       setOpenEditDialog(false);
       setSelectedCourse(null);
-      await fetchCourses();
+      await fetchCourses(searchQuery);
     } catch (err) {
       console.error('Error updating course:', err);
       setError(err instanceof Error ? err.message : 'Failed to update course');
@@ -107,7 +108,7 @@ const AdminCourses = () => {
       await adminCoursesApi.deleteCourse(selectedCourse._id);
       setOpenDeleteDialog(false);
       setSelectedCourse(null);
-      await fetchCourses();
+      await fetchCourses(searchQuery);
     } catch (err) {
       console.error('Error deleting course:', err);
       setError(err instanceof Error ? err.message : 'Failed to delete course');
@@ -120,7 +121,7 @@ const AdminCourses = () => {
     try {
       setLoading(true);
       await adminCoursesApi.toggleCourseStatus(course._id);
-      await fetchCourses();
+      await fetchCourses(searchQuery);
     } catch (err) {
       console.error('Error toggling course status:', err);
       setError(err instanceof Error ? err.message : 'Failed to toggle course status');

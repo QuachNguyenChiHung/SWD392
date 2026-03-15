@@ -22,6 +22,15 @@ export const adminUsersApi = {
       const response = await apiService.get(
         `/users/search?keyword=${encodeURIComponent(keyword)}&page=${page}&limit=${limit}`
       );
+
+      if (Array.isArray(response)) {
+        const hasNext = response.length === limit;
+        return {
+          users: response,
+          total: hasNext ? page * limit + 1 : (page - 1) * limit + response.length,
+        };
+      }
+
       return response;
     } catch (error) {
       console.error('Error searching users:', error);
@@ -39,9 +48,10 @@ export const adminUsersApi = {
       
       // Backend returns array directly, wrap it in expected format
       if (Array.isArray(response)) {
+        const hasNext = response.length === limit;
         return {
           users: response,
-          total: response.length
+          total: hasNext ? page * limit + 1 : (page - 1) * limit + response.length
         };
       }
       
