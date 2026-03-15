@@ -32,7 +32,6 @@ import AdminDashboard from "../pages/admin/AdminDashboard";
 import AdminUsers from "../pages/admin/AdminUsers";
 import AdminSystemManagement from "../pages/admin/AdminSystemManagement";
 import AdminCourses from "../pages/admin/AdminCourses";
-import AdminTeacherRequests from "../pages/admin/AdminTeacherRequests";
 import AdminMaterials from "../pages/admin/AdminMaterials";
 import AdminTopics from "../pages/admin/AdminTopics";
 
@@ -237,14 +236,6 @@ export const routes: RouteObject[] = [
             element: (
               <ProtectedRoute allowedRoles={[UserRole.ADMIN]}>
                 <AdminMaterials />
-              </ProtectedRoute>
-            ),
-          },
-          {
-            path: "teacher-requests",
-            element: (
-              <ProtectedRoute allowedRoles={[UserRole.ADMIN]}>
-                <AdminTeacherRequests />
               </ProtectedRoute>
             ),
           },

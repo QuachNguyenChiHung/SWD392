@@ -26,6 +26,29 @@ import { useEffect, useState } from 'react';
 import type { AdminClassMaterial, AdminClassMaterialDetailResponse, AdminQuestion } from '../../types/adminType';
 import { adminMaterialsApi } from '../../services/adminApi';
 
+const getDisplayValue = (value: unknown): string => {
+  if (value == null) return '-';
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+    return String(value);
+  }
+
+  if (typeof value === 'object') {
+    const record = value as Record<string, unknown>;
+    const candidates = [record.title, record.name, record.code, record._id];
+    for (const candidate of candidates) {
+      if (typeof candidate === 'string' && candidate.trim()) {
+        return candidate;
+      }
+    }
+
+    return JSON.stringify(record);
+  }
+
+  return '-';
+};
+
+const toSearchText = (value: unknown): string => getDisplayValue(value).toLowerCase();
+
 const AdminMaterials = () => {
   const [tabValue, setTabValue] = useState(0);
   const [materials, setMaterials] = useState<AdminClassMaterial[]>([]);
@@ -72,8 +95,8 @@ const AdminMaterials = () => {
     if (!keyword) return true;
     const title = (material.title || '').toLowerCase();
     const type = (material.type || '').toLowerCase();
-    const classId = (material.class_assign_id || '').toLowerCase();
-    const topicId = (material.topic_id || '').toLowerCase();
+    const classId = toSearchText(material.class_assign_id);
+    const topicId = toSearchText(material.topic_id);
     return (
       title.includes(keyword) ||
       type.includes(keyword) ||
@@ -87,7 +110,7 @@ const AdminMaterials = () => {
     if (!keyword) return true;
     const title = (question.title || '').toLowerCase();
     const type = (question.type || '').toLowerCase();
-    const quizId = (question.quiz_id || '').toLowerCase();
+    const quizId = toSearchText(question.quiz_id);
     return (
       title.includes(keyword) ||
       type.includes(keyword) ||
@@ -167,8 +190,8 @@ const AdminMaterials = () => {
                       <TableCell>
                         <Chip label={material.status} size="small" color={material.status === 'reviewed' ? 'success' : 'default'} />
                       </TableCell>
-                      <TableCell>{material.class_assign_id}</TableCell>
-                      <TableCell>{material.topic_id}</TableCell>
+                      <TableCell>{getDisplayValue(material.class_assign_id)}</TableCell>
+                      <TableCell>{getDisplayValue(material.topic_id)}</TableCell>
                       <TableCell>{new Date(material.dateCreate).toLocaleDateString('vi-VN')}</TableCell>
                       <TableCell align="right">
                         <Button size="small" startIcon={<Visibility />} onClick={() => handleViewMaterial(material._id)}>
@@ -208,9 +231,9 @@ const AdminMaterials = () => {
                   filteredQuestions.map((question) => (
                     <TableRow key={question._id} hover>
                       <TableCell>{question.title}</TableCell>
-                      <TableCell>{question.quiz_id}</TableCell>
+                      <TableCell>{getDisplayValue(question.quiz_id)}</TableCell>
                       <TableCell>{question.type}</TableCell>
-                      <TableCell>{question.options.length}</TableCell>
+                      <TableCell>{Array.isArray(question.options) ? question.options.length : 0}</TableCell>
                       <TableCell>{question.correct_index + 1}</TableCell>
                     </TableRow>
                   ))

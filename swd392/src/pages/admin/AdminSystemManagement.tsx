@@ -27,45 +27,35 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { Delete, PersonAdd, Search } from '@mui/icons-material';
+import { Delete, Search } from '@mui/icons-material';
 import { useEffect, useMemo, useState } from 'react';
-import type { AdminClass, AdminClassStats, AdminQuiz, AdminUser, CreateUserRequest } from '../../types/adminType';
-import { UserRole } from '../../types/adminType';
-import { adminSystemApi, adminUsersApi } from '../../services/adminApi';
+import type { AdminClass, AdminClassStats, AdminQuiz } from '../../types/adminType';
+import { adminSystemApi } from '../../services/adminApi';
 
 const AdminSystemManagement = () => {
   const [tabValue, setTabValue] = useState(0);
-  const [users, setUsers] = useState<AdminUser[]>([]);
+  const [classes, setClasses] = useState<AdminClass[]>([]);
   const [quizzes, setQuizzes] = useState<AdminQuiz[]>([]);
   const [classStats, setClassStats] = useState<AdminClassStats | null>(null);
   const [classLookupId, setClassLookupId] = useState('');
   const [classLookupResult, setClassLookupResult] = useState<AdminClass | null>(null);
-  const [userSearchQuery, setUserSearchQuery] = useState('');
+  const [classSearchQuery, setClassSearchQuery] = useState('');
   const [quizSearchQuery, setQuizSearchQuery] = useState('');
   const [timeRange, setTimeRange] = useState<AdminClassStats['timeRange']>('30days');
   const [statusFilter, setStatusFilter] = useState<AdminClassStats['status']>('all');
   const [error, setError] = useState<string | null>(null);
-  const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
   const [selectedQuiz, setSelectedQuiz] = useState<AdminQuiz | null>(null);
-  const [openDeleteUserDialog, setOpenDeleteUserDialog] = useState(false);
   const [openDeleteClassDialog, setOpenDeleteClassDialog] = useState(false);
   const [openDeleteQuizDialog, setOpenDeleteQuizDialog] = useState(false);
-  const [openCreateModeratorDialog, setOpenCreateModeratorDialog] = useState(false);
-  const [newModerator, setNewModerator] = useState<CreateUserRequest>({
-    username: '',
-    email: '',
-    password: '',
-    role: UserRole.MODERATOR,
-  });
-
-  const fetchUsers = async () => {
-    const response = await adminUsersApi.getAllUsers({ page: 1, limit: 100 });
-    setUsers(response.users);
-  };
 
   const fetchQuizzes = async () => {
     const response = await adminSystemApi.getAllQuizzes(1);
     setQuizzes(response);
+  };
+
+  const fetchClasses = async () => {
+    const response = await adminSystemApi.getAllClasses({ timeRange, status: statusFilter });
+    setClasses(response);
   };
 
   const fetchClassStats = async () => {
@@ -76,7 +66,7 @@ const AdminSystemManagement = () => {
   const fetchInitialData = async () => {
     try {
       setError(null);
-      await Promise.all([fetchUsers(), fetchQuizzes(), fetchClassStats()]);
+      await Promise.all([fetchQuizzes(), fetchClasses()]);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load system management data');
     }
@@ -90,40 +80,32 @@ const AdminSystemManagement = () => {
     fetchClassStats().catch((err) => {
       setError(err instanceof Error ? err.message : 'Failed to load class stats');
     });
-  }, [timeRange, statusFilter]);
 
-  const filteredUsers = useMemo(
-    () => users.filter((user) => user.username.toLowerCase().includes(userSearchQuery.toLowerCase()) || user.email.toLowerCase().includes(userSearchQuery.toLowerCase())),
-    [userSearchQuery, users],
-  );
+    fetchClasses().catch((err) => {
+      setError(err instanceof Error ? err.message : 'Failed to load class list');
+    });
+  }, [timeRange, statusFilter]);
 
   const filteredQuizzes = useMemo(
     () => quizzes.filter((quiz) => quiz.title.toLowerCase().includes(quizSearchQuery.toLowerCase())),
     [quizSearchQuery, quizzes],
   );
 
-  const handleCreateModerator = async () => {
-    try {
-      await adminUsersApi.createUser(newModerator);
-      setOpenCreateModeratorDialog(false);
-      setNewModerator({ username: '', email: '', password: '', role: UserRole.MODERATOR });
-      await fetchUsers();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create moderator');
-    }
-  };
+  const filteredClasses = useMemo(() => {
+    const keyword = classSearchQuery.trim().toLowerCase();
+    const statusKeyword = statusFilter.toLowerCase();
 
-  const handleDeleteUser = async () => {
-    if (!selectedUser) return;
-    try {
-      await adminUsersApi.deleteUser(selectedUser._id);
-      setOpenDeleteUserDialog(false);
-      setSelectedUser(null);
-      await fetchUsers();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete user');
-    }
-  };
+    return classes.filter((classItem) => {
+      const matchesKeyword =
+        !keyword ||
+        classItem.class_name.toLowerCase().includes(keyword) ||
+        classItem._id.toLowerCase().includes(keyword);
+
+      const matchesStatus = statusKeyword === 'all' || classItem.status === statusKeyword;
+
+      return matchesKeyword && matchesStatus;
+    });
+  }, [classSearchQuery, statusFilter, classes]);
 
   const handleLookupClass = async () => {
     if (!classLookupId.trim()) return;
@@ -143,7 +125,7 @@ const AdminSystemManagement = () => {
       setOpenDeleteClassDialog(false);
       setClassLookupResult(null);
       setClassLookupId('');
-      await fetchClassStats();
+      await Promise.all([fetchClassStats(), fetchClasses()]);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete class');
     }
@@ -171,10 +153,10 @@ const AdminSystemManagement = () => {
 
       <Box sx={{ mb: 3 }}>
         <Typography variant="h4" fontWeight="bold" gutterBottom>
-          Quản lý hệ thống
+          Quản lý lớp học và quiz
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          Kết nối API thật cho tạo moderator, xóa user, tra cứu/xóa class và xóa quiz
+          Tác vụ vận hành hệ thống: thống kê lớp học, xóa lớp và xóa quiz
         </Typography>
       </Box>
 
@@ -183,18 +165,7 @@ const AdminSystemManagement = () => {
       </Alert>
 
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid size={{ xs: 12, md: 4 }}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" fontWeight="bold">Tạo moderator</Typography>
-              <Typography variant="body2" color="text.secondary">Dùng `POST /api/users` với role moderator</Typography>
-              <Button sx={{ mt: 2 }} variant="contained" startIcon={<PersonAdd />} onClick={() => setOpenCreateModeratorDialog(true)}>
-                Tạo moderator
-              </Button>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid size={{ xs: 12, md: 4 }}>
+        <Grid size={{ xs: 12, md: 6 }}>
           <Card>
             <CardContent>
               <Typography variant="h6" fontWeight="bold">Thống kê lớp học</Typography>
@@ -203,11 +174,11 @@ const AdminSystemManagement = () => {
             </CardContent>
           </Card>
         </Grid>
-        <Grid size={{ xs: 12, md: 4 }}>
+        <Grid size={{ xs: 12, md: 6 }}>
           <Card>
             <CardContent>
               <Typography variant="h6" fontWeight="bold">Dữ liệu tải sẵn</Typography>
-              <Typography variant="body2" color="text.secondary">Users: {users.length}</Typography>
+              <Typography variant="body2" color="text.secondary">Class stats đã tải</Typography>
               <Typography variant="body2" color="text.secondary">Quizzes: {quizzes.length}</Typography>
             </CardContent>
           </Card>
@@ -216,51 +187,11 @@ const AdminSystemManagement = () => {
 
       <Paper>
         <Tabs value={tabValue} onChange={(_, value) => setTabValue(value)}>
-          <Tab label="Users" />
           <Tab label="Classes" />
           <Tab label="Quizzes" />
         </Tabs>
 
         {tabValue === 0 && (
-          <Box sx={{ p: 3 }}>
-            <TextField fullWidth placeholder="Tìm user theo username/email" value={userSearchQuery} onChange={(event) => setUserSearchQuery(event.target.value)} sx={{ mb: 2 }} />
-            <TableContainer>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Username</TableCell>
-                    <TableCell>Email</TableCell>
-                    <TableCell>Role</TableCell>
-                    <TableCell>Status</TableCell>
-                    <TableCell align="right">Thao tác</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {filteredUsers.map((user) => (
-                    <TableRow key={user._id} hover>
-                      <TableCell>{user.username}</TableCell>
-                      <TableCell>{user.email}</TableCell>
-                      <TableCell>{user.role}</TableCell>
-                      <TableCell>
-                        <Chip label={user.status} size="small" color={user.status === 'active' ? 'success' : 'error'} />
-                      </TableCell>
-                      <TableCell align="right">
-                        <Button color="error" startIcon={<Delete />} onClick={() => {
-                          setSelectedUser(user);
-                          setOpenDeleteUserDialog(true);
-                        }}>
-                          Xóa
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </Box>
-        )}
-
-        {tabValue === 1 && (
           <Box sx={{ p: 3 }}>
             <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} sx={{ mb: 3 }}>
               <FormControl fullWidth>
@@ -295,6 +226,70 @@ const AdminSystemManagement = () => {
               </Grid>
             </Grid>
 
+            <Paper variant="outlined" sx={{ p: 2, mb: 3 }}>
+              <Typography variant="h6" sx={{ mb: 2 }}>Danh sách lớp</Typography>
+              <TextField
+                fullWidth
+                placeholder="Tìm theo tên lớp hoặc ID"
+                value={classSearchQuery}
+                onChange={(event) => setClassSearchQuery(event.target.value)}
+                sx={{ mb: 2 }}
+              />
+              <TableContainer>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Tên lớp</TableCell>
+                      <TableCell>Class ID</TableCell>
+                      <TableCell>Teacher ID</TableCell>
+                      <TableCell>Trạng thái</TableCell>
+                      <TableCell>Ngày tạo</TableCell>
+                      <TableCell align="right">Thao tác</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {filteredClasses.length > 0 ? (
+                      filteredClasses.map((classItem) => (
+                        <TableRow key={classItem._id} hover>
+                          <TableCell>{classItem.class_name}</TableCell>
+                          <TableCell>{classItem._id}</TableCell>
+                          <TableCell>{classItem.teacher_id}</TableCell>
+                          <TableCell>
+                            <Chip
+                              size="small"
+                              label={classItem.status === 'active' ? 'Active' : 'Inactive'}
+                              color={classItem.status === 'active' ? 'success' : 'default'}
+                            />
+                          </TableCell>
+                          <TableCell>{new Date(classItem.date_create).toLocaleDateString('vi-VN')}</TableCell>
+                          <TableCell align="right">
+                            <Button
+                              size="small"
+                              startIcon={<Search />}
+                              onClick={() => {
+                                setClassLookupId(classItem._id);
+                                setClassLookupResult(classItem);
+                              }}
+                            >
+                              Chọn
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={6} align="center">
+                          <Typography variant="body2" color="text.secondary" sx={{ py: 3 }}>
+                            Không tìm thấy lớp phù hợp
+                          </Typography>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </Paper>
+
             <Paper variant="outlined" sx={{ p: 2 }}>
               <Typography variant="h6" sx={{ mb: 2 }}>Tra cứu lớp theo ID để xóa</Typography>
               <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
@@ -317,7 +312,7 @@ const AdminSystemManagement = () => {
           </Box>
         )}
 
-        {tabValue === 2 && (
+        {tabValue === 1 && (
           <Box sx={{ p: 3 }}>
             <TextField fullWidth placeholder="Tìm quiz theo tiêu đề" value={quizSearchQuery} onChange={(event) => setQuizSearchQuery(event.target.value)} sx={{ mb: 2 }} />
             <TableContainer>
@@ -354,65 +349,6 @@ const AdminSystemManagement = () => {
           </Box>
         )}
       </Paper>
-
-      <Dialog open={openCreateModeratorDialog} onClose={() => setOpenCreateModeratorDialog(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Tạo tài khoản moderator</DialogTitle>
-        <DialogContent>
-          <Stack spacing={2} sx={{ mt: 1 }}>
-            <TextField
-              label="Username"
-              fullWidth
-              required
-              value={newModerator.username}
-              onChange={(e) => setNewModerator({...newModerator, username: e.target.value})}
-            />
-            <TextField
-              label="Email"
-              type="email"
-              fullWidth
-              required
-              value={newModerator.email}
-              onChange={(e) => setNewModerator({...newModerator, email: e.target.value})}
-            />
-            <TextField
-              label="Mật khẩu"
-              type="password"
-              fullWidth
-              required
-              value={newModerator.password}
-              onChange={(e) => setNewModerator({...newModerator, password: e.target.value})}
-            />
-            <Alert severity="info">
-              Tài khoản sẽ được tạo với vai trò Người điều hành (Moderator)
-            </Alert>
-          </Stack>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenCreateModeratorDialog(false)}>Hủy</Button>
-          <Button 
-            variant="contained" 
-            onClick={handleCreateModerator}
-            disabled={!newModerator.username || !newModerator.email || !newModerator.password}
-          >
-            Tạo
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      <Dialog open={openDeleteUserDialog} onClose={() => setOpenDeleteUserDialog(false)}>
-        <DialogTitle>Xác nhận xóa user</DialogTitle>
-        <DialogContent>
-          <Typography>
-            Bạn có chắc chắn muốn xóa user <strong>{selectedUser?.username}</strong>?
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenDeleteUserDialog(false)}>Hủy</Button>
-          <Button variant="contained" color="error" onClick={handleDeleteUser}>
-            Xóa
-          </Button>
-        </DialogActions>
-      </Dialog>
 
       <Dialog open={openDeleteClassDialog} onClose={() => setOpenDeleteClassDialog(false)}>
         <DialogTitle>Xác nhận xóa lớp học</DialogTitle>

@@ -63,6 +63,72 @@ export const adminUsersApi = {
   },
 
   /**
+   * Aggregate total users by role across all pages.
+   */
+  getUserRoleCounts: async (): Promise<{ students: number; teachers: number; moderators: number; admins: number }> => {
+    const PAGE_SIZE = 50;
+    const MAX_PAGES = 500;
+    let page = 1;
+    const seenUserIds = new Set<string>();
+
+    const counts = {
+      students: 0,
+      teachers: 0,
+      moderators: 0,
+      admins: 0,
+    };
+
+    while (page <= MAX_PAGES) {
+      const { users, total } = await adminUsersApi.getAllUsers({ page, limit: PAGE_SIZE });
+
+      if (!Array.isArray(users) || users.length === 0) {
+        break;
+      }
+
+      let newUsersCount = 0;
+
+      for (const user of users) {
+        if (!user?._id || seenUserIds.has(user._id)) {
+          continue;
+        }
+
+        seenUserIds.add(user._id);
+        newUsersCount += 1;
+
+        switch (user.role) {
+          case 'student':
+            counts.students += 1;
+            break;
+          case 'teacher':
+            counts.teachers += 1;
+            break;
+          case 'moderator':
+            counts.moderators += 1;
+            break;
+          case 'admin':
+            counts.admins += 1;
+            break;
+          default:
+            break;
+        }
+      }
+
+      if (typeof total === 'number' && total > 0 && seenUserIds.size >= total) {
+        break;
+      }
+
+      // Prevent infinite loop when backend repeats same page data.
+      if (newUsersCount === 0) {
+        break;
+      }
+
+      page += 1;
+    }
+
+    return counts;
+  },
+
+  /**
    * GET /api/users/{id} - Get user by ID
    */
   getUserById: async (userId: string): Promise<AdminUser> => {

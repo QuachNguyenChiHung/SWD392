@@ -1,8 +1,8 @@
 import { Box, Typography, Chip, Button, Card, CardContent, Avatar, List, ListItem, ListItemAvatar, ListItemText, Divider, Alert, CircularProgress } from '@mui/material';
-import { People, School, Assignment, SupervisorAccount, Person, Class as ClassIcon, Description } from '@mui/icons-material';
+import { People, School, SupervisorAccount, Person, Class as ClassIcon, Description, AdminPanelSettings } from '@mui/icons-material';
 import { useState, useEffect } from 'react';
 import type { DashboardStats, AdminClassMaterial } from '../../types/adminType';
-import { adminDashboardApi, adminMaterialsApi } from '../../services/adminApi';
+import { adminDashboardApi, adminMaterialsApi, adminUsersApi } from '../../services/adminApi';
 import { useNavigate } from 'react-router-dom';
 
 interface MaterialItem {
@@ -18,6 +18,7 @@ interface MaterialItem {
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [roleCounts, setRoleCounts] = useState<{ students: number; teachers: number; moderators: number } | null>(null);
   const [recentMaterials, setRecentMaterials] = useState<MaterialItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -29,8 +30,17 @@ const AdminDashboard = () => {
         setError(null);
 
         // Fetch dashboard stats from API
-        const statsData = await adminDashboardApi.getDashboardStats();
+        const [statsData, userRoleCounts] = await Promise.all([
+          adminDashboardApi.getDashboardStats(),
+          adminUsersApi.getUserRoleCounts(),
+        ]);
+
         setStats(statsData);
+        setRoleCounts({
+          students: userRoleCounts.students,
+          teachers: userRoleCounts.teachers,
+          moderators: userRoleCounts.moderators,
+        });
 
         // Fetch recent materials from API
         const materialsData = await adminMaterialsApi.getAllClassMaterials(1);
@@ -88,16 +98,22 @@ const AdminDashboard = () => {
       onClick: () => navigate('/admin/users')
     },
     { 
-      label: 'Học sinh hoạt động', 
-      value: stats.activeStudents || 0, 
+      label: 'Tổng học sinh', 
+      value: roleCounts?.students ?? stats.activeStudents ?? 0,
       icon: <Person />, 
       color: '#0288d1'
     },
     { 
-      label: 'Giáo viên hoạt động', 
-      value: stats.activeTeachers || 0, 
+      label: 'Tổng giáo viên', 
+      value: roleCounts?.teachers ?? stats.activeTeachers ?? 0,
       icon: <SupervisorAccount />, 
       color: '#2e7d32'
+    },
+    {
+      label: 'Tổng moderator',
+      value: roleCounts?.moderators ?? 0,
+      icon: <AdminPanelSettings />,
+      color: '#6a1b9a'
     },
     { 
       label: 'Tổng lớp học', 
@@ -140,7 +156,7 @@ const AdminDashboard = () => {
       </Box>
 
       {/* Stats Cards */}
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }, gap: 3, mb: 4 }}>
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(5, 1fr)' }, gap: 3, mb: 4 }}>
         {statCards.map((stat, index) => (
           <Card
             key={index}
@@ -290,19 +306,10 @@ const AdminDashboard = () => {
               variant="outlined" 
               size="large"
               startIcon={<ClassIcon />}
-              onClick={() => navigate('/admin/classes')}
-              sx={{ py: 1.5 }}
-            >
-              Quản lý lớp học
-            </Button>
-            <Button 
-              variant="outlined" 
-              size="large"
-              startIcon={<Assignment />}
               onClick={() => navigate('/admin/system')}
               sx={{ py: 1.5 }}
             >
-              Quản lý hệ thống
+              Lớp học và Quiz
             </Button>
           </Box>
         </CardContent>

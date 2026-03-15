@@ -9,6 +9,22 @@ import type {
 } from '../../types/adminType';
 
 export const adminSystemApi = {
+  getAllClasses: async (params: ClassStatsParams = {}): Promise<AdminClass[]> => {
+    const searchParams = new URLSearchParams();
+
+    if (params.timeRange) searchParams.set('timeRange', params.timeRange);
+    if (params.status) searchParams.set('status', params.status);
+
+    const queryString = searchParams.toString();
+    const response = await apiService.get(`/admin/stats/classes${queryString ? `?${queryString}` : ''}`);
+
+    if (Array.isArray(response)) return response;
+    if (Array.isArray(response?.data)) return response.data;
+    if (Array.isArray(response?.classes)) return response.classes;
+
+    return [];
+  },
+
   getClassById: async (classId: string): Promise<AdminClass> => {
     const response = await apiService.get(`/class/${classId}`);
     return response;
@@ -22,6 +38,29 @@ export const adminSystemApi = {
 
     const queryString = searchParams.toString();
     const response = await apiService.get(`/admin/stats/classes${queryString ? `?${queryString}` : ''}`);
+
+    if (Array.isArray(response)) {
+      const active = response.filter((item) => item?.status === 'active').length;
+      const inactive = response.filter((item) => item?.status !== 'active').length;
+
+      return {
+        timeRange: params.timeRange ?? 'all',
+        status: params.status ?? 'all',
+        totalClasses: response.length,
+        byStatus: {
+          active,
+          inactive,
+        },
+        averageClassSize: 0,
+        topEnrolledClasses: [],
+        trend: [],
+      };
+    }
+
+    if (response?.data && !Array.isArray(response.data)) {
+      return response.data;
+    }
+
     return response;
   },
 
