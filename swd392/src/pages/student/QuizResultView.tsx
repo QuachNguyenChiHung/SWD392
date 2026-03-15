@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Box, Typography, Stack, Paper, Chip, Button,
   Skeleton, Alert, Divider, LinearProgress, Grid
 } from '@mui/material';
 import {
   ArrowBack, CheckCircle, Cancel, Timer,
-  EmojiEvents, Quiz, BarChart
+  EmojiEvents, Quiz, BarChart, Replay
 } from '@mui/icons-material';
 import { apiService } from '../../services/api';
 
@@ -14,7 +14,7 @@ interface QuizResult {
   _id: string;
   quiz_attempt_id: string;
   text: string;
-  options: { text: string; index: number }[] | Record<string, any>;
+  options: { text: string; index: number }[] | Record<string, any> | null;
   options_picked_index: number;
   isCorrect: boolean;
 }
@@ -44,6 +44,11 @@ const QuizResultView = () => {
   const [score, setScore] = useState<Score | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [quizId, setQuizId] = useState<string | null>(null);
+  const [maxAttempts, setMaxAttempts] = useState<number>(999);
+  const [attemptCount, setAttemptCount] = useState<number>(0);
+  const [searchParams] = useSearchParams();
+  const timestamp = searchParams.get('t');
 
   useEffect(() => {
     const fetchResult = async () => {
@@ -52,12 +57,19 @@ const QuizResultView = () => {
       try {
         // 1. Get material to find quiz_id
         const material: any = await apiService.get(`/class-materials/${id}`);
-        const quizId = material?.content_id;
+        const qId = material?.content_id;
 
-        if (!quizId) {
+        if (!qId) {
           setError('Bài kiểm tra chưa có nội dung');
           return;
         }
+        setQuizId(qId);
+
+        // Fetch quiz info for max_attempt_number
+        try {
+          const quizInfo: any = await apiService.get(`/quizzes/${qId}`);
+          setMaxAttempts(quizInfo?.max_attempt_number ?? 999);
+        } catch {}
 
         // 2. Get my attempts, find latest for this quiz
         const myAttempts: any[] = await apiService.get('/my-quiz-attempts');
@@ -66,7 +78,7 @@ const QuizResultView = () => {
             const aQuizId = typeof a.attempt?.quiz_id === 'object'
               ? a.attempt.quiz_id._id
               : a.attempt?.quiz_id;
-            return aQuizId === quizId;
+            return aQuizId === qId;
           })
           .sort((a, b) =>
             new Date(b.attempt.date).getTime() - new Date(a.attempt.date).getTime()
@@ -77,12 +89,18 @@ const QuizResultView = () => {
           return;
         }
 
-        // 3. Get attempt with results
+        // 3. Get attempt with results (latest)
         const data: any = await apiService.get(
           `/quiz-attempts/${matchingAttempt.attempt._id}/with-results`
         );
 
         setAttempt(data.attempt);
+        // Count total attempts for this quiz
+        const totalAttempts = myAttempts.filter(a => {
+          const aQuizId = typeof a.attempt?.quiz_id === 'object' ? a.attempt.quiz_id._id : a.attempt?.quiz_id;
+          return aQuizId === qId;
+        }).length;
+        setAttemptCount(totalAttempts);
         setResults(data.results || []);
         setScore(data.score || matchingAttempt.score);
       } catch (err: any) {
@@ -93,7 +111,7 @@ const QuizResultView = () => {
     };
 
     if (id) fetchResult();
-  }, [id]);
+  }, [id, timestamp]);
 
   const formatDate = (dateStr: string) =>
     new Date(dateStr).toLocaleDateString('vi-VN', {
@@ -146,13 +164,22 @@ const QuizResultView = () => {
 
   return (
     <Box>
-      <Stack direction="row" alignItems="center" mb={3}>
+      <Stack direction="row" justifyContent="space-between" alignItems="center" mb={3}>
         <Button
           startIcon={<ArrowBack />}
           onClick={() => navigate('/student/quizzes')}
           sx={{ textTransform: 'none', fontWeight: 600, color: 'text.secondary' }}
         >
           Quay lại
+        </Button>
+        <Button
+          variant="outlined"
+          startIcon={<Replay />}
+          onClick={() => navigate(`/student/take-quiz/${id}`, { replace: true })}
+          disabled={attemptCount >= maxAttempts}
+          sx={{ textTransform: 'none', fontWeight: 600 }}
+        >
+          {attemptCount >= maxAttempts ? `Hết lượt (${maxAttempts} lần)` : 'Làm lại'}
         </Button>
       </Stack>
 
@@ -163,7 +190,6 @@ const QuizResultView = () => {
         {/* Score Summary */}
         <Grid size={{ xs: 12, md: 4 }}>
           <Stack spacing={2}>
-            {/* Main Score Card */}
             <Paper sx={{
               p: 4, textAlign: 'center',
               background: `linear-gradient(135deg, ${scoreColor}15, ${scoreColor}05)`,
@@ -172,7 +198,7 @@ const QuizResultView = () => {
             }}>
               <EmojiEvents sx={{ fontSize: 48, color: scoreColor, mb: 1 }} />
               <Typography variant="h2" fontWeight="900" sx={{ color: scoreColor }}>
-                {score?.percentage ?? 0}%
+                {score?.score ?? 0}
               </Typography>
               <Chip
                 label={getScoreLabel(score?.percentage ?? 0)}
@@ -184,7 +210,6 @@ const QuizResultView = () => {
               </Typography>
             </Paper>
 
-            {/* Stats */}
             <Paper sx={{ p: 2.5, borderRadius: 3 }}>
               <Typography variant="subtitle2" fontWeight="bold" mb={2}>
                 <BarChart sx={{ fontSize: 16, mr: 0.5, verticalAlign: 'middle' }} />
@@ -250,7 +275,6 @@ const QuizResultView = () => {
             <Stack spacing={2}>
               {results.map((result, index) => {
                 const options = Array.isArray(result.options) ? result.options : [];
-                console.log('result options:', JSON.stringify(result.options));
 
                 return (
                   <Paper
@@ -271,9 +295,7 @@ const QuizResultView = () => {
                       </Box>
                       <Box sx={{ flex: 1 }}>
                         <Stack direction="row" justifyContent="space-between" alignItems="center" mb={1}>
-                          <Typography variant="body2" color="text.secondary">
-                            Câu {index + 1}
-                          </Typography>
+                          <Typography variant="body2" color="text.secondary">Câu {index + 1}</Typography>
                           <Chip
                             label={result.isCorrect ? 'Đúng' : 'Sai'}
                             size="small"
@@ -289,7 +311,7 @@ const QuizResultView = () => {
                           {result.text || `Câu hỏi ${index + 1}`}
                         </Typography>
 
-                        {options.length > 0 && (
+                        {options.length > 0 ? (
                           <Stack spacing={0.75}>
                             {options.map((opt: any, optIdx: number) => {
                               const optText = typeof opt === 'string' ? opt : opt.text;
@@ -301,13 +323,9 @@ const QuizResultView = () => {
                                   key={optIdx}
                                   sx={{
                                     px: 1.5, py: 0.75, borderRadius: 1.5,
-                                    bgcolor: isPicked
-                                      ? (result.isCorrect ? '#d1fae5' : '#fee2e2')
-                                      : '#f8fafc',
+                                    bgcolor: isPicked ? (result.isCorrect ? '#d1fae5' : '#fee2e2') : '#f8fafc',
                                     border: '1px solid',
-                                    borderColor: isPicked
-                                      ? (result.isCorrect ? '#6ee7b7' : '#fca5a5')
-                                      : '#e2e8f0',
+                                    borderColor: isPicked ? (result.isCorrect ? '#6ee7b7' : '#fca5a5') : '#e2e8f0',
                                     display: 'flex', alignItems: 'center', gap: 1
                                   }}
                                 >
@@ -315,11 +333,8 @@ const QuizResultView = () => {
                                     label={String.fromCharCode(65 + optIdx)}
                                     size="small"
                                     sx={{
-                                      height: 20, minWidth: 24, fontSize: '0.65rem',
-                                      fontWeight: 'bold',
-                                      bgcolor: isPicked
-                                        ? (result.isCorrect ? '#10b981' : '#ef4444')
-                                        : '#e2e8f0',
+                                      height: 20, minWidth: 24, fontSize: '0.65rem', fontWeight: 'bold',
+                                      bgcolor: isPicked ? (result.isCorrect ? '#10b981' : '#ef4444') : '#e2e8f0',
                                       color: isPicked ? 'white' : 'text.secondary'
                                     }}
                                   />
@@ -333,6 +348,15 @@ const QuizResultView = () => {
                               );
                             })}
                           </Stack>
+                        ) : (
+                          <Box sx={{ px: 1.5, py: 1, borderRadius: 1.5, bgcolor: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                            <Typography variant="body2" color="text.secondary">
+                              Đã chọn đáp án #{result.options_picked_index + 1} •{' '}
+                              <b style={{ color: result.isCorrect ? '#059669' : '#dc2626' }}>
+                                {result.isCorrect ? 'Đúng' : 'Sai'}
+                              </b>
+                            </Typography>
+                          </Box>
                         )}
                       </Box>
                     </Stack>

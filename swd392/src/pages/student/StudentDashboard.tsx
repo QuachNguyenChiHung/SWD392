@@ -60,7 +60,6 @@ const StudentDashboard = () => {
   const [classes, setClasses] = useState<ClassItem[]>([]);
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [quizAttempts, setQuizAttempts] = useState<QuizAttempt[]>([]);
-  const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [classPage, setClassPage] = useState(1);
@@ -74,11 +73,9 @@ const StudentDashboard = () => {
       setLoading(true);
       setError(null);
       try {
-        // 1. Fetch classes
         const classesData: ClassItem[] = await apiService.get('/student/class?page=1');
         setClasses(classesData);
 
-        // 2. Fetch enrollments - deduplicate by keeping latest per class
         const enrollmentsData: Enrollment[] = await apiService.get('/enroll/student');
         const latestEnrollmentMap = new Map<string, Enrollment>();
         for (const enrollment of enrollmentsData) {
@@ -90,10 +87,9 @@ const StudentDashboard = () => {
         }
         setEnrollments(Array.from(latestEnrollmentMap.values()));
 
-        // 3. Fetch quiz attempts from /my-quiz-attempts (includes score)
         try {
           const myAttempts: any[] = await apiService.get('/my-quiz-attempts');
-          const mapped: QuizAttempt[] = myAttempts.slice(0, 5).map((item) => ({
+          const mapped: QuizAttempt[] = myAttempts.map((item) => ({
             ...item.attempt,
             score: item.score,
             quizTitle: typeof item.attempt?.quiz_id === 'object'
@@ -103,14 +99,6 @@ const StudentDashboard = () => {
           setQuizAttempts(mapped);
         } catch (err) {
           console.warn('Failed to fetch quiz attempts');
-        }
-
-        // 4. Fetch dashboard stats
-        try {
-          const statsData: DashboardStats = await apiService.get('/dashboard');
-          setDashboardStats(statsData);
-        } catch (err) {
-          console.warn('Failed to fetch dashboard stats');
         }
 
       } catch (err: any) {
@@ -130,12 +118,12 @@ const StudentDashboard = () => {
     enrollments.find(e => getEnrollClassId(e) === classId);
 
   const calculateAverageScore = (): string => {
-    const withScore = quizAttempts.filter(a => a.score?.percentage !== undefined);
+    const withScore = quizAttempts.filter(a => a.score?.score != null);
     if (withScore.length === 0) return 'N/A';
     const avg = Math.round(
-      withScore.reduce((sum, a) => sum + (a.score?.percentage || 0), 0) / withScore.length
+      withScore.reduce((sum, a) => sum + (a.score?.score || 0), 0) / withScore.length
     );
-    return avg + '%';
+    return avg + ' điểm';
   };
 
   const totalPages = Math.ceil(classes.length / CLASSES_PER_PAGE);
@@ -146,16 +134,12 @@ const StudentDashboard = () => {
 
   return (
     <Box>
-      <Typography variant="h4" gutterBottom fontWeight="bold">
-        Dashboard Học sinh
-      </Typography>
       <Typography variant="body1" color="text.secondary" paragraph>
         Quản lý lớp học và theo dõi lộ trình học tập của bạn
       </Typography>
 
       <Stack spacing={3}>
         <Grid container spacing={3}>
-          {/* Left column */}
           <Grid size={{ xs: 12, md: 8 }}>
             <Grid container direction="column" spacing={3}>
 
@@ -280,16 +264,17 @@ const StudentDashboard = () => {
                     </Stack>
                   ) : quizAttempts.length > 0 ? (
                     <Stack spacing={1.5}>
-                      {quizAttempts.map((attempt) => {
-                        const score = attempt.score?.percentage;
-                        const scoreColor = score === undefined ? '#94a3b8'
+                      {quizAttempts.slice(0, 5).map((attempt) => {
+                        const score = attempt.score?.score;
+                        const hasScore = score != null;
+                        const scoreColor = !hasScore ? '#94a3b8'
                           : score >= 70 ? '#059669'
-                            : score >= 50 ? '#b45309'
-                              : '#dc2626';
-                        const scoreBg = score === undefined ? '#f1f5f9'
+                          : score >= 50 ? '#b45309'
+                          : '#dc2626';
+                        const scoreBg = !hasScore ? '#f1f5f9'
                           : score >= 70 ? '#d1fae5'
-                            : score >= 50 ? '#fef3c7'
-                              : '#fee2e2';
+                          : score >= 50 ? '#fef3c7'
+                          : '#fee2e2';
 
                         return (
                           <Paper
@@ -306,7 +291,7 @@ const StudentDashboard = () => {
                               </Typography>
                             </Box>
                             <Chip
-                              label={score != null ? `${score}%` : 'Chưa có điểm'}
+                              label={hasScore ? `${score} điểm` : 'Chưa có điểm'}
                               size="small"
                               sx={{ bgcolor: scoreBg, color: scoreColor, fontWeight: 'bold' }}
                             />
@@ -329,7 +314,6 @@ const StudentDashboard = () => {
           <Grid size={{ xs: 12, md: 4 }}>
             <Grid container direction="column" spacing={3}>
 
-              {/* Learning Status */}
               <Grid size={{ xs: 12 }}>
                 <Paper sx={{ p: 3, bgcolor: '#f8fafc', border: '1px solid #e2e8f0' }}>
                   <Typography variant="subtitle1" fontWeight="bold" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -373,7 +357,6 @@ const StudentDashboard = () => {
                 </Paper>
               </Grid>
 
-              {/* Enrollment Stats */}
               <Grid size={{ xs: 12 }}>
                 <Paper sx={{ p: 3, bgcolor: '#f0f9ff', border: '1px solid #bfdbfe' }}>
                   <Typography variant="subtitle2" fontWeight="bold" gutterBottom>

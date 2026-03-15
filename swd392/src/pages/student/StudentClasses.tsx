@@ -113,6 +113,7 @@ const StudentClasses = () => {
     if (!cls.enrollment) {
       return { label: 'Chưa tham gia', color: '#6b7280', bg: '#f3f4f6' };
     }
+    console.log('enrollment status:', cls.enrollment?.status);
     switch (cls.enrollment.status) {
       case 'completed':
         return { label: 'Hoàn thành', color: '#059669', bg: '#d1fae5' };
@@ -130,13 +131,10 @@ const StudentClasses = () => {
       {/* Header */}
       <Stack direction="row" justifyContent="space-between" alignItems="center" mb={4}>
         <Box>
-          <Typography variant="h4" fontWeight="bold">
-            Lớp học của tôi
-          </Typography>
           <Typography color="text.secondary">
             Bạn đang tham gia {classes.length} lớp học
           </Typography>
-        </Box>
+        </Box>  
         <Stack direction="row" spacing={1}>
           <Button
             variant="contained"

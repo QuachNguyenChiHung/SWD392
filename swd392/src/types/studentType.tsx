@@ -9,6 +9,17 @@ export interface ClassItem {
   date_create: string;
   status: string;
 }
+export interface File {
+  _id: string;
+  file_name: string;
+  file_path: string;
+}
+
+export interface Slide {
+  _id: string;
+  slide_name: string;
+  file_path: string;
+}
 
 export interface Topic {
   _id: string;
