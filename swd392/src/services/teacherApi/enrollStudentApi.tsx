@@ -12,6 +12,17 @@ export const enrollStudentApi = {
         }
     },
 
+    // PATCH /api/enroll/:enroll_id/completed - Mark enrollment as completed (teachers only)
+    completeEnrollment: async (enrollId: string) => {
+        try {
+            const response = await apiService.patch(`/enroll/${enrollId}/completed`);
+            return response;
+        } catch (error) {
+            console.error('Error marking enrollment as completed:', error);
+            throw error;
+        }
+    },
+
     // GET /teacher/enroll/:class_id - Get all enrollments from a class (paginated, teachers only)
     getEnrollmentsByClass: async (classId: string, page: number = 1) => {
         try {
