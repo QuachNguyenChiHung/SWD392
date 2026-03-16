@@ -260,6 +260,7 @@ class ClassService {
         return await ClassRepo.getClassCountByTeacher(teacherId);
     }
     async searchClassesByName(name: string, page: number) {
+        if (!name || name.trim() === "") return await ClassRepo.searchClassesByName("", page)
         return await ClassRepo.searchClassesByName(name, page);
     }
     async searchClassesByNameFromTeacher(teacherId: string, name: string, page: number) {
