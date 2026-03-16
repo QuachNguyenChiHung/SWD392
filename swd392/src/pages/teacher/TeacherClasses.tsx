@@ -32,21 +32,32 @@ const TeacherClasses = () => {
   const [classDescription, setClassDescription] = useState("");
   const [creating, setCreating] = useState(false);
 
+  // Pagination states
+  const [page, setPage] = useState(1);
+  const [nextPageEmpty, setNextPageEmpty] = useState(false);
+  const [nextPageData, setNextPageData] = useState<Class[]>([]);
+
   // Course states
   const [courses, setCourses] = useState<Course[]>([]);
   const [coursesLoading, setCoursesLoading] = useState(false);
 
-  // Fetch classes on component mount
+  // Fetch classes when page changes
   useEffect(() => {
-    fetchClasses();
-  }, []);
+    fetchClasses(page);
+  }, [page]);
 
-  const fetchClasses = async () => {
+  const fetchClasses = async (pageNum = 1) => {
     try {
       setLoading(true);
       setError(null);
-      const fetchedClasses = await teacherClassApi.getClassesByTeacher();
-      setClasses(fetchedClasses);
+      // Fetch current page
+      const currentPageClasses = await teacherClassApi.getClassesByTeacher(pageNum);
+      setClasses(Array.isArray(currentPageClasses) ? currentPageClasses : []);
+
+      // Prefetch next page
+      const nextPageClasses = await teacherClassApi.getClassesByTeacher(pageNum + 1);
+      setNextPageData(Array.isArray(nextPageClasses) ? nextPageClasses : []);
+      setNextPageEmpty(!nextPageClasses || nextPageClasses.length === 0);
     } catch (err) {
       console.error('Error fetching classes:', err);
       setError('Không thể tải danh sách lớp học. Vui lòng thử lại.');
@@ -316,6 +327,27 @@ const TeacherClasses = () => {
             )}
           </TableBody>
         </Table>
+        {/* Simple Next/Prev buttons */}
+        <Stack direction="row" spacing={2} justifyContent="flex-end" alignItems="center" sx={{ mt: 2 }} paddingBottom={1} paddingRight={1}>
+          <Button
+            variant="outlined"
+            disabled={page === 1}
+            onClick={() => setPage(page - 1)}
+          >
+            Trang trước
+          </Button>
+          <Button
+            variant="outlined"
+            disabled={nextPageEmpty}
+            onClick={() => {
+              // Use cached next page data for instant update
+              setClasses(nextPageData);
+              setPage(page + 1);
+            }}
+          >
+            Trang sau
+          </Button>
+        </Stack>
       </Paper>
     </Box >
   );
