@@ -4,9 +4,9 @@ import verifyRole from '../ultis/verifyRole.ts';
 
 const router = Router();
 
-// All teacher-request admin endpoints require admin role
-router.get('/admin/teacher-requests', verifyRole.verifyAdmin, TeacherRequestController.getList);
-router.get('/admin/teacher-requests/:id', verifyRole.verifyAdmin, TeacherRequestController.getById);
-router.patch('/admin/teacher-requests/:id', verifyRole.verifyAdmin, TeacherRequestController.processRequest);
+// All teacher-request admin endpoints require admin or moderator role
+router.get('/admin/teacher-requests', verifyRole.verifyAdminOrModerator, TeacherRequestController.getList);
+router.get('/admin/teacher-requests/:id', verifyRole.verifyAdminOrModerator, TeacherRequestController.getById);
+router.patch('/admin/teacher-requests/:id', verifyRole.verifyAdminOrModerator, TeacherRequestController.processRequest);
 
 export default router;

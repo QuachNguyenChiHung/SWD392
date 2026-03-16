@@ -6,14 +6,14 @@ const route = Router();
 route.get('/admin/stats/users', verifyRole.verifyAdmin, UserController.getAdminUserStats);
 
 // Search users by keyword functionality
-route.get('/users/search', verifyRole.verifyAdmin, UserController.findByKeyWord);
-route.get('/users', verifyRole.verifyAdmin, UserController.getAllUsers);
-route.get('/users/:id', verifyRole.verifyAdmin, UserController.getUserById);
+route.get('/users/search', verifyRole.verifyAdminOrModerator, UserController.findByKeyWord);
+route.get('/users', verifyRole.verifyAdminOrModerator, UserController.getAllUsers);
+route.get('/users/:id', verifyRole.verifyAdminOrModerator, UserController.getUserById);
 route.post('/users', verifyRole.verifyAdmin, UserController.createUser);
 route.patch('/users/:id', verifyRole.verifyAdmin, UserController.updateUser);
 
-// User status toggle route, only for admin to use, prevent user from updating their own status by themselves
-route.patch('/users/:id/status', verifyRole.verifyAdmin, UserController.toggleStatus);
+// User status toggle route, only for admin or moderator to use
+route.patch('/users/:id/status', verifyRole.verifyAdminOrModerator, UserController.toggleStatus);
 
 // Authentication routes
 route.post('/register', UserController.registerUser);

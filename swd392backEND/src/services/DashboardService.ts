@@ -22,20 +22,46 @@ class DashboardService {
 
     // Moderator Dashboard
     async getModeratorStats() {
-        const [pendingContent, violationReports, suspendedAccounts] = await Promise.all([
+        const [
+            pendingContent, 
+            pendingCount,
+            violationReports, 
+            violationCount, 
+            suspendedAccounts, 
+            suspendedCount,
+            totalMaterials,
+            totalTeachers,
+            totalStudents,
+            totalTopics,
+            totalClasses
+        ] = await Promise.all([
             AiContent.find({ review_status: "pending" }).populate('ai_request_id').limit(50),
+            AiContent.countDocuments({ review_status: "pending" }),
             Feedback.find({ $or: [{ rating: { $lte: 2 } }, { comment: { $regex: /vi phạm|báo cáo|inappropriate|spam/i } }] })
                 .populate('user_id', 'username email').populate('material_id', 'title type').sort({ date: -1 }).limit(50),
-            User.find({ status: "banned" }).select('username email role date_create').limit(50)
-        ]);
-
-        const [pendingCount, violationCount, suspendedCount] = await Promise.all([
-            AiContent.countDocuments({ review_status: "pending" }),
             Feedback.countDocuments({ $or: [{ rating: { $lte: 2 } }, { comment: { $regex: /vi phạm|báo cáo/i } }] }),
-            User.countDocuments({ status: "banned" })
+            User.find({ status: "banned" }).select('username email role date_create').limit(50),
+            User.countDocuments({ status: "banned" }),
+            ClassMaterial.countDocuments(),
+            User.countDocuments({ role: "teacher" }),
+            User.countDocuments({ role: "student" }),
+            mongoose.model('Topic').countDocuments(),
+            Class.countDocuments()
         ]);
 
-        return { pendingContent, pendingCount, violationReports, violationCount, suspendedAccounts, suspendedCount };
+        return { 
+            pendingContent, 
+            pendingCount, 
+            violationReports, 
+            violationCount, 
+            suspendedAccounts, 
+            suspendedCount,
+            totalMaterials,
+            totalTeachers,
+            totalStudents,
+            totalTopics,
+            totalClasses
+        };
     }
 
     // Student Dashboard

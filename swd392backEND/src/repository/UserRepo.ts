@@ -5,110 +5,131 @@ import type { registerDTO } from "../dto/AuthDTO.ts";
 import type { UserUpdateDTO } from "../dto/UserDTO.ts";
 
 class UserRepo {
-    async getAllUsers(page: number) {
-        const limit = 12;
-        const skip = (page - 1) * limit;
-        return await User.find().skip(skip).limit(limit);
+  async getAllUsers(page: number) {
+    const limit = 12;
+    const skip = (page - 1) * limit;
+    return await User.find().skip(skip).limit(limit);
+  }
+  async getUserById(id: string) {
+    return await User.findById(id);
+  }
+  async createUser(userData: registerDTO) {
+    // normalize email before saving
+    const normalized = {
+      ...userData,
+      email: (userData.email || "").trim().toLowerCase(),
+    } as any;
+    const user = new User(normalized);
+    return await user.save();
+  }
+  async updateUser(id: string, updateData: UserUpdateDTO) {
+    return await User.findByIdAndUpdate(id, updateData, { new: true });
+  }
+  async toggleStatus(id: string) {
+    const user = await User.findById(id);
+    if (user) {
+      user.status = user.status === "active" ? "banned" : "active";
+      return await user.save();
     }
-    async getUserById(id: string) {
-        return await User.findById(id);
-    }
-    async createUser(userData: registerDTO) {
+    return null;
+  }
+  async findByMail(email: string) {
+    // perform case-insensitive exact match; escape any regex meta-characters
+    const e = (email || "").trim();
+    const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const safe = escapeRegex(e);
+    return await User.findOne({
+      email: { $regex: `^${safe}$`, $options: "i" },
+    });
+  }
+  async getListUsersByRole(role: string, page: number) {
+    const limit = 12;
+    const skip = (page - 1) * limit;
+    return await User.find({ role: role }).skip(skip).limit(limit);
+  }
+  async findByKeyWord(keyword: string, page: number) {
+    const limit = 12;
+    const skip = (page - 1) * limit;
+    // Defensive: ensure keyword is a string and escape regex meta-characters
+    const k = (keyword || "") as string;
+    const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const safe = escapeRegex(k);
 
-        const user = new User(userData);
-        return await user.save();
-    }
-    async updateUser(id: string, updateData: UserUpdateDTO) {
-        return await User.findByIdAndUpdate(id, updateData, { new: true });
-    }
-    async toggleStatus(id: string) {
-        const user = await User.findById(id);
-        if (user) {
-            user.status = user.status === "active" ? "banned" : "active";
-            return await user.save();
-        }
-        return null;
-    }
-    async findByMail(email: string) {
-        return await User.findOne({ email: email });
-    }
-    async getListUsersByRole(role: string, page: number) {
-        const limit = 12;
-        const skip = (page - 1) * limit;
-        return await User.find({ role: role }).skip(skip).limit(limit);
-    }
-    async findByKeyWord(keyword: string, page: number) {
-        const limit = 12;
-        const skip = (page - 1) * limit;
-        return await User.find({
-            $or: [
-                { name: { $regex: keyword, $options: 'i' } },
-                { email: { $regex: keyword, $options: 'i' } }
-            ]
-        }).skip(skip).limit(limit);
-    }
+    // If keyword is empty, match all users (avoid passing undefined to $regex)
+    const regex =
+      safe === "" ? { $exists: true } : { $regex: safe, $options: "i" };
 
-    async getAdminUserStats(timeRange: string, role: string) {
-        const getDateFilter = (range: string) => {
-            const now = new Date();
-            switch (range) {
-                case '7days': return new Date(now.setDate(now.getDate() - 7));
-                case '30days': return new Date(now.setDate(now.getDate() - 30));
-                case '3months': return new Date(now.setMonth(now.getMonth() - 3));
-                case '1year': return new Date(now.setFullYear(now.getFullYear() - 1));
-                default: return null;
-            }
-        };
+    return await User.find({
+      $or: [{ name: regex as any }, { email: regex as any }],
+    })
+      .skip(skip)
+      .limit(limit);
+  }
 
-        const dateFilter = getDateFilter(timeRange);
-        const matchStage: any = {};
+  async getAdminUserStats(timeRange: string, role: string) {
+    const getDateFilter = (range: string) => {
+      const now = new Date();
+      switch (range) {
+        case "7days":
+          return new Date(now.setDate(now.getDate() - 7));
+        case "30days":
+          return new Date(now.setDate(now.getDate() - 30));
+        case "3months":
+          return new Date(now.setMonth(now.getMonth() - 3));
+        case "1year":
+          return new Date(now.setFullYear(now.getFullYear() - 1));
+        default:
+          return null;
+      }
+    };
 
-        if (dateFilter) matchStage.date_create = { $gte: dateFilter };
-        if (role !== 'all') matchStage.role = role;
+    const dateFilter = getDateFilter(timeRange);
+    const matchStage: any = {};
 
-        const [stats] = await User.aggregate([
-            { $match: matchStage },
+    if (dateFilter) matchStage.date_create = { $gte: dateFilter };
+    if (role !== "all") matchStage.role = role;
+
+    const [stats] = await User.aggregate([
+      { $match: matchStage },
+      {
+        $facet: {
+          byRole: [{ $group: { _id: "$role", count: { $sum: 1 } } }],
+          byStatus: [{ $group: { _id: "$status", count: { $sum: 1 } } }],
+          trend: [
             {
-                $facet: {
-                    byRole: [
-                        { $group: { _id: "$role", count: { $sum: 1 } } }
-                    ],
-                    byStatus: [
-                        { $group: { _id: "$status", count: { $sum: 1 } } }
-                    ],
-                    trend: [
-                        {
-                            $group: {
-                                _id: { $dateToString: { format: "%Y-%m-%d", date: "$date_create" } },
-                                count: { $sum: 1 }
-                            }
-                        },
-                        { $sort: { _id: 1 } }
-                    ],
-                    total: [{ $count: "count" }]
-                }
-            }
-        ]);
+              $group: {
+                _id: {
+                  $dateToString: { format: "%Y-%m-%d", date: "$date_create" },
+                },
+                count: { $sum: 1 },
+              },
+            },
+            { $sort: { _id: 1 } },
+          ],
+          total: [{ $count: "count" }],
+        },
+      },
+    ]);
 
-        // Get stats for previous period for growth calculation
-        let previousTotal = 0;
-        if (dateFilter) {
-            const previousPeriodStart = new Date(dateFilter);
-            const duration = Date.now() - dateFilter.getTime();
-            previousPeriodStart.setTime(previousPeriodStart.getTime() - duration);
+    // Get stats for previous period for growth calculation
+    let previousTotal = 0;
+    if (dateFilter) {
+      const previousPeriodStart = new Date(dateFilter);
+      const duration = Date.now() - dateFilter.getTime();
+      previousPeriodStart.setTime(previousPeriodStart.getTime() - duration);
 
-            const previousMatch: any = {
-                date_create: {
-                    $gte: previousPeriodStart,
-                    $lt: dateFilter
-                }
-            };
-            if (role !== 'all') previousMatch.role = role;
+      const previousMatch: any = {
+        date_create: {
+          $gte: previousPeriodStart,
+          $lt: dateFilter,
+        },
+      };
+      if (role !== "all") previousMatch.role = role;
 
-            previousTotal = await User.countDocuments(previousMatch);
-        }
-
-        return { ...stats, previousTotal };
+      previousTotal = await User.countDocuments(previousMatch);
     }
+
+    return { ...stats, previousTotal };
+  }
 }
 export default new UserRepo();

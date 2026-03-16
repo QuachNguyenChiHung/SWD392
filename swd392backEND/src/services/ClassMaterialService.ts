@@ -1,6 +1,6 @@
 import ClassMaterialRepo from "../repository/ClassMaterialRepo.ts";
 import type { CreateClassMaterialDTO, UpdateClassMaterialDTO } from "../dto/ClassMaterialDTO.ts";
-import type { IClassMaterial } from "../interface/IClassMaterial";
+import type { IClassMaterial } from "../interface/IClassMaterial.ts";
 import ProgressClassMaterialService from "./ProgressClassMaterialService.ts";
 
 class ClassMaterialService {
@@ -112,7 +112,51 @@ class ClassMaterialService {
         return await ClassMaterialRepo.deleteClassMaterial(id);
     }
 
+    async toggleClassMaterialStatus(id: string, status: string) {
+        const validStatuses = ['published', 'draft', 'reviewed', 'deleted'];
+        if (!validStatuses.includes(status)) return { error: "Invalid status value" };
+        
+        const previous = await ClassMaterialRepo.getClassMaterialById(id);
+        // Using any since the repo function expects any
+        const result = await ClassMaterialRepo.updateClassMaterial(id, { status } as any);
 
+        if (result && status) {
+            const wasActive = previous && !['draft', 'deleted'].includes(previous.status);
+            const isActive = !['draft', 'deleted'].includes(status);
+
+            if (!wasActive && isActive) {
+                await ProgressClassMaterialService.bulkCreateForMaterial(
+                    result._id.toString(),
+                    result.class_assign_id.toString()
+                );
+            } else if (wasActive && !isActive) {
+                await ProgressClassMaterialService.bulkDeleteForMaterial(result._id.toString());
+            }
+        }
+        return result;
+    }
+
+    async flagMaterial(id: string) {
+        const material = await ClassMaterialRepo.getClassMaterialById(id);
+        if (!material) return { error: "Class material not found" };
+        if (material.status !== 'reviewed') return { error: "Only reviewed materials can be flagged" };
+        if (!material.isFlaggable) return { error: "Material cannot be flagged" };
+        if (material.isFlagged) return { error: "Material is already flagged" };
+
+        return await ClassMaterialRepo.updateClassMaterial(id, { isFlagged: true } as any);
+    }
+
+    async verifyAfterFlag(id: string) {
+        const material = await ClassMaterialRepo.getClassMaterialById(id);
+        if (!material) return { error: "Class material not found" };
+        if (!material.isFlagged) return { error: "Material is not currently flagged" };
+
+        return await ClassMaterialRepo.updateClassMaterial(id, { 
+            status: 'reviewed', 
+            isFlagged: false, 
+            isFlaggable: false 
+        } as any);
+    }
 }
 
 export default new ClassMaterialService();

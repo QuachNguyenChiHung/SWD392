@@ -5,16 +5,16 @@ import verifyRole from "../ultis/verifyRole.ts";
 const router = Router();
 
 // POST: Create topic (admin only)
-router.post("/topics", verifyRole.verifyAdmin, TopicController.createTopic);
+router.post("/topics", verifyRole.verifyAdminOrModerator, TopicController.createTopic);
 
 // GET: Search topics by keyword (paginated)
 router.get("/topics/search", TopicController.searchTopicsByKeyword);
 
 // PUT: Update topic (admin only)
-router.put("/topics/:id", verifyRole.verifyAdmin, TopicController.updateTopic);
+router.put("/topics/:id", verifyRole.verifyAdminOrModerator, TopicController.updateTopic);
 
 // DELETE: Delete topic with cascade (admin only)
-router.delete("/topics/:id", verifyRole.verifyAdmin, TopicController.deleteTopic);
+router.delete("/topics/:id", verifyRole.verifyAdminOrModerator, TopicController.deleteTopic);
 
 // GET: Get topic by ID
 router.get("/topics/:id", TopicController.getTopicById);
