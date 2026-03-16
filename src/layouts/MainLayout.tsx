@@ -28,6 +28,7 @@ import {
   Settings,
   Logout,
   Science,
+  Assignment,
 } from '@mui/icons-material';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -74,6 +75,36 @@ const navItems: NavItem[] = [
     text: 'Kiểm duyệt',
     icon: <Settings />,
     path: '/moderator/dashboard',
+    roles: [UserRole.MODERATOR],
+  },
+  {
+    text: 'Quản lý người dùng',
+    icon: <Group />,
+    path: '/moderator/user-suspension',
+    roles: [UserRole.MODERATOR],
+  },
+  {
+    text: 'Duyệt giáo viên',
+    icon: <Person />,
+    path: '/moderator/teacher-approvals',
+    roles: [UserRole.MODERATOR],
+  },
+  {
+    text: 'Quản lý khóa học',
+    icon: <Assignment />,
+    path: '/moderator/courses',
+    roles: [UserRole.MODERATOR],
+  },
+  {
+    text: 'Quản lý lớp học',
+    icon: <School />,
+    path: '/moderator/classes',
+    roles: [UserRole.MODERATOR],
+  },
+  {
+    text: 'Tài liệu chờ duyệt',
+    icon: <Class />,
+    path: '/moderator/pending',
     roles: [UserRole.MODERATOR],
   },
   {
