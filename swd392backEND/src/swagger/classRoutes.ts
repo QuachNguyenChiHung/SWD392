@@ -105,42 +105,74 @@
  *               $ref: '#/components/schemas/Class'
  *       404:
  *         description: Class not found
- *   put:
+/**
+ * @openapi
+ * /api/classes/search:
+ *   get:
  *     tags:
  *       - Classes
- *     summary: Update class
- *     description: "[Teacher] Update class details. Only the teacher who owns this class can update it."
- *     security:
- *       - cookieAuth: []
+ *     summary: Search classes by name or id
+ *     description: "[Public] Search classes by name or id with optional pagination. Returns a paginated array of matching classes."
  *     parameters:
- *       - in: path
- *         name: id
- *         required: true
+ *       - in: query
+ *         name: name
  *         schema:
  *           type: string
- *         description: Class ID
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/ClassUpdateInput'
+ *         description: Search term for class name or id
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number
  *     responses:
  *       200:
- *         description: Class updated successfully
+ *         description: Array of classes matching the search
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Class'
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Class'
  *       400:
  *         description: Validation error
- *       401:
- *         description: Unauthorized
- *       403:
- *         description: Forbidden - You can only update your own class
- *       404:
- *         description: Class not found
  */
+ * put:
+ * tags:
+ * - Classes
+    * summary: Update class
+ * description: "[Teacher] Update class details. Only the teacher who owns this class can update it."
+    * security:
+ * - cookieAuth: []
+    * parameters:
+ * - in: path
+    * name: id
+        * required: true
+            * schema:
+ * type: string
+    * description: Class ID
+        * requestBody:
+ * required: true
+    * content:
+ * application / json:
+ * schema:
+ * $ref: '#/components/schemas/ClassUpdateInput'
+    * responses:
+ * 200:
+ * description: Class updated successfully
+    * content:
+ * application / json:
+ * schema:
+ * $ref: '#/components/schemas/Class'
+    * 400:
+ * description: Validation error
+    * 401:
+ * description: Unauthorized
+    * 403:
+ * description: Forbidden - You can only update your own class
+ * 404:
+ * description: Class not found
+    */
 
 /**
  * @openapi

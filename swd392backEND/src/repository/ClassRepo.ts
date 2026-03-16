@@ -14,7 +14,23 @@ class ClassRepo {
     async searchClassesByName(name: string, page: number) {
         const limit = 12;
         const skip = (page - 1) * limit;
-        return await Class.find({ class_name: { $regex: name, $options: 'i' } }).skip(skip).limit(limit);
+        console.log("Searching classes with name:", name);
+        return await Class.find({
+            $or: [
+                { class_name: { $regex: name, $options: "i" } },
+                {
+                    $expr: {
+                        $regexMatch: {
+                            input: { $toString: "$_id" },
+                            regex: name,
+                            options: "i"
+                        }
+                    }
+                }
+            ]
+        })
+            .skip(skip)
+            .limit(limit);
     }
     async searchClassesByNameFromTeacher(teacherId: string, name: string, page: number) {
         const limit = 12;

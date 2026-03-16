@@ -18,7 +18,26 @@ class ClassController {
             next(error);
         }
     }
+    async getClassesByName(req: Request, res: Response, next: NextFunction) {
+        try {
+            const { name, page } = req.query;
+            const classObj = await ClassService.searchClassesByName(name as string, parseInt(page as string));
+            if (!classObj || classObj.length === 0) {
+                return res.status(404).json({ message: "No classes found" });
+            }
 
+
+            const cleaned = classObj.map((cls) => {
+                const { keypass, ...rest } = cls.toObject();
+                return rest;
+            });
+            return res.status(200).json(cleaned);
+
+
+        } catch (error) {
+            next(error);
+        }
+    }
     /**
      * DELETE /classes/:id (Teachers only - with ownership verification)
      * 
