@@ -30,6 +30,11 @@ import ModeratorDashboard from "../pages/moderator/ModeratorDashboard";
 // Admin Pages
 import AdminDashboard from "../pages/admin/AdminDashboard";
 import AdminUsers from "../pages/admin/AdminUsers";
+import AdminSystemManagement from "../pages/admin/AdminSystemManagement";
+import AdminCourses from "../pages/admin/AdminCourses";
+import AdminMaterials from "../pages/admin/AdminMaterials";
+import AdminClasses from "../pages/admin/AdminClasses";
+// import AdminTopics from "../pages/admin/AdminTopics";
 
 // Protected Route Component
 import ProtectedRoute from "../components/ProtectedRoute";
@@ -67,13 +72,7 @@ export const routes: RouteObject[] = [
         path: "dashboard",
         element: (
           <ProtectedRoute
-            allowedRoles={[
-              UserRole.GUEST,
-              UserRole.STUDENT,
-              UserRole.TEACHER,
-              UserRole.MODERATOR,
-              UserRole.ADMIN,
-            ]}
+            allowedRoles={[UserRole.GUEST]}
           >
             <GuestDashboard />
           </ProtectedRoute>
@@ -214,6 +213,46 @@ export const routes: RouteObject[] = [
             element: (
               <ProtectedRoute allowedRoles={[UserRole.ADMIN]}>
                 <AdminUsers />
+              </ProtectedRoute>
+            ),
+          },
+          {
+            path: "courses",
+            element: (
+              <ProtectedRoute allowedRoles={[UserRole.ADMIN]}>
+                <AdminCourses />
+              </ProtectedRoute>
+            ),
+          },
+          {
+            path: "classes",
+            element: (
+              <ProtectedRoute allowedRoles={[UserRole.ADMIN]}>
+                <AdminClasses />
+              </ProtectedRoute>
+            ),
+          },
+          // {
+          //   path: "topics",
+          //   element: (
+          //     <ProtectedRoute allowedRoles={[UserRole.ADMIN]}>
+          //       <AdminTopics />
+          //     </ProtectedRoute>
+          //   ),
+          // },
+          {
+            path: "materials",
+            element: (
+              <ProtectedRoute allowedRoles={[UserRole.ADMIN]}>
+                <AdminMaterials />
+              </ProtectedRoute>
+            ),
+          },
+          {
+            path: "system",
+            element: (
+              <ProtectedRoute allowedRoles={[UserRole.ADMIN]}>
+                <AdminSystemManagement />
               </ProtectedRoute>
             ),
           },

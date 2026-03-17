@@ -28,6 +28,8 @@ import {
   Settings,
   Logout,
   Science,
+  AdminPanelSettings,
+  Description,
 } from '@mui/icons-material';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -77,9 +79,39 @@ const navItems: NavItem[] = [
     roles: [UserRole.MODERATOR],
   },
   {
-    text: 'Quản lý người dùng',
+    text: 'Tài khoản (HS/GV)',
     icon: <Group />,
     path: '/admin/users',
+    roles: [UserRole.ADMIN],
+  },
+  {
+    text: 'Quản lý khóa học',
+    icon: <School />,
+    path: '/admin/courses',
+    roles: [UserRole.ADMIN],
+  },
+  {
+    text: 'Danh sách lớp học',
+    icon: <Class />,
+    path: '/admin/classes',
+    roles: [UserRole.ADMIN],
+  },
+  // {
+  //   text: 'Quản lý chủ đề',
+  //   icon: <Class />,
+  //   path: '/admin/topics',
+  //   roles: [UserRole.ADMIN],
+  // },
+  {
+    text: 'Tài liệu và câu hỏi',
+    icon: <Description />,
+    path: '/admin/materials',
+    roles: [UserRole.ADMIN],
+  },
+  {
+    text: 'Quản lý lớp/Quiz',
+    icon: <AdminPanelSettings />,
+    path: '/admin/system',
     roles: [UserRole.ADMIN],
   },
 ];
@@ -111,10 +143,14 @@ const MainLayout = () => {
   const handleNavigation = (path: string) => {
     // Special handling for role-specific dashboard redirects
     if (path === '/dashboard') {
-      if (user?.role === UserRole.TEACHER) {
+      if (user?.role === UserRole.ADMIN) {
+        navigate('/admin/dashboard');
+      } else if (user?.role === UserRole.TEACHER) {
         navigate('/teacher/dashboard');
       } else if (user?.role === UserRole.STUDENT) {
         navigate('/student/dashboard');
+      } else if (user?.role === UserRole.MODERATOR) {
+        navigate('/moderator/dashboard');
       } else {
         navigate(path);
       }
