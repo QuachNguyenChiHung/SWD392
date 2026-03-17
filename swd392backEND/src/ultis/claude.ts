@@ -8,7 +8,7 @@ const client = new Anthropic({
 async function runModel(prompt: string) {
     const msg = await client.messages.create({
         model: process.env.CLAUDE_KEY_MODAL || "Blaude-Baiku-4.5",
-        max_tokens: 2024,
+        max_tokens: 10024,
         messages: [
             { role: "user", content: prompt }
         ]
@@ -29,4 +29,6 @@ async function runModelWithHistory(prompt: ChatMessage[]) {
     const content = msg.content[0] as any;
     return content.text;
 }
+
+
 export { runModel, runModelWithHistory };
