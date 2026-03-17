@@ -556,7 +556,7 @@ Constraints:
                         {/* Selected Content Type Header (moved to AI generator tab) */}
                         {selectedContentType && (
                             <Card variant="outlined" sx={{ mb: 2, bgcolor: "primary.50" }}>
-                                <CardContent sx={{ py: 2, height: '300px' }}>
+                                <CardContent sx={{ py: 2, minHeight: '400px' }}>
                                     <Stack direction="column" alignItems="center" justifyContent="space-between" spacing={2}>
                                         <Stack direction="row" alignItems="center" spacing={1} sx={{ minWidth: 200 }}>
                                             {TYPE_META[selectedContentType].icon}

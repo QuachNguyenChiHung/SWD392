@@ -84,12 +84,11 @@ export default function StudentClassDetail() {
     }, [progressRecords]);
     // Note: progressStats uses allMaterialIds to filter correctly
 
-    // Progress stats — only count materials that belong to this class
+    // Progress stats — only count materials (files + slides). Exclude 2D renders (placeholder)
     const allMaterialIds = useMemo(() => [
         ...files.map(f => f._id),
         ...slides.map(s => s._id),
-        ...render2dIds
-    ], [files, slides, render2dIds]);
+    ], [files, slides]);
 
     const progressStats = useMemo(() => {
         const total = allMaterialIds.length;
@@ -453,7 +452,7 @@ export default function StudentClassDetail() {
                         <Button
                             fullWidth variant="outlined" color="inherit"
                             sx={{ textTransform: 'none', fontWeight: 600 }}
-                            onClick={() => setTabValue([0,1,2].find(i => i !== tabValue) || 0)}
+                            onClick={() => setTabValue([0, 1, 2].find(i => i !== tabValue) || 0)}
                         >
                             Bắt đầu học
                         </Button>

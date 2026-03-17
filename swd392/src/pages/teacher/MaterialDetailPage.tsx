@@ -309,6 +309,35 @@ export default function MaterialDetailPage() {
                             icon={<SmartToy fontSize="small" />}
                         />
                     )}
+                    {/* status: 'published' | 'draft' | 'reviewed' | 'deleted' */}
+                    {material.status=='deleted' && (
+                        <Chip
+                            label="Đã xoá"
+                            color="error"
+                            size="small"
+                        />
+                    )}
+                    {material.status=='draft' && (
+                        <Chip
+                            label="Bản nháp"
+                            color="secondary"
+                            size="small"
+                        />
+                    )}
+                    {material.status=='reviewed' && (
+                        <Chip
+                            label="Đã duyệt"
+                            color="info"
+                            size="small"
+                        />
+                    )}
+                    {material.status=='published' && (
+                        <Chip
+                            label="Đã xuất bản"
+                            color="success"
+                            size="small"
+                        />
+                    )}
                 </Stack>
 
                 {/* Meta row */}

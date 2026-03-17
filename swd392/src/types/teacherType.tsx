@@ -84,6 +84,7 @@ export type ClassMaterialType = "file" | "slide" | "2d_render" | "quiz";
 
 export interface ClassMaterial {
   _id?: string;
+  status: 'published' | 'draft' | 'reviewed' | 'deleted'
   type: ClassMaterialType;
   order_num: number;
   class_assign_id: string;
