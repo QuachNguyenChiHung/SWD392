@@ -78,5 +78,94 @@ export const adminMaterialsApi = {
       console.error(`Error fetching material count for class ${classId}:`, error);
       throw error;
     }
-  }
+  },
+
+  /**
+   * GET /api/class-materials/topic/{topicId} - Get materials by topic
+   */
+  getClassMaterialsByTopicId: async (topicId: string, page: number = 1): Promise<AdminClassMaterial[]> => {
+    try {
+      const response = await apiService.get(`/class-materials/topic/${encodeURIComponent(topicId)}?page=${page}`);
+      if (Array.isArray(response)) return response;
+      if (Array.isArray(response?.data)) return response.data;
+      if (Array.isArray(response?.data?.materials)) return response.data.materials;
+      if (Array.isArray(response?.materials)) return response.materials;
+      return [];
+    } catch (error) {
+      console.error(`Error fetching materials for topic ${topicId}:`, error);
+      throw error;
+    }
+  },
+
+  getFileById: async (fileId: string): Promise<{ _id: string; file_name: string; file_path: string }> => {
+    try {
+      const response = await apiService.get(`/files/${encodeURIComponent(fileId)}`);
+      return (response?.data ?? response) as { _id: string; file_name: string; file_path: string };
+    } catch (error) {
+      console.error(`Error fetching file ${fileId}:`, error);
+      throw error;
+    }
+  },
+
+  getSlideById: async (slideId: string): Promise<{ _id: string; slide_name: string; file_path: string }> => {
+    try {
+      const response = await apiService.get(`/slides/${encodeURIComponent(slideId)}`);
+      return (response?.data ?? response) as { _id: string; slide_name: string; file_path: string };
+    } catch (error) {
+      console.error(`Error fetching slide ${slideId}:`, error);
+      throw error;
+    }
+  },
+
+  getQuizById: async (quizId: string): Promise<{
+    _id: string;
+    title: string;
+    type: string;
+    available_date?: string;
+    max_attempt_number?: number;
+    end_date?: string;
+    status?: boolean;
+  }> => {
+    try {
+      const response = await apiService.get(`/quizzes/${encodeURIComponent(quizId)}`);
+      return (response?.data ?? response) as {
+        _id: string;
+        title: string;
+        type: string;
+        available_date?: string;
+        max_attempt_number?: number;
+        end_date?: string;
+        status?: boolean;
+      };
+    } catch (error) {
+      console.error(`Error fetching quiz ${quizId}:`, error);
+      throw error;
+    }
+  },
+
+  getQuestionsByQuizId: async (quizId: string): Promise<AdminQuestion[]> => {
+    const normalizeQuestions = (response: any): AdminQuestion[] => {
+      if (Array.isArray(response)) return response;
+      if (Array.isArray(response?.data)) return response.data;
+      if (Array.isArray(response?.questions)) return response.questions;
+      if (Array.isArray(response?.data?.questions)) return response.data.questions;
+
+      const single = response?.data ?? response;
+      if (single?._id && single?.quiz_id) return [single as AdminQuestion];
+      return [];
+    };
+
+    try {
+      const response = await apiService.get(`/questions/${encodeURIComponent(quizId)}`);
+      return normalizeQuestions(response);
+    } catch (errorByQuestions) {
+      try {
+        const response = await apiService.get(`/quizzes/${encodeURIComponent(quizId)}/questions`);
+        return normalizeQuestions(response);
+      } catch (errorByQuizQuestions) {
+        console.error(`Error fetching questions for quiz ${quizId}:`, errorByQuestions, errorByQuizQuestions);
+        throw errorByQuizQuestions;
+      }
+    }
+  },
 };

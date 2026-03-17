@@ -90,6 +90,12 @@ const navItems: NavItem[] = [
     path: '/admin/courses',
     roles: [UserRole.ADMIN],
   },
+  {
+    text: 'Danh sách lớp học',
+    icon: <Class />,
+    path: '/admin/classes',
+    roles: [UserRole.ADMIN],
+  },
   // {
   //   text: 'Quản lý chủ đề',
   //   icon: <Class />,

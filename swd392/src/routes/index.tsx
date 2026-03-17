@@ -33,6 +33,7 @@ import AdminUsers from "../pages/admin/AdminUsers";
 import AdminSystemManagement from "../pages/admin/AdminSystemManagement";
 import AdminCourses from "../pages/admin/AdminCourses";
 import AdminMaterials from "../pages/admin/AdminMaterials";
+import AdminClasses from "../pages/admin/AdminClasses";
 // import AdminTopics from "../pages/admin/AdminTopics";
 
 // Protected Route Component
@@ -220,6 +221,14 @@ export const routes: RouteObject[] = [
             element: (
               <ProtectedRoute allowedRoles={[UserRole.ADMIN]}>
                 <AdminCourses />
+              </ProtectedRoute>
+            ),
+          },
+          {
+            path: "classes",
+            element: (
+              <ProtectedRoute allowedRoles={[UserRole.ADMIN]}>
+                <AdminClasses />
               </ProtectedRoute>
             ),
           },

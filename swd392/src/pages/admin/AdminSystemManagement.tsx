@@ -136,7 +136,7 @@ const AdminSystemManagement = () => {
       setOpenDeleteClassDialog(false);
       setClassLookupResult(null);
       setClassLookupId('');
-      await Promise.all([fetchClassStats(), fetchClasses()]);
+      await Promise.all([fetchClassStats(), fetchClasses(classSearchQuery, classSearchPage)]);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete class');
     }
