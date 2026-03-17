@@ -33,7 +33,7 @@ import AdminUsers from "../pages/admin/AdminUsers";
 import AdminSystemManagement from "../pages/admin/AdminSystemManagement";
 import AdminCourses from "../pages/admin/AdminCourses";
 import AdminMaterials from "../pages/admin/AdminMaterials";
-import AdminTopics from "../pages/admin/AdminTopics";
+// import AdminTopics from "../pages/admin/AdminTopics";
 
 // Protected Route Component
 import ProtectedRoute from "../components/ProtectedRoute";
@@ -223,14 +223,14 @@ export const routes: RouteObject[] = [
               </ProtectedRoute>
             ),
           },
-          {
-            path: "topics",
-            element: (
-              <ProtectedRoute allowedRoles={[UserRole.ADMIN]}>
-                <AdminTopics />
-              </ProtectedRoute>
-            ),
-          },
+          // {
+          //   path: "topics",
+          //   element: (
+          //     <ProtectedRoute allowedRoles={[UserRole.ADMIN]}>
+          //       <AdminTopics />
+          //     </ProtectedRoute>
+          //   ),
+          // },
           {
             path: "materials",
             element: (

@@ -8,6 +8,12 @@ import type {
   DeleteAdminQuizResponse,
 } from '../../types/adminType';
 
+interface ClassSearchResult {
+  classes: AdminClass[];
+  page: number;
+  hasNextPage: boolean;
+}
+
 export const adminSystemApi = {
   getAllClasses: async (params: ClassStatsParams = {}): Promise<AdminClass[]> => {
     const searchParams = new URLSearchParams();
@@ -28,6 +34,44 @@ export const adminSystemApi = {
   getClassById: async (classId: string): Promise<AdminClass> => {
     const response = await apiService.get(`/class/${classId}`);
     return response;
+  },
+
+  searchClasses: async (name: string = '', page: number = 1): Promise<ClassSearchResult> => {
+    const searchParams = new URLSearchParams();
+    const keyword = name.trim();
+
+    if (keyword) searchParams.set('name', keyword);
+    searchParams.set('page', String(page));
+
+    const response = await apiService.get(`/classes/search?${searchParams.toString()}`);
+
+    if (Array.isArray(response)) {
+      return {
+        classes: response,
+        page,
+        hasNextPage: response.length >= 10,
+      };
+    }
+
+    const normalizedClasses = Array.isArray(response?.data)
+      ? response.data
+      : Array.isArray(response?.classes)
+        ? response.classes
+        : [];
+
+    const normalizedPage = Number(response?.page ?? page) || page;
+    const totalPages = Number(response?.totalPages ?? response?.total_pages);
+    const hasNextPage = typeof response?.hasNext === 'boolean'
+      ? response.hasNext
+      : Number.isFinite(totalPages)
+        ? normalizedPage < totalPages
+        : normalizedClasses.length >= 10;
+
+    return {
+      classes: normalizedClasses,
+      page: normalizedPage,
+      hasNextPage,
+    };
   },
 
   getClassStats: async (params: ClassStatsParams = {}): Promise<AdminClassStats> => {

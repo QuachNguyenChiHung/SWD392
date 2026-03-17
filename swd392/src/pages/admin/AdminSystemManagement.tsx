@@ -14,6 +14,7 @@ import {
   InputLabel,
   MenuItem,
   Paper,
+  Pagination,
   Select,
   Stack,
   Tab,
@@ -40,6 +41,9 @@ const AdminSystemManagement = () => {
   const [classLookupId, setClassLookupId] = useState('');
   const [classLookupResult, setClassLookupResult] = useState<AdminClass | null>(null);
   const [classSearchQuery, setClassSearchQuery] = useState('');
+  const [classSearchPage, setClassSearchPage] = useState(1);
+  const [classHasNextPage, setClassHasNextPage] = useState(false);
+  const [classListLoading, setClassListLoading] = useState(false);
   const [quizSearchQuery, setQuizSearchQuery] = useState('');
   const [timeRange, setTimeRange] = useState<AdminClassStats['timeRange']>('30days');
   const [statusFilter, setStatusFilter] = useState<AdminClassStats['status']>('all');
@@ -53,9 +57,16 @@ const AdminSystemManagement = () => {
     setQuizzes(response);
   };
 
-  const fetchClasses = async () => {
-    const response = await adminSystemApi.getAllClasses({ timeRange, status: statusFilter });
-    setClasses(response);
+  const fetchClasses = async (keyword: string, page: number) => {
+    setClassListLoading(true);
+    try {
+      const response = await adminSystemApi.searchClasses(keyword, page);
+      setClasses(response.classes);
+      setClassSearchPage(response.page);
+      setClassHasNextPage(response.hasNextPage);
+    } finally {
+      setClassListLoading(false);
+    }
   };
 
   const fetchClassStats = async () => {
@@ -66,7 +77,7 @@ const AdminSystemManagement = () => {
   const fetchInitialData = async () => {
     try {
       setError(null);
-      await Promise.all([fetchQuizzes(), fetchClasses()]);
+      await fetchQuizzes();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load system management data');
     }
@@ -80,11 +91,17 @@ const AdminSystemManagement = () => {
     fetchClassStats().catch((err) => {
       setError(err instanceof Error ? err.message : 'Failed to load class stats');
     });
-
-    fetchClasses().catch((err) => {
-      setError(err instanceof Error ? err.message : 'Failed to load class list');
-    });
   }, [timeRange, statusFilter]);
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      fetchClasses(classSearchQuery, classSearchPage).catch((err) => {
+        setError(err instanceof Error ? err.message : 'Failed to load class list');
+      });
+    }, 300);
+
+    return () => clearTimeout(timeout);
+  }, [classSearchQuery, classSearchPage]);
 
   const filteredQuizzes = useMemo(
     () => quizzes.filter((quiz) => quiz.title.toLowerCase().includes(quizSearchQuery.toLowerCase())),
@@ -92,20 +109,14 @@ const AdminSystemManagement = () => {
   );
 
   const filteredClasses = useMemo(() => {
-    const keyword = classSearchQuery.trim().toLowerCase();
     const statusKeyword = statusFilter.toLowerCase();
 
     return classes.filter((classItem) => {
-      const matchesKeyword =
-        !keyword ||
-        classItem.class_name.toLowerCase().includes(keyword) ||
-        classItem._id.toLowerCase().includes(keyword);
-
       const matchesStatus = statusKeyword === 'all' || classItem.status === statusKeyword;
 
-      return matchesKeyword && matchesStatus;
+      return matchesStatus;
     });
-  }, [classSearchQuery, statusFilter, classes]);
+  }, [statusFilter, classes]);
 
   const handleLookupClass = async () => {
     if (!classLookupId.trim()) return;
@@ -232,7 +243,10 @@ const AdminSystemManagement = () => {
                 fullWidth
                 placeholder="Tìm theo tên lớp hoặc ID"
                 value={classSearchQuery}
-                onChange={(event) => setClassSearchQuery(event.target.value)}
+                onChange={(event) => {
+                  setClassSearchQuery(event.target.value);
+                  setClassSearchPage(1);
+                }}
                 sx={{ mb: 2 }}
               />
               <TableContainer>
@@ -288,6 +302,18 @@ const AdminSystemManagement = () => {
                   </TableBody>
                 </Table>
               </TableContainer>
+              <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mt: 2 }}>
+                <Typography variant="body2" color="text.secondary">
+                  Trang {classSearchPage}
+                </Typography>
+                <Pagination
+                  color="primary"
+                  page={classSearchPage}
+                  count={classHasNextPage ? classSearchPage + 1 : classSearchPage}
+                  onChange={(_, value) => setClassSearchPage(value)}
+                  disabled={classListLoading}
+                />
+              </Stack>
             </Paper>
 
             <Paper variant="outlined" sx={{ p: 2 }}>

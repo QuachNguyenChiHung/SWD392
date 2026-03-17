@@ -1,8 +1,8 @@
-import { Box, Typography, Paper, Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip, IconButton, TextField, InputAdornment, Dialog, DialogTitle, DialogContent, DialogActions, Alert, Stack, CircularProgress } from '@mui/material';
+import { Box, Typography, Paper, Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip, IconButton, TextField, InputAdornment, Dialog, DialogTitle, DialogContent, DialogActions, Alert, Stack, CircularProgress, Pagination, List, ListItem, ListItemText } from '@mui/material';
 import { useState, useEffect } from 'react';
-import { Add, Search, Edit, Delete, School, ToggleOn, ToggleOff } from '@mui/icons-material';
-import type { AdminCourse, CreateCourseRequest, UpdateCourseRequest } from '../../types/adminType';
-import { adminCoursesApi } from '../../services/adminApi';
+import { Add, Search, Edit, Delete, School, ToggleOn, ToggleOff, Topic } from '@mui/icons-material';
+import type { AdminCourse, AdminTopic, CreateCourseRequest, UpdateCourseRequest } from '../../types/adminType';
+import { adminCoursesApi, adminTopicsApi } from '../../services/adminApi';
 
 const AdminCourses = () => {
   const [courses, setCourses] = useState<AdminCourse[]>([]);
@@ -11,7 +11,14 @@ const AdminCourses = () => {
   const [openCreateDialog, setOpenCreateDialog] = useState(false);
   const [openEditDialog, setOpenEditDialog] = useState(false);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
+  const [openTopicsDialog, setOpenTopicsDialog] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<AdminCourse | null>(null);
+  const [selectedTopicCourse, setSelectedTopicCourse] = useState<AdminCourse | null>(null);
+  const [selectedTopicCourseId, setSelectedTopicCourseId] = useState('');
+  const [courseTopics, setCourseTopics] = useState<AdminTopic[]>([]);
+  const [topicPage, setTopicPage] = useState(1);
+  const [topicHasNextPage, setTopicHasNextPage] = useState(false);
+  const [topicsLoading, setTopicsLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
@@ -144,6 +151,58 @@ const AdminCourses = () => {
     setOpenDeleteDialog(true);
   };
 
+  const resolveCourseId = (course: AdminCourse): string => {
+    const rawCourse = course as unknown as Record<string, unknown>;
+    const id = rawCourse._id ?? rawCourse.id ?? rawCourse.course_id;
+    return typeof id === 'string' ? id : '';
+  };
+
+  const loadTopicsByCourse = async (courseId: string, page: number) => {
+    try {
+      setTopicsLoading(true);
+      setError(null);
+      const response = await adminTopicsApi.getTopicsByCourse(courseId, page);
+      const payload = (response as any)?.data ?? response;
+      const topics = Array.isArray(payload?.topics)
+        ? payload.topics
+        : Array.isArray(payload?.course?.topics)
+          ? payload.course.topics
+          : [];
+      const totalPages = Number((payload as any)?.totalPages ?? (payload as any)?.total_pages);
+      const hasNextPage = Number.isFinite(totalPages) ? page < totalPages : topics.length >= 12;
+
+      setCourseTopics(topics);
+      setTopicHasNextPage(hasNextPage);
+    } catch (err) {
+      console.error('Error fetching topics by course:', err);
+      setCourseTopics([]);
+      setTopicHasNextPage(false);
+      setError(err instanceof Error ? err.message : 'Failed to load topics by course');
+    } finally {
+      setTopicsLoading(false);
+    }
+  };
+
+  const handleOpenTopics = (course: AdminCourse) => {
+    const courseId = resolveCourseId(course);
+    if (!courseId) {
+      setError('Không tìm thấy Course ID hợp lệ để lấy topics.');
+      return;
+    }
+
+    setSelectedTopicCourse(course);
+    setSelectedTopicCourseId(courseId);
+    setTopicPage(1);
+    setCourseTopics([]);
+    setTopicHasNextPage(false);
+    setOpenTopicsDialog(true);
+  };
+
+  useEffect(() => {
+    if (!openTopicsDialog || !selectedTopicCourseId) return;
+    loadTopicsByCourse(selectedTopicCourseId, topicPage);
+  }, [openTopicsDialog, selectedTopicCourseId, topicPage]);
+
   const getStatusColor = (status: string) => {
     return status === 'active' ? 'success' : 'default';
   };
@@ -212,6 +271,7 @@ const AdminCourses = () => {
                 <TableCell>Cấp độ</TableCell>
                 <TableCell>Trạng thái</TableCell>
                 <TableCell>Ngày tạo</TableCell>
+                <TableCell>Topics</TableCell>
                 <TableCell align="right">Thao tác</TableCell>
               </TableRow>
             </TableHead>
@@ -246,6 +306,16 @@ const AdminCourses = () => {
                     <TableCell>
                       {new Date(course.date_create).toLocaleDateString('vi-VN')}
                     </TableCell>
+                    <TableCell>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        startIcon={<Topic />}
+                        onClick={() => handleOpenTopics(course)}
+                      >
+                        Xem topics
+                      </Button>
+                    </TableCell>
                     <TableCell align="right">
                       <IconButton 
                         size="small" 
@@ -274,7 +344,7 @@ const AdminCourses = () => {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={5} align="center">
+                  <TableCell colSpan={6} align="center">
                     <Typography variant="body2" color="text.secondary" sx={{ py: 3 }}>
                       Không tìm thấy khóa học nào
                     </Typography>
@@ -376,6 +446,58 @@ const AdminCourses = () => {
           <Button variant="contained" color="error" onClick={handleDeleteCourse} disabled={loading}>
             Xóa
           </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={openTopicsDialog}
+        onClose={() => {
+          setOpenTopicsDialog(false);
+          setSelectedTopicCourseId('');
+        }}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>
+          Topics theo khóa học: {selectedTopicCourse?.course_name || '-'}
+        </DialogTitle>
+        <DialogContent>
+          {topicsLoading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 5 }}>
+              <CircularProgress />
+            </Box>
+          ) : courseTopics.length > 0 ? (
+            <List>
+              {courseTopics.map((topic) => (
+                <ListItem key={topic._id} divider>
+                  <ListItemText
+                    primary={topic.title}
+                    secondary={topic.description || 'Không có mô tả'}
+                  />
+                </ListItem>
+              ))}
+            </List>
+          ) : (
+            <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>
+              Khóa học này chưa có topic ở trang hiện tại.
+            </Typography>
+          )}
+
+          <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mt: 1 }}>
+            <Typography variant="body2" color="text.secondary">
+              Trang {topicPage}
+            </Typography>
+            <Pagination
+              color="primary"
+              page={topicPage}
+              count={topicHasNextPage ? topicPage + 1 : topicPage}
+              onChange={(_, value) => setTopicPage(value)}
+              disabled={topicsLoading}
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenTopicsDialog(false)}>Đóng</Button>
         </DialogActions>
       </Dialog>
     </Box>
