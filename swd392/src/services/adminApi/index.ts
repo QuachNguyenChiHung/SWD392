@@ -8,6 +8,7 @@ export { adminTopicsApi } from './topicsApi';
 export { adminMaterialsApi } from './materialsApi';
 export { adminTeacherRequestsApi } from './teacherRequestsApi';
 export { adminSystemApi } from './systemApi';
+export { adminTeachersApi } from './teachersApi';
 
 // Re-export types for convenience
 export type {

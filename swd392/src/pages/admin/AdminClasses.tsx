@@ -29,7 +29,7 @@ import {
 import { useEffect, useMemo, useState } from 'react';
 import { Search } from '@mui/icons-material';
 import type { AdminClass, AdminClassStats, AdminUser } from '../../types/adminType';
-import { adminSystemApi, adminUsersApi } from '../../services/adminApi';
+import { adminSystemApi, adminTeachersApi } from '../../services/adminApi';
 
 type ExtendedAdminClass = AdminClass & {
   teacher_name?: string;
@@ -60,7 +60,71 @@ const AdminClasses = () => {
 
   const fetchClasses = async (keyword: string, pageNumber: number) => {
     const response = await adminSystemApi.searchClasses(keyword, pageNumber);
-    setClasses(response.classes as ExtendedAdminClass[]);
+
+    const baseClasses = response.classes as ExtendedAdminClass[];
+    const teacherIds = Array.from(new Set(baseClasses.map((classItem) => classItem.teacher_id).filter(Boolean)));
+    const classIds = Array.from(new Set(baseClasses.map((classItem) => classItem._id).filter(Boolean)));
+
+    const teacherMap = new Map<string, { username?: string; email?: string; userId?: string }>();
+    const studentCountMap = new Map<string, number>();
+
+    await Promise.all(
+      teacherIds.map(async (teacherId) => {
+        try {
+          const teacherResponse = await adminTeachersApi.getTeacherById(teacherId);
+          const user = teacherResponse.user;
+
+          if (!user) {
+            return;
+          }
+
+          teacherMap.set(teacherId, {
+            username: user.username,
+            email: user.email,
+            userId: user._id,
+          });
+        } catch {
+          // Keep fallback data when teacher profile cannot be resolved.
+        }
+      })
+    );
+
+    await Promise.all(
+      classIds.map(async (classId) => {
+        try {
+          const studentCount = await adminSystemApi.getClassEnrollmentCount(classId);
+          studentCountMap.set(classId, studentCount);
+        } catch {
+          // Keep fallback when enrollment endpoint is inaccessible.
+        }
+      })
+    );
+
+    const enrichedClasses = baseClasses.map((classItem) => {
+      const teacherInfo = teacherMap.get(classItem.teacher_id);
+      const studentCount = studentCountMap.get(classItem._id);
+
+      if (!teacherInfo) {
+        return {
+          ...classItem,
+          student_count: studentCount ?? classItem.student_count,
+        };
+      }
+
+      return {
+        ...classItem,
+        teacher_name: teacherInfo.username ?? classItem.teacher_name,
+        teacher_email: teacherInfo.email ?? classItem.teacher_email,
+        student_count: studentCount ?? classItem.student_count,
+        teacher: {
+          _id: teacherInfo.userId,
+          username: teacherInfo.username,
+          email: teacherInfo.email,
+        },
+      };
+    });
+
+    setClasses(enrichedClasses);
     setPage(response.page);
     setHasNextPage(response.hasNextPage);
   };
@@ -126,8 +190,14 @@ const AdminClasses = () => {
 
     try {
       setDetailLoading(true);
-      const response = await adminUsersApi.getUserById(classItem.teacher_id);
-      setTeacherDetail(response);
+      const response = await adminTeachersApi.getTeacherById(classItem.teacher_id);
+
+      if (!response.user) {
+        setTeacherDetail(null);
+        return;
+      }
+
+      setTeacherDetail(response.user);
     } catch {
       setTeacherDetail(null);
     } finally {
@@ -188,46 +258,52 @@ const AdminClasses = () => {
       </Grid>
 
       <Paper sx={{ p: 2, mb: 3 }}>
-        <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
-          <TextField
-            fullWidth
-            placeholder="Tìm theo tên lớp"
-            value={search}
-            onChange={(event) => {
-              setSearch(event.target.value);
-              setPage(1);
-            }}
-          />
-          <FormControl fullWidth>
-            <InputLabel>Thời gian</InputLabel>
-            <Select
-              value={timeRange}
-              label="Thời gian"
-              onChange={(event) => setTimeRange(event.target.value as AdminClassStats['timeRange'])}
-            >
-              <MenuItem value="7days">7 ngày</MenuItem>
-              <MenuItem value="30days">30 ngày</MenuItem>
-              <MenuItem value="3months">3 tháng</MenuItem>
-              <MenuItem value="1year">1 năm</MenuItem>
-              <MenuItem value="all">Tất cả</MenuItem>
-            </Select>
-          </FormControl>
-          <FormControl fullWidth>
-            <InputLabel>Trạng thái</InputLabel>
-            <Select
-              value={statusFilter}
-              label="Trạng thái"
+        <Grid container spacing={2}>
+          <Grid size={{ xs: 12, md: 4 }}>
+            <TextField
+              fullWidth
+              placeholder="Tìm theo tên lớp"
+              value={search}
               onChange={(event) => {
-                setStatusFilter(event.target.value as AdminClassStats['status']);
+                setSearch(event.target.value);
                 setPage(1);
               }}
-            >
-              <MenuItem value="all">Tất cả</MenuItem>
-              <MenuItem value="active">Active</MenuItem>
-              <MenuItem value="inactive">Inactive</MenuItem>
-            </Select>
-          </FormControl>
-        </Stack>
+            />
+          </Grid>
+          <Grid size={{ xs: 12, md: 4 }}>
+            <FormControl fullWidth>
+              <InputLabel>Thời gian</InputLabel>
+              <Select
+                value={timeRange}
+                label="Thời gian"
+                onChange={(event) => setTimeRange(event.target.value as AdminClassStats['timeRange'])}
+              >
+                <MenuItem value="7days">7 ngày</MenuItem>
+                <MenuItem value="30days">30 ngày</MenuItem>
+                <MenuItem value="3months">3 tháng</MenuItem>
+                <MenuItem value="1year">1 năm</MenuItem>
+                <MenuItem value="all">Tất cả</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid size={{ xs: 12, md: 4 }}>
+            <FormControl fullWidth>
+              <InputLabel>Trạng thái</InputLabel>
+              <Select
+                value={statusFilter}
+                label="Trạng thái"
+                onChange={(event) => {
+                  setStatusFilter(event.target.value as AdminClassStats['status']);
+                  setPage(1);
+                }}
+              >
+                <MenuItem value="all">Tất cả</MenuItem>
+                <MenuItem value="active">Active</MenuItem>
+                <MenuItem value="inactive">Inactive</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+        </Grid>
       </Paper>
 
       <Paper sx={{ p: 2, mb: 3 }}>

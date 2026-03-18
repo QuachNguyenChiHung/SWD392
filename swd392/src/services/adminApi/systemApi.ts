@@ -14,6 +14,15 @@ interface ClassSearchResult {
   hasNextPage: boolean;
 }
 
+interface EnrollmentStudent {
+  _id?: string;
+}
+
+interface EnrollmentItem {
+  _id?: string;
+  student_id?: string | EnrollmentStudent;
+}
+
 export const adminSystemApi = {
   getAllClasses: async (params: ClassStatsParams = {}): Promise<AdminClass[]> => {
     const searchParams = new URLSearchParams();
@@ -106,6 +115,49 @@ export const adminSystemApi = {
     }
 
     return response;
+  },
+
+  getClassEnrollmentCount: async (classId: string): Promise<number> => {
+    const MAX_PAGES = 200;
+    const seenStudentIds = new Set<string>();
+    let page = 1;
+
+    while (page <= MAX_PAGES) {
+      const response = await apiService.get(`/teacher/enroll/${encodeURIComponent(classId)}?page=${page}`);
+
+      const enrollments: EnrollmentItem[] = Array.isArray(response)
+        ? response
+        : Array.isArray(response?.data)
+          ? response.data
+          : [];
+
+      if (enrollments.length === 0) {
+        break;
+      }
+
+      let newStudentsInPage = 0;
+
+      for (const enrollment of enrollments) {
+        const rawStudent = enrollment?.student_id;
+        const studentId = typeof rawStudent === 'string' ? rawStudent : rawStudent?._id;
+
+        if (!studentId || seenStudentIds.has(studentId)) {
+          continue;
+        }
+
+        seenStudentIds.add(studentId);
+        newStudentsInPage += 1;
+      }
+
+      // Stop when backend keeps returning duplicated rows across pages.
+      if (newStudentsInPage === 0) {
+        break;
+      }
+
+      page += 1;
+    }
+
+    return seenStudentIds.size;
   },
 
   deleteClass: async (classId: string): Promise<DeleteAdminClassResponse> => {
