@@ -1,8 +1,10 @@
 import type { NextFunction, Request, Response } from "express";
 import UserService from "../services/UserService.ts";
+import TeacherService from "../services/TeacherService.ts";
 import zod from "zod";
 import { tr } from "zod/locales";
 import { loginSchema, registerSchema } from "../dto/AuthDTO.ts";
+import { uploadFile } from "../ultis/cloudinary.ts";
 import {
   UserGetFromTokenSchema,
   UserUpdateSchema,
@@ -10,6 +12,77 @@ import {
 } from "../dto/UserDTO.ts";
 
 class UserController {
+  async getUserProfile(req: Request, res: Response, next: NextFunction) {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const user = await UserService.getUserById(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User profile not found" });
+      }
+
+      const userObject = user.toObject();
+      const { password, ...safeUser } = userObject;
+
+      return res.status(200).json({ user: safeUser });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getUserAdminProfile(req: Request, res: Response, next: NextFunction) {
+    try {
+      const userId = req.user?.id;
+      const admin = req.admin;
+
+      if (!userId || !admin) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const user = await UserService.getUserById(userId);
+      if (!user) {
+        return res.status(404).json({ message: "Admin user profile not found" });
+      }
+
+      const userObject = user.toObject();
+      const { password, ...safeUser } = userObject;
+      const safeAdmin =
+        typeof (admin as any).toObject === "function"
+          ? (admin as any).toObject()
+          : admin;
+
+      return res.status(200).json({
+        user: safeUser,
+        admin: safeAdmin,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getUserTeacherProfile(req: Request, res: Response, next: NextFunction) {
+    try {
+      const userId = req.user?.id;
+      const teacherId = req.teacher?._id?.toString();
+
+      if (!userId || !teacherId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const profile = await TeacherService.getUserTeacherProfile(userId, teacherId);
+      if (!profile) {
+        return res.status(404).json({ message: "Teacher profile not found" });
+      }
+
+      return res.status(200).json(profile);
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async deleteModerator(req: Request, res: Response, next: NextFunction) {
     try {
       const user = await UserService.getUserById(req.params.id as string);
@@ -48,7 +121,7 @@ class UserController {
   async getAllUsers(req: Request, res: Response, next: NextFunction) {
     try {
       const page = parseInt(req.query.page as string) || 1;
-      const users = await UserService.getAllUsers(page);
+      const users = await UserService.getAllUsersForAdmin(page);
       return res.status(200).json(users);
     } catch (error: any) {
       next(error);
@@ -56,7 +129,7 @@ class UserController {
   }
   async getUserById(req: Request, res: Response, next: NextFunction) {
     try {
-      const user = await UserService.getUserById(req.params.id as string);
+      const user = await UserService.getUserByIdForAdmin(req.params.id as string);
       return res.status(200).json(user);
     } catch (error: any) {
       next(error);
@@ -64,9 +137,31 @@ class UserController {
   }
   async createUser(req: Request, res: Response, next: NextFunction) {
     try {
-      const created = await UserService.createUser(
-        registerSchema.parse(req.body),
-      );
+      const parsedBody = registerSchema.parse(req.body);
+
+      let credentialLink: string | undefined;
+      let credentialFileName: string | undefined;
+
+      if (parsedBody.role === "teacher") {
+        if (!req.file) {
+          return res
+            .status(400)
+            .json({ message: "Credential PDF file is required for teacher role" });
+        }
+
+        if (req.file.mimetype !== "application/pdf") {
+          return res.status(400).json({ message: "Credential file must be a PDF" });
+        }
+
+        credentialLink = await uploadFile(req.file.buffer, req.file.originalname);
+        credentialFileName = req.file.originalname;
+      }
+
+      const created = await UserService.createUser(parsedBody, {
+        credentialLink,
+        credentialFileName,
+      });
+
       if (created === "Email already exists") {
         return res.status(400).json({ message: "Email already exists" });
       }
@@ -77,7 +172,12 @@ class UserController {
   }
   async updateUser(req: Request, res: Response, next: NextFunction) {
     try {
-      const updateBody = UserUpdateSchema.parse(req.body);
+      if (typeof req.body.role !== "undefined") {
+        return res.status(400).json({ message: "Changing user role is not allowed" });
+      }
+
+      const { role, ...safeBody } = req.body;
+      const updateBody = UserUpdateSchema.parse(safeBody);
       const updated = await UserService.updateUser(
         req.params.id as string,
         updateBody,
@@ -113,17 +213,20 @@ class UserController {
       next(error);
     }
   }
-  // async deleteUser(req: Request, res: Response, next: NextFunction) {
-  //     try {
-  //         const deleted = await UserService.deleteUser(req.params.id as string);
-  //         if (!deleted) {
-  //             return res.status(404).json({ message: "User not found" });
-  //         }
-  //         return res.status(200).json(deleted);
-  //     } catch (error: any) {
-  //         next(error);
-  //     }
-  // }
+  async deleteUser(req: Request, res: Response, next: NextFunction) {
+    try {
+      const deleted = await UserService.deleteUser(req.params.id as string);
+      if (!deleted) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      if (deleted === "Cannot delete admin") {
+        return res.status(403).json({ message: "Cannot delete admin user" });
+      }
+      return res.status(200).json({ message: "User deleted successfully", user: deleted });
+    } catch (error: any) {
+      next(error);
+    }
+  }
   async toggleStatus(req: Request, res: Response, next: NextFunction) {
     try {
       const toggled = await UserService.toggleStatus(req.params.id as string);
@@ -202,7 +305,7 @@ class UserController {
       // accept either `q` or `keyword` from client (frontend uses `keyword` in some places)
       const keyword =
         (req.query.q as string) || (req.query.keyword as string) || "";
-      const results = await UserService.findByKeyWord(keyword, page);
+      const results = await UserService.findByKeyWordForAdmin(keyword, page);
       return res.status(200).json(results);
     } catch (error: any) {
       next(error);

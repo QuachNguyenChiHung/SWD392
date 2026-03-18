@@ -105,6 +105,7 @@
  *               $ref: '#/components/schemas/Class'
  *       404:
  *         description: Class not found
+ */
 /**
  * @openapi
  * /api/classes/search:

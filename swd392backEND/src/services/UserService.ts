@@ -2,6 +2,8 @@ import { de } from "zod/locales";
 import type { loginDTO, registerDTO } from "../dto/AuthDTO.ts";
 import type { UserUpdateDTO } from "../dto/UserDTO.ts";
 import UserRepo from "../repository/UserRepo.ts";
+import TeacherRepo from "../repository/TeacherRepo.ts";
+import AdminRepo from "../repository/AdminRepo.ts";
 import jwt from "jsonwebtoken";
 import type { IUser } from "../interface/IUser.ts";
 import bcrypt from "bcrypt";
@@ -12,16 +14,60 @@ class UserService {
   async getUserById(userId: string) {
     return await UserRepo.getUserById(userId);
   }
-  async createUser(userData: registerDTO) {
+  async createUser(
+    userData: registerDTO,
+    options?: {
+      credentialLink?: string | undefined;
+      credentialFileName?: string | undefined;
+    },
+  ) {
     const findEmail = await this.findByMail(userData.email);
     if (findEmail) {
       return "Email already exists";
     }
+
     const hashedPassword = await bcrypt.hash(userData.password, SALT_ROUNDS);
-    return await UserRepo.createUser({ ...userData, password: hashedPassword });
+    const createdUser = await UserRepo.createUser({
+      ...userData,
+      password: hashedPassword,
+    });
+
+    if (userData.role === "teacher") {
+      if (!options?.credentialLink || !options?.credentialFileName) {
+        throw new Error("Teacher credential PDF is required");
+      }
+      await TeacherRepo.createTeacher(
+        createdUser._id.toString(),
+        options.credentialLink,
+        options.credentialFileName,
+      );
+    }
+
+    if (userData.role === "admin" || userData.role === "moderator") {
+      const authorizationLevel: 1 | 2 = userData.role === "admin" ? 2 : 1;
+      await AdminRepo.createAdmin(createdUser._id.toString(), authorizationLevel);
+    }
+
+    return createdUser;
   }
   async updateUser(userId: string, updateData: UserUpdateDTO) {
     return await UserRepo.updateUser(userId, updateData);
+  }
+  async deleteUser(userId: string) {
+    const user = await UserRepo.getUserById(userId);
+    if (!user) {
+      return null;
+    }
+    if (user.role === "admin") {
+      return "Cannot delete admin";
+    }
+    if (user.role === "teacher") {
+      await TeacherRepo.deleteTeacherByUserId(userId);
+    }
+    if (user.role === "moderator") {
+      await AdminRepo.deleteAdminByUserId(userId);
+    }
+    return await UserRepo.deleteUser(userId);
   }
   async loginUser(userLogin: loginDTO) {
     // normalize email to avoid case/whitespace mismatches
@@ -77,6 +123,12 @@ class UserService {
   async getAllUsers(page: number) {
     return await UserRepo.getAllUsers(page);
   }
+  async getAllUsersForAdmin(page: number) {
+    return await UserRepo.getAllUsersWithEntities(page);
+  }
+  async getUserByIdForAdmin(userId: string) {
+    return await UserRepo.getUserByIdWithEntities(userId);
+  }
   async getListUsersByRole(role: string, page: number) {
     return await UserRepo.getListUsersByRole(role, page);
   }
@@ -85,6 +137,9 @@ class UserService {
   }
   async findByKeyWord(keyword: string, page: number) {
     return await UserRepo.findByKeyWord(keyword, page);
+  }
+  async findByKeyWordForAdmin(keyword: string, page: number) {
+    return await UserRepo.findByKeyWordWithEntities(keyword, page);
   }
 
   async getAdminUserStats(timeRange: string = "30days", role: string = "all") {

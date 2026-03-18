@@ -1,10 +1,57 @@
 import { Schema } from "mongoose";
 import { User } from "../entities/User.ts";
+import { Teacher } from "../entities/Teacher.ts";
+import { Admin } from "../entities/Admin.ts";
 import type { IUser } from "../interface/IUser.ts";
 import type { registerDTO } from "../dto/AuthDTO.ts";
 import type { UserUpdateDTO } from "../dto/UserDTO.ts";
 
 class UserRepo {
+  private async attachRoleEntities(user: any) {
+    if (!user) return null;
+    const userId = user._id?.toString();
+    const [teacher, admin] = await Promise.all([
+      Teacher.findOne({ user_id: userId }).lean(),
+      Admin.findOne({ user_id: userId }).lean(),
+    ]);
+    return {
+      ...user,
+      teacher: teacher || null,
+      admin: admin || null,
+    };
+  }
+
+  async getAllUsersWithEntities(page: number) {
+    const limit = 12;
+    const skip = (page - 1) * limit;
+    const users = await User.find().skip(skip).limit(limit).lean();
+    return await Promise.all(users.map((user) => this.attachRoleEntities(user)));
+  }
+
+  async getUserByIdWithEntities(id: string) {
+    const user = await User.findById(id).lean();
+    return await this.attachRoleEntities(user);
+  }
+
+  async findByKeyWordWithEntities(keyword: string, page: number) {
+    const limit = 12;
+    const skip = (page - 1) * limit;
+    const k = (keyword || "") as string;
+    const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const safe = escapeRegex(k);
+    const regex =
+      safe === "" ? { $exists: true } : { $regex: safe, $options: "i" };
+
+    const users = await User.find({
+      $or: [{ username: regex as any }, { email: regex as any }],
+    })
+      .skip(skip)
+      .limit(limit)
+      .lean();
+
+    return await Promise.all(users.map((user) => this.attachRoleEntities(user)));
+  }
+
   async getAllUsers(page: number) {
     const limit = 12;
     const skip = (page - 1) * limit;
@@ -24,6 +71,9 @@ class UserRepo {
   }
   async updateUser(id: string, updateData: UserUpdateDTO) {
     return await User.findByIdAndUpdate(id, updateData, { new: true });
+  }
+  async deleteUser(id: string) {
+    return await User.findByIdAndDelete(id);
   }
   async toggleStatus(id: string) {
     const user = await User.findById(id);
@@ -60,7 +110,7 @@ class UserRepo {
       safe === "" ? { $exists: true } : { $regex: safe, $options: "i" };
 
     return await User.find({
-      $or: [{ name: regex as any }, { email: regex as any }],
+      $or: [{ username: regex as any }, { email: regex as any }],
     })
       .skip(skip)
       .limit(limit);
