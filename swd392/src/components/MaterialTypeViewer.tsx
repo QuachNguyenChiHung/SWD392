@@ -31,21 +31,11 @@ export default function MaterialTypeViewer({
     );
   }
 
-  if (!material.type) {
+  if (!material.type || !material.content) {
     return (
       <Box sx={{ p: 2, textAlign: "center" }}>
         <Typography variant="body2" color="error">
           Dữ liệu tài liệu không hợp lệ: Thiếu loại tài liệu
-        </Typography>
-      </Box>
-    );
-  }
-
-  if (!material.content) {
-    return (
-      <Box sx={{ p: 2, textAlign: "center" }}>
-        <Typography variant="body2" color="error">
-          Dữ liệu tài liệu không hợp lệ: Thiếu nội dung tài liệu
         </Typography>
       </Box>
     );

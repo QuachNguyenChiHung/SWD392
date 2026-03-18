@@ -104,10 +104,11 @@ export interface FileMaterial {
 // Question interface
 export interface Question {
   _id?: string;
-  content: string;
-  type: "multiple-choice" | "true-false";
-  options?: string[];
-  correctAnswer: string | string[];
+  quiz_id?: string;
+  title: string;
+  type: "multiple_choice" | "true_false";
+  options: string[];
+  correct_index: number;
   has2DVisualization?: boolean;
 }
 // Quiz interface

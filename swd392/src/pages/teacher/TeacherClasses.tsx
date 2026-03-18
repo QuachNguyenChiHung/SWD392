@@ -152,6 +152,79 @@ const TeacherClasses = () => {
           Tạo lớp học mới
         </Button>
       </Box>
+
+      <Stack spacing={1} mb={2}>
+        <Typography variant="subtitle1" color="text.secondary">
+          Theo dõi mã lớp học, mô tả, course ID, trạng thái, ngày khởi tạo và khóa truy cập (ẩn mặc định).
+        </Typography>
+      </Stack>
+
+      <Paper sx={{ width: "100%", overflowX: "auto" }}>
+        <Table size="medium">
+          <TableHead>
+            <TableRow>
+              <TableCell>Lớp học</TableCell>
+              <TableCell>Mô tả</TableCell>
+              <TableCell>Course ID</TableCell>
+              <TableCell>Trạng thái</TableCell>
+              <TableCell>Ngày khởi tạo</TableCell>
+              <TableCell>Khóa lớp</TableCell>
+              <TableCell align="right">Thao tác</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {loading ? (
+              <TableRow key="loading">
+                <TableCell colSpan={7} sx={{ textAlign: 'center', py: 4 }}>
+                  <CircularProgress size={30} />
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                    Đang tải danh sách lớp học...
+                  </Typography>
+                </TableCell>
+              </TableRow>
+            ) : !classes?.length ? (
+              <TableRow key="empty">
+                <TableCell colSpan={7} sx={{ textAlign: 'center', py: 4 }}>
+                  <Typography variant="body1" color="text.secondary">
+                    Chưa có lớp học nào
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Hãy tạo lớp học đầu tiên của bạn
+                  </Typography>
+                </TableCell>
+              </TableRow>
+            ) : (
+              classes.map((classItem) => (
+                <ClassTableRow key={classItem._id} {...classItem} />
+              ))
+            )}
+          </TableBody>
+        </Table>
+        {/* Simple Next/Prev buttons */}
+        <Stack direction="row" spacing={2} justifyContent="flex-end" alignItems="center" sx={{ mt: 2 }} paddingBottom={1} paddingRight={1}>
+          <Button
+            variant="outlined"
+            disabled={page === 1}
+            onClick={() => setPage(page - 1)}
+          >
+            Trang trước
+          </Button>
+          <Button
+            variant="outlined"
+            disabled={nextPageEmpty}
+            onClick={() => {
+              // Use cached next page data for instant update
+              setClasses(nextPageData);
+              setPage(page + 1);
+            }}
+          >
+            Trang sau
+          </Button>
+        </Stack>
+      </Paper>
+
+
+
       <Modal
         open={modalClassCreation}
         onClose={handleModalClose}
@@ -280,75 +353,6 @@ const TeacherClasses = () => {
           )}
         </Box>
       </Modal>
-      <Stack spacing={1} mb={2}>
-        <Typography variant="subtitle1" color="text.secondary">
-          Theo dõi mã lớp học, mô tả, course ID, trạng thái, ngày khởi tạo và khóa truy cập (ẩn mặc định).
-        </Typography>
-      </Stack>
-
-      <Paper sx={{ width: "100%", overflowX: "auto" }}>
-        <Table size="medium">
-          <TableHead>
-            <TableRow>
-              <TableCell>Lớp học</TableCell>
-              <TableCell>Mô tả</TableCell>
-              <TableCell>Course ID</TableCell>
-              <TableCell>Trạng thái</TableCell>
-              <TableCell>Ngày khởi tạo</TableCell>
-              <TableCell>Khóa lớp</TableCell>
-              <TableCell align="right">Thao tác</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {loading ? (
-              <TableRow key="loading">
-                <TableCell colSpan={7} sx={{ textAlign: 'center', py: 4 }}>
-                  <CircularProgress size={30} />
-                  <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                    Đang tải danh sách lớp học...
-                  </Typography>
-                </TableCell>
-              </TableRow>
-            ) : !classes?.length ? (
-              <TableRow key="empty">
-                <TableCell colSpan={7} sx={{ textAlign: 'center', py: 4 }}>
-                  <Typography variant="body1" color="text.secondary">
-                    Chưa có lớp học nào
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Hãy tạo lớp học đầu tiên của bạn
-                  </Typography>
-                </TableCell>
-              </TableRow>
-            ) : (
-              classes.map((classItem) => (
-                <ClassTableRow key={classItem._id} {...classItem} />
-              ))
-            )}
-          </TableBody>
-        </Table>
-        {/* Simple Next/Prev buttons */}
-        <Stack direction="row" spacing={2} justifyContent="flex-end" alignItems="center" sx={{ mt: 2 }} paddingBottom={1} paddingRight={1}>
-          <Button
-            variant="outlined"
-            disabled={page === 1}
-            onClick={() => setPage(page - 1)}
-          >
-            Trang trước
-          </Button>
-          <Button
-            variant="outlined"
-            disabled={nextPageEmpty}
-            onClick={() => {
-              // Use cached next page data for instant update
-              setClasses(nextPageData);
-              setPage(page + 1);
-            }}
-          >
-            Trang sau
-          </Button>
-        </Stack>
-      </Paper>
     </Box >
   );
 };

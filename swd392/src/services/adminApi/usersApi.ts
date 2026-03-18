@@ -182,11 +182,21 @@ export const adminUsersApi = {
   },
 
   /**
-   * POST /api/users - Create new user (Teacher/Moderator)
+   * POST /api/users - Create new user (supports teacher credential PDF upload)
    */
   createUser: async (userData: CreateUserRequest): Promise<AdminUser> => {
     try {
-      const response = await apiService.post('/users', userData);
+      const formData = new FormData();
+      formData.append('username', userData.username);
+      formData.append('email', userData.email);
+      formData.append('password', userData.password);
+      formData.append('role', userData.role);
+
+      if (userData.role === 'teacher' && userData.credentialFile) {
+        formData.append('credentialFile', userData.credentialFile);
+      }
+
+      const response = await apiService.uploadFile('/users', formData);
       return response;
     } catch (error) {
       console.error('Error creating user:', error);
@@ -195,7 +205,7 @@ export const adminUsersApi = {
   },
 
   /**
-   * PATCH /api/users/{id} - Update user info + role
+   * PATCH /api/users/{id} - Update user info (role change is blocked by backend)
    */
   updateUser: async (userId: string, userData: UpdateUserRequest): Promise<AdminUser> => {
     try {

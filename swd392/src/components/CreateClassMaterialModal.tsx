@@ -173,13 +173,12 @@ export default function CreateClassMaterialModal({
                     for (const q of quizQuestions) {
                         await questionApiService.createQuestion(
                             {
-                                content: q.content,
+                                quiz_id: quizResult._id as string,
+                                title: q.title,
                                 type: q.type,
-                                options: q.options,
-                                correctAnswer: q.correctAnswer,
-                                has2DVisualization: q.has2DVisualization || false,
+                                options: q.options || [],
+                                correct_index: q.correct_index,
                             },
-                            quizResult._id as string,
                         );
                     }
                     break;
