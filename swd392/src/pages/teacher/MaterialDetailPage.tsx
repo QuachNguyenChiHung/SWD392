@@ -64,6 +64,16 @@ const TYPE_META: Record<
     },
 };
 
+const STATUS_META: Record<
+    "published" | "draft" | "reviewed" | "deleted",
+    { label: string; color: "default" | "primary" | "secondary" | "error" | "info" | "success" | "warning" }
+> = {
+    deleted: { label: "Đã xoá", color: "error" },
+    draft: { label: "Bản nháp", color: "secondary" },
+    reviewed: { label: "Đã duyệt", color: "info" },
+    published: { label: "Đã xuất bản", color: "success" },
+};
+
 const formatDate = (d: Date | null | undefined) => {
     if (!d) return "—";
     return new Date(d).toLocaleDateString("en-GB", {
@@ -73,7 +83,6 @@ const formatDate = (d: Date | null | undefined) => {
     });
 };
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function MaterialDetailPage() {
     const navigate = useNavigate();
@@ -97,11 +106,9 @@ export default function MaterialDetailPage() {
             setLoading(true);
             setError(null);
 
-            // Use navigation state or fetch from API
-            const mat = material ?? await classMaterialApi.getMaterialById(materialId);
+            const mat = await classMaterialApi.getMaterialById(materialId);
             console.log('Material data:', mat);
 
-            // content_id is a string reference from the backend, not an embedded object
             const contentId = (mat as any).content_id as string | undefined;
 
             if (contentId) {
@@ -136,14 +143,10 @@ export default function MaterialDetailPage() {
         }
     };
 
-    // Fetch material by ID (skip if already loaded from location state)
     useEffect(() => {
-
-
         fetchMaterial();
     }, [materialId]);
 
-    // Loading state
     if (loading) {
         return (
             <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
@@ -152,7 +155,6 @@ export default function MaterialDetailPage() {
         );
     }
 
-    // Error state
     if (error) {
         return (
             <Box p={4}>
@@ -189,6 +191,7 @@ export default function MaterialDetailPage() {
     }
 
     const meta = TYPE_META[material.type];
+    const statusMeta = STATUS_META[material.status as keyof typeof STATUS_META];
 
     // ─── Handlers ────────────────────────────────────────────────────────────────
 
@@ -301,46 +304,16 @@ export default function MaterialDetailPage() {
                         size="small"
                         icon={meta.icon}
                     />
-                    {material.is_ai_material && (
+                    {statusMeta && (
                         <Chip
-                            label="AI generated"
-                            color="success"
+                            label={material.is_ai_material ? `${statusMeta.label} · AI` : statusMeta.label}
+                            color={statusMeta.color}
                             size="small"
-                            icon={<SmartToy fontSize="small" />}
-                        />
-                    )}
-                    {/* status: 'published' | 'draft' | 'reviewed' | 'deleted' */}
-                    {material.status=='deleted' && (
-                        <Chip
-                            label="Đã xoá"
-                            color="error"
-                            size="small"
-                        />
-                    )}
-                    {material.status=='draft' && (
-                        <Chip
-                            label="Bản nháp"
-                            color="secondary"
-                            size="small"
-                        />
-                    )}
-                    {material.status=='reviewed' && (
-                        <Chip
-                            label="Đã duyệt"
-                            color="info"
-                            size="small"
-                        />
-                    )}
-                    {material.status=='published' && (
-                        <Chip
-                            label="Đã xuất bản"
-                            color="success"
-                            size="small"
+                            icon={material.is_ai_material ? <SmartToy fontSize="small" /> : undefined}
                         />
                     )}
                 </Stack>
 
-                {/* Meta row */}
                 <Stack direction="row" spacing={3} mb={3}>
                     <Typography variant="caption" color="text.secondary">
                         Được tạo : {formatDate(material.dateCreate)}
@@ -357,7 +330,6 @@ export default function MaterialDetailPage() {
 
                 <Divider sx={{ mb: 3 }} />
 
-                {/* Type-specific viewer */}
                 <MaterialTypeViewer
                     material={material}
                     onQuestionsChange={
@@ -366,7 +338,6 @@ export default function MaterialDetailPage() {
                 />
             </Paper>
 
-            {/* ── Edit modal ── */}
             <MaterialEditModal
                 open={editOpen}
                 material={material}
@@ -374,7 +345,6 @@ export default function MaterialDetailPage() {
                 onSave={handleSave}
             />
 
-            {/* ── Delete confirmation dialog ── */}
             <Dialog open={deleteConfirmOpen} onClose={() => setDeleteConfirmOpen(false)}>
                 <DialogTitle>Xoá tài liệu?</DialogTitle>
                 <DialogContent>

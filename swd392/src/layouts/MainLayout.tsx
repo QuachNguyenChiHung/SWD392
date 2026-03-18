@@ -79,6 +79,12 @@ const navItems: NavItem[] = [
     roles: [UserRole.TEACHER],
   },
   {
+    text: 'Xem hồ sơ',
+    icon: <Person />,
+    path: '/teacher/profile',
+    roles: [UserRole.TEACHER],
+  },
+  {
     text: 'Kiểm duyệt',
     icon: <Settings />,
     path: '/moderator/dashboard',

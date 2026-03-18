@@ -30,15 +30,12 @@ const TeacherClassDetail = () => {
         setLoading(true);
         setError(null);
 
-        // Fetch class details
         const classResponse = await teacherClassApi.getClassById(classId);
         setClassData(classResponse);
 
-        // Fetch students for this class
         const studentsResponse = await teacherClassApi.getStudentsByClass(classId);
         setStudents(studentsResponse);
 
-        // Fetch topics for this course
         if (classResponse.course_id) {
           const topicsResponse = await topicApi.getTopicsByCourse(classResponse.course_id);
           setTopics(topicsResponse.topics || []);

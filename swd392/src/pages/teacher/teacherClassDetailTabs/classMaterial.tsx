@@ -7,7 +7,7 @@ import {
   Quiz,
   AutoAwesome,
 } from "@mui/icons-material";
-import { type Topic, type ClassMaterialType, type ClassMaterial, type CreateClassMaterialDTO } from "../../../types/teacherType";
+import { type Topic, type ClassMaterialType, type ClassMaterial, } from "../../../types/teacherType";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import CreateClassMaterialModal from "../../../components/CreateClassMaterialModal";
@@ -79,8 +79,7 @@ export default function ClassMaterial({ topics, classId }: ClassMaterialProps) {
     setCurrentTopic(null);
   };
 
-  const handleMaterialCreated = async (topicId: string, newMaterial: CreateClassMaterialDTO) => {
-    // Refresh materials for the topic
+  const handleMaterialCreated = async (topicId: string) => {
     try {
       const updatedMaterials = await classMaterialApi.getMaterialByTopicAndClass(topicId, classId);
       setMaterialsByTopic(prev => ({
@@ -95,7 +94,7 @@ export default function ClassMaterial({ topics, classId }: ClassMaterialProps) {
   const handleMaterialClick = (material: any) => {
     const id = material._id || material.material_id;
     console.log('Material clicked:', material, 'Resolved ID:', id);
-    navigate(`/teacher/class/${classId}/materials/${id}`, { state: { material } });
+    navigate(`/teacher/class/${classId}/materials/${id}`);
   };
 
   return (
@@ -146,9 +145,9 @@ export default function ClassMaterial({ topics, classId }: ClassMaterialProps) {
           </Stack>
 
           <Stack spacing={1}>
-            {materialsByTopic[getTopicId(topic)]?.map((material, materialIndex) => (
+            {materialsByTopic[getTopicId(topic)]?.map((material) => (
               <Box
-                key={material._id ?? materialIndex}
+                key={material._id}
                 sx={{
                   display: "flex",
                   justifyContent: "space-between",
@@ -175,7 +174,7 @@ export default function ClassMaterial({ topics, classId }: ClassMaterialProps) {
                         slide: "Slide",
                         "2d_render": "2D Render",
                         quiz: "Bài kiểm tra",
-                      }[material.type] ?? material.type}
+                      }[material.type]}
                     </Typography>
                   </Box>
                 </Stack>
