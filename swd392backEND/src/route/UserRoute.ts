@@ -13,7 +13,7 @@ route.post('/users', verifyRole.verifyAdmin, UserController.createUser);
 route.patch('/users/:id', verifyRole.verifyAdmin, UserController.updateUser);
 
 // User status toggle route, only for admin to use, prevent user from updating their own status by themselves
-route.patch('/users/:id/status', verifyRole.verifyAdmin, UserController.toggleStatus);
+route.patch('/users/:id/status', verifyRole.verifyAdminOrModerator, UserController.toggleStatus);
 
 // Authentication routes
 route.post('/register', UserController.registerUser);
