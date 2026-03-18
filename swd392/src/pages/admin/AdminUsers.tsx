@@ -5,6 +5,9 @@ import type { AdminUser, CreateUserRequest, UpdateUserRequest } from '../../type
 import { UserRole } from '../../types/adminType';
 import { adminUsersApi } from '../../services/adminApi';
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PASSWORD_REGEX = /^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{10,}$/;
+
 const AdminUsers = () => {
   const [tabValue, setTabValue] = useState(0);
   const [users, setUsers] = useState<AdminUser[]>([]);
@@ -18,23 +21,61 @@ const AdminUsers = () => {
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [totalUsers, setTotalUsers] = useState(0);
+  const [hasTriedCreateSubmit, setHasTriedCreateSubmit] = useState(false);
 
   const PAGE_SIZE = 12;
-  
+
   // New user form state
   const [newUser, setNewUser] = useState<CreateUserRequest>({
     username: '',
     email: '',
     password: '',
     role: UserRole.TEACHER,
+    credentialFile: null,
   });
 
   // Edit user form state
   const [editUser, setEditUser] = useState<UpdateUserRequest>({
     username: '',
     email: '',
-    role: UserRole.TEACHER,
   });
+
+  const createValidationErrors = {
+    username:
+      newUser.username.trim().length === 0 ? 'Tên người dùng là bắt buộc' : '',
+    email:
+      newUser.email.trim().length === 0
+        ? 'Email là bắt buộc'
+        : !EMAIL_REGEX.test(newUser.email.trim())
+          ? 'Email không hợp lệ'
+          : '',
+    password:
+      newUser.password.length === 0
+        ? 'Mật khẩu là bắt buộc'
+        : !PASSWORD_REGEX.test(newUser.password)
+          ? 'Mật khẩu phải có ít nhất 10 ký tự, gồm 1 chữ in hoa, 1 số và 1 ký tự đặc biệt'
+          : '',
+    credentialFile:
+      newUser.role === UserRole.TEACHER && !newUser.credentialFile
+        ? 'Credential PDF là bắt buộc cho giáo viên'
+        : newUser.role === UserRole.TEACHER && newUser.credentialFile?.type !== 'application/pdf'
+          ? 'File credential phải là PDF'
+          : '',
+  };
+
+  const editValidationErrors = {
+    username:
+      editUser.username !== undefined && editUser.username.trim().length === 0
+        ? 'Tên người dùng không được để trống'
+        : '',
+    email:
+      editUser.email !== undefined && editUser.email.trim().length > 0 && !EMAIL_REGEX.test(editUser.email.trim())
+        ? 'Email không hợp lệ'
+        : '',
+  };
+
+  const isCreateFormValid = Object.values(createValidationErrors).every((message) => !message);
+  const isEditFormValid = Object.values(editValidationErrors).every((message) => !message);
 
   const fetchUsers = async (keyword: string, pageNumber: number) => {
     try {
@@ -81,16 +122,24 @@ const AdminUsers = () => {
   }, [tabValue, users]);
 
   const handleCreateUser = async () => {
+    setHasTriedCreateSubmit(true);
+    if (!isCreateFormValid) {
+      setError('Vui lòng kiểm tra lại dữ liệu trong form tạo người dùng');
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
       await adminUsersApi.createUser(newUser);
       setOpenCreateDialog(false);
+      setHasTriedCreateSubmit(false);
       setNewUser({
         username: '',
         email: '',
         password: '',
         role: UserRole.TEACHER,
+        credentialFile: null,
       });
       await fetchUsers(searchQuery, page);
     } catch (err) {
@@ -103,6 +152,11 @@ const AdminUsers = () => {
 
   const handleEditUser = async () => {
     if (!selectedUser) return;
+    if (!isEditFormValid) {
+      setError('Vui lòng kiểm tra lại dữ liệu trong form chỉnh sửa');
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
@@ -167,8 +221,56 @@ const AdminUsers = () => {
     switch (status) {
       case 'active': return 'Hoạt động';
       case 'banned': return 'Bị cấm';
+      case 'deleted': return 'Đã xóa';
       default: return status;
     }
+  };
+
+  const renderEntityInfo = (user: AdminUser) => {
+    if (user.role === UserRole.TEACHER) {
+      if (!user.teacher) {
+        return <Typography variant="body2" color="warning.main">Chưa có hồ sơ giáo viên</Typography>;
+      }
+
+      return (
+        <Stack spacing={0.5}>
+          <Typography variant="body2">Hồ sơ giáo viên</Typography>
+          {user.teacher.fileName && (
+            <Typography variant="caption" color="text.secondary">
+              File: {user.teacher.fileName}
+            </Typography>
+          )}
+          {user.teacher.credential && (
+            <Button
+              size="small"
+              href={user.teacher.credential}
+              target="_blank"
+              rel="noopener noreferrer"
+              sx={{ p: 0, minWidth: 0, justifyContent: 'flex-start' }}
+            >
+              Xem credential
+            </Button>
+          )}
+        </Stack>
+      );
+    }
+
+    if (user.role === UserRole.ADMIN || user.role === UserRole.MODERATOR) {
+      if (!user.admin) {
+        return <Typography variant="body2" color="warning.main">Chưa có hồ sơ quản trị</Typography>;
+      }
+
+      return (
+        <Stack spacing={0.5}>
+          <Typography variant="body2">Hồ sơ quản trị</Typography>
+          <Typography variant="caption" color="text.secondary">
+            Authorization level: {user.admin.authorization_lvl}
+          </Typography>
+        </Stack>
+      );
+    }
+
+    return <Typography variant="body2" color="text.secondary">-</Typography>;
   };
 
   const handleToggleUserStatus = async (user: AdminUser) => {
@@ -189,7 +291,6 @@ const AdminUsers = () => {
     setEditUser({
       username: user.username,
       email: user.email,
-      role: user.role,
     });
     setOpenEditDialog(true);
   };
@@ -224,10 +325,13 @@ const AdminUsers = () => {
             Quản lý tài khoản và vai trò người dùng trong hệ thống
           </Typography>
         </Box>
-        <Button 
-          variant="contained" 
+        <Button
+          variant="contained"
           startIcon={<Add />}
-          onClick={() => setOpenCreateDialog(true)}
+          onClick={() => {
+            setHasTriedCreateSubmit(false);
+            setOpenCreateDialog(true);
+          }}
         >
           Tạo người dùng
         </Button>
@@ -259,7 +363,7 @@ const AdminUsers = () => {
           <Tab label={`Học sinh (${users?.filter(u => u.role === UserRole.STUDENT).length || 0})`} />
           <Tab label={`Người điều hành (${users?.filter(u => u.role === UserRole.MODERATOR).length || 0})`} />
         </Tabs>
-        
+
         <TableContainer>
           <Table>
             <TableHead>
@@ -267,6 +371,7 @@ const AdminUsers = () => {
                 <TableCell>Tên</TableCell>
                 <TableCell>Email</TableCell>
                 <TableCell>Vai trò</TableCell>
+                <TableCell>Entity</TableCell>
                 <TableCell>Trạng thái</TableCell>
                 <TableCell>Ngày tạo</TableCell>
                 <TableCell align="right">Thao tác</TableCell>
@@ -279,16 +384,17 @@ const AdminUsers = () => {
                     <TableCell>{user.username}</TableCell>
                     <TableCell>{user.email}</TableCell>
                     <TableCell>
-                      <Chip 
-                        label={getRoleLabel(user.role)} 
-                        size="small" 
+                      <Chip
+                        label={getRoleLabel(user.role)}
+                        size="small"
                         color={getRoleColor(user.role) as any}
                       />
                     </TableCell>
+                    <TableCell>{renderEntityInfo(user)}</TableCell>
                     <TableCell>
-                      <Chip 
-                        label={getStatusLabel(user.status)} 
-                        size="small" 
+                      <Chip
+                        label={getStatusLabel(user.status)}
+                        size="small"
                         color={getStatusColor(user.status) as any}
                         variant="outlined"
                       />
@@ -297,23 +403,23 @@ const AdminUsers = () => {
                       {user.date_create ? new Date(user.date_create).toLocaleDateString('vi-VN') : '-'}
                     </TableCell>
                     <TableCell align="right">
-                      <IconButton 
-                        size="small" 
+                      <IconButton
+                        size="small"
                         color={user.status === 'active' ? 'error' : 'success'}
                         onClick={() => handleToggleUserStatus(user)}
                         title={user.status === 'active' ? 'Ban user' : 'Unban user'}
                       >
                         {user.status === 'active' ? <Block /> : <CheckCircle />}
                       </IconButton>
-                      <IconButton 
-                        size="small" 
+                      <IconButton
+                        size="small"
                         color="primary"
                         onClick={() => openEdit(user)}
                       >
                         <Edit />
                       </IconButton>
-                      <IconButton 
-                        size="small" 
+                      <IconButton
+                        size="small"
                         color="error"
                         onClick={() => openDelete(user)}
                       >
@@ -324,7 +430,7 @@ const AdminUsers = () => {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={6} align="center">
+                  <TableCell colSpan={7} align="center">
                     <Typography variant="body2" color="text.secondary" sx={{ py: 3 }}>
                       Không tìm thấy người dùng nào
                     </Typography>
@@ -347,7 +453,15 @@ const AdminUsers = () => {
       </Paper>
 
       {/* Create User Dialog */}
-      <Dialog open={openCreateDialog} onClose={() => setOpenCreateDialog(false)} maxWidth="sm" fullWidth>
+      <Dialog
+        open={openCreateDialog}
+        onClose={() => {
+          setOpenCreateDialog(false);
+          setHasTriedCreateSubmit(false);
+        }}
+        maxWidth="sm"
+        fullWidth
+      >
         <DialogTitle>
           <Stack direction="row" alignItems="center" spacing={1}>
             <PersonAdd />
@@ -361,7 +475,9 @@ const AdminUsers = () => {
               fullWidth
               required
               value={newUser.username}
-              onChange={(e) => setNewUser({...newUser, username: e.target.value})}
+              onChange={(e) => setNewUser({ ...newUser, username: e.target.value })}
+              error={hasTriedCreateSubmit && !!createValidationErrors.username}
+              helperText={hasTriedCreateSubmit ? createValidationErrors.username : ''}
             />
             <TextField
               label="Email"
@@ -369,7 +485,9 @@ const AdminUsers = () => {
               fullWidth
               required
               value={newUser.email}
-              onChange={(e) => setNewUser({...newUser, email: e.target.value})}
+              onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+              error={hasTriedCreateSubmit && !!createValidationErrors.email}
+              helperText={hasTriedCreateSubmit ? createValidationErrors.email : ''}
             />
             <TextField
               label="Mật khẩu"
@@ -377,28 +495,69 @@ const AdminUsers = () => {
               fullWidth
               required
               value={newUser.password}
-              onChange={(e) => setNewUser({...newUser, password: e.target.value})}
+              onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+              error={hasTriedCreateSubmit && !!createValidationErrors.password}
+              helperText={
+                hasTriedCreateSubmit
+                  ? (createValidationErrors.password || 'Ít nhất 10 ký tự, gồm chữ in hoa, số và ký tự đặc biệt')
+                  : 'Ít nhất 10 ký tự, gồm chữ in hoa, số và ký tự đặc biệt'
+              }
             />
             <FormControl fullWidth>
               <InputLabel>Vai trò</InputLabel>
               <Select
                 value={newUser.role}
                 label="Vai trò"
-                onChange={(e) => setNewUser({...newUser, role: e.target.value as UserRole})}
+                onChange={(e) => {
+                  const nextRole = e.target.value as UserRole;
+                  setNewUser({
+                    ...newUser,
+                    role: nextRole,
+                    credentialFile: nextRole === UserRole.TEACHER ? newUser.credentialFile : null,
+                  });
+                }}
               >
                 <MenuItem value={UserRole.STUDENT}>Học sinh</MenuItem>
                 <MenuItem value={UserRole.TEACHER}>Giáo viên</MenuItem>
                 <MenuItem value={UserRole.MODERATOR}>Người điều hành</MenuItem>
               </Select>
             </FormControl>
+
+            {newUser.role === UserRole.TEACHER && (
+              <TextField
+                fullWidth
+                required
+                type="file"
+                label="Credential PDF"
+                InputLabelProps={{ shrink: true }}
+                inputProps={{ accept: '.pdf,application/pdf' }}
+                onChange={(e) => {
+                  const file = (e.target as HTMLInputElement).files?.[0] ?? null;
+                  setNewUser({ ...newUser, credentialFile: file });
+                }}
+                error={hasTriedCreateSubmit && !!createValidationErrors.credentialFile}
+                helperText={
+                  hasTriedCreateSubmit
+                    ? (createValidationErrors.credentialFile || 'Bắt buộc cho tài khoản giáo viên')
+                    : 'Bắt buộc cho tài khoản giáo viên'
+                }
+              />
+            )}
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setOpenCreateDialog(false)}>Hủy</Button>
-          <Button 
-            variant="contained" 
+          <Button
+            onClick={() => {
+              setOpenCreateDialog(false);
+              setHasTriedCreateSubmit(false);
+            }}
+          >
+            Hủy
+          </Button>
+          <Button
+            variant="contained"
             onClick={handleCreateUser}
-            disabled={!newUser.username || !newUser.email || !newUser.password || loading}
+            disabled={loading}
           >
             Tạo
           </Button>
@@ -415,33 +574,26 @@ const AdminUsers = () => {
                 label="Tên người dùng"
                 fullWidth
                 value={editUser.username}
-                onChange={(e) => setEditUser({...editUser, username: e.target.value})}
+                onChange={(e) => setEditUser({ ...editUser, username: e.target.value })}
+                error={!!editValidationErrors.username}
+                helperText={editValidationErrors.username}
               />
               <TextField
                 label="Email"
                 type="email"
                 fullWidth
                 value={editUser.email}
-                onChange={(e) => setEditUser({...editUser, email: e.target.value})}
+                onChange={(e) => setEditUser({ ...editUser, email: e.target.value })}
+                error={!!editValidationErrors.email}
+                helperText={editValidationErrors.email}
               />
-              <FormControl fullWidth>
-                <InputLabel>Vai trò</InputLabel>
-                <Select
-                  value={editUser.role}
-                  label="Vai trò"
-                  onChange={(e) => setEditUser({...editUser, role: e.target.value as UserRole})}
-                >
-                  <MenuItem value={UserRole.STUDENT}>Học sinh</MenuItem>
-                  <MenuItem value={UserRole.TEACHER}>Giáo viên</MenuItem>
-                  <MenuItem value={UserRole.MODERATOR}>Người điều hành</MenuItem>
-                </Select>
-              </FormControl>
+              {renderEntityInfo(selectedUser)}
             </Stack>
           )}
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenEditDialog(false)}>Hủy</Button>
-          <Button variant="contained" onClick={handleEditUser} disabled={loading}>
+          <Button variant="contained" onClick={handleEditUser} disabled={loading || !isEditFormValid}>
             Lưu
           </Button>
         </DialogActions>

@@ -2,7 +2,7 @@ import { UserRole } from './index';
 
 export { UserRole };
 
-export type UserStatus = 'active' | 'banned';
+export type UserStatus = 'active' | 'banned' | 'deleted';
 export type AdminTeacherRequestStatus = 'pending' | 'approved' | 'rejected';
 export type MaterialType = 'file' | 'slide' | '2d_render' | 'quiz';
 export type MaterialStatus = 'draft' | 'published' | 'reviewed' | 'deleted';
@@ -14,6 +14,17 @@ export interface AdminUser {
   role: UserRole;
   status: UserStatus;
   date_create: string;
+  teacher?: {
+    _id: string;
+    user_id: string;
+    credential?: string;
+    fileName?: string;
+  } | null;
+  admin?: {
+    _id: string;
+    user_id: string;
+    authorization_lvl: 1 | 2;
+  } | null;
 }
 
 export interface CreateUserRequest {
@@ -21,12 +32,12 @@ export interface CreateUserRequest {
   email: string;
   password: string;
   role: UserRole;
+  credentialFile?: File | null;
 }
 
 export interface UpdateUserRequest {
   username?: string;
   email?: string;
-  role?: UserRole;
 }
 
 export interface UsersListResponse {
