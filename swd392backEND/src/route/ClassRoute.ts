@@ -8,7 +8,7 @@ route.get("/admin/stats/classes", verifyRole.verifyAdmin, ClassController.getAdm
 
 // Admin delete class (no ownership check)
 route.delete("/admin/classes/:id", verifyRole.verifyAdmin, ClassController.deleteClassForAdmin);
-route.get("/classes/search", verifyRole.verifyAdmin, ClassController.getClassesByName);
+route.get("/classes/search", verifyRole.verifyAdminOrModerator, ClassController.getClassesByName);
 route.get("/class/:id", ClassController.getClassById);
 route.get("/teacher/class", verifyRole.verifyTeacher, ClassController.getClassesByTeacher);
 route.get("/student/class", verifyRole.verifyStudent, ClassController.getClassesByStudent);
