@@ -43,6 +43,19 @@ class VerifyRole {
             return res.status(403).json({ message: "Forbidden: Invalid token" });
         }
     }
+    async verifyUser(req: Request, res: Response, next: NextFunction) {// verify if the user is a teacher
+        try {
+            const token = req.signedCookies.Authorization;
+            const user = await UserService.getUserByToken(token as string);
+            const verified = UserGetFromTokenSchema.parse(user);
+            console.log("Verified user from token:", verified);
+            req.user = verified;
+            // Query Teacher entity to get teacher_id
+            return next();
+        } catch (error) {
+            return res.status(403).json({ message: "Forbidden: Invalid token" });
+        }
+    }
     async verifyModerator(req: Request, res: Response, next: NextFunction) {//verify if the user is a moderator
         try {
             const token = req.signedCookies.Authorization;

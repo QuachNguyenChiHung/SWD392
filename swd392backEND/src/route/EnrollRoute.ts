@@ -16,8 +16,8 @@ router.post("/enroll/keypass", verifyRole.verifyStudent, EnrollController.enroll
 // POST: /api/enroll/invite/:class_id - Teacher invites student to class
 router.post("/enroll/invite/:class_id", verifyRole.verifyTeacher, EnrollController.inviteStudent);
 
-// GET: /teacher/enroll/:class_id  Get all enrollments from a class (paginated, teachers only)
-router.get("/teacher/enroll/:class_id", verifyRole.verifyTeacher, EnrollController.getEnrollmentsByClass);
+// GET: /teacher/enroll/:class_id  Get all enrollments from a class (paginated, all users)
+router.get("/teacher/enroll/:class_id", verifyRole.verifyUser, EnrollController.getEnrollmentsByClass);
 
 // PATCH: /api/enroll/:enroll_id/completed - Mark enrollment status as completed
 router.patch("/enroll/:enroll_id/completed", verifyRole.verifyTeacher, EnrollController.completeEnrollment);

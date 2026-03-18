@@ -13,7 +13,9 @@
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "target": "esnext",
-    "types": ["node"],
+    "types": [],
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
     // For nodejs:
     // "lib": ["esnext"],
     // "types": ["node"],
@@ -35,7 +37,7 @@
     // Recommended Options
     "strict": true,
     "jsx": "react-jsx",
-    "verbatimModuleSyntax": true,
+    "verbatimModuleSyntax": false,
     "isolatedModules": true,
     "noUncheckedSideEffectImports": true,
     "moduleDetection": "force",
