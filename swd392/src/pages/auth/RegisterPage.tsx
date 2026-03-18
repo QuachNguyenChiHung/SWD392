@@ -9,7 +9,6 @@ import {
 } from '@mui/material';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { UserRole } from '../../types';
 
 const RegisterPage = () => {
   const [name, setName] = useState('');
@@ -69,10 +68,13 @@ const RegisterPage = () => {
     <Box
       component="form"
       onSubmit={handleSubmit}
-      sx={{ width: '100%', mt: 1 }}
+      sx={{ width: '100%' }}
     >
-      <Typography variant="h5" component="h2" gutterBottom textAlign="center">
+      <Typography variant="h5" component="h2" gutterBottom>
         Đăng ký tài khoản
+      </Typography>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+        Tạo tài khoản để tham gia lớp học và bài tập tương tác.
       </Typography>
 
       {error && (
@@ -132,7 +134,7 @@ const RegisterPage = () => {
         type="submit"
         fullWidth
         variant="contained"
-        sx={{ mt: 3, mb: 2 }}
+        sx={{ mt: 2.5, mb: 2 }}
         disabled={loading}
       >
         {loading ? 'Đang đăng ký...' : 'Đăng ký'}
