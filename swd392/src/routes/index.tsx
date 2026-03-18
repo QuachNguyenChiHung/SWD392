@@ -22,6 +22,7 @@ import StudentQuizzes from "../pages/student/StudentQuizzes";
 import TeacherDashboard from "../pages/teacher/TeacherDashboard";
 import TeacherClasses from "../pages/teacher/TeacherClasses";
 import AiContentGenerator from "../pages/teacher/aiContentGenerator";
+import TeacherProfilePage from "../pages/teacher/teacherProfile";
 
 
 // Moderator Pages
@@ -152,6 +153,14 @@ export const routes: RouteObject[] = [
             element: (
               <ProtectedRoute allowedRoles={[UserRole.TEACHER]}>
                 <TeacherClasses />
+              </ProtectedRoute>
+            ),
+          },
+          {
+            path: "profile",
+            element: (
+              <ProtectedRoute allowedRoles={[UserRole.TEACHER]}>
+                <TeacherProfilePage />
               </ProtectedRoute>
             ),
           },
