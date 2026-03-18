@@ -6,7 +6,7 @@ const route = Router();
 route.get('/admin/stats/users', verifyRole.verifyAdmin, UserController.getAdminUserStats);
 
 // Search users by keyword functionality
-route.get('/users/search', verifyRole.verifyAdmin, UserController.findByKeyWord);
+route.get('/users/search', verifyRole.verifyAdminOrModerator, UserController.findByKeyWord);
 route.get('/users', verifyRole.verifyAdmin, UserController.getAllUsers);
 route.get('/users/:id', verifyRole.verifyAdmin, UserController.getUserById);
 route.post('/users', verifyRole.verifyAdmin, UserController.createUser);
