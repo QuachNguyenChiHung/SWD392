@@ -171,7 +171,7 @@ class UserController {
     async findByKeyWord(req: Request, res: Response, next: NextFunction) {
         try {
             const page = parseInt(req.query.page as string) || 1;
-            const results = await UserService.findByKeyWord(req.query.q as string, page);
+            const results = await UserService.findByKeyWord(req.query.keyword as string, page);
             return res.status(200).json(results);
         } catch (error: any) {
             next(error);
