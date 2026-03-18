@@ -12,6 +12,7 @@ import {
   MenuItem,
   Paper,
   Stack,
+  Toolbar,
   Typography,
 } from '@mui/material';
 import {
@@ -21,6 +22,7 @@ import {
   ManageAccounts,
   ModelTraining,
   Person,
+  Science,
   School,
   Security,
   Timeline,
@@ -129,48 +131,53 @@ const HomePage = () => {
       }}
     >
       <AppBar
-        elevation={0}
-        color="transparent"
+        position="fixed"
+        elevation={1}
+        color="primary"
         sx={{
-          backdropFilter: 'blur(10px)',
-          borderBottom: '1px solid rgba(120, 149, 179, 0.25)',
-          background: 'linear-gradient(180deg, rgba(250,254,255,0.95), rgba(248,252,255,0.88))',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.18)',
         }}
       >
         <Container maxWidth="lg">
-          <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ py: 1.2 }}>
+          <Toolbar disableGutters sx={{ minHeight: 64 }}>
             <Stack direction="row" spacing={1.2} alignItems="center">
-              <Biotech sx={{ color: '#0f6e8b' }} />
-              <Typography sx={{ fontFamily: '"Space Grotesk", sans-serif', fontWeight: 700, color: '#12344d' }}>
-                Chemistry LMS
+              <Science />
+              <Typography sx={{ fontWeight: 700 }}>
+                Hóa học THPT
               </Typography>
             </Stack>
 
-            <Stack direction="row" spacing={1}>
-              <Button size="small" sx={{ color: '#29516f', fontWeight: 700 }} onClick={() => navigate('/')}>
+            <Stack direction="row" spacing={0.3} sx={{ ml: 3, display: { xs: 'none', md: 'flex' } }}>
+              <Button size="small" color="inherit" onClick={() => navigate('/')}>
                 Home
               </Button>
-              <Button size="small" sx={{ color: '#29516f', fontWeight: 700 }} onClick={() => scrollToSection('problem-solution')}>
+              <Button size="small" color="inherit" onClick={() => scrollToSection('problem-solution')}>
                 Vấn đề & giải pháp
               </Button>
-              <Button size="small" sx={{ color: '#29516f', fontWeight: 700 }} onClick={() => scrollToSection('features')}>
+              <Button size="small" color="inherit" onClick={() => scrollToSection('features')}>
                 Tính năng
               </Button>
             </Stack>
 
-            <Stack direction="row" spacing={1}>
+            <Stack direction="row" spacing={1} sx={{ ml: 'auto' }}>
               {!isAuthenticated ? (
                 <>
-                  <Button size="small" variant="outlined" onClick={() => navigate('/auth/login')}>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    color="inherit"
+                    onClick={() => navigate('/auth/login')}
+                    sx={{ borderColor: 'rgba(255,255,255,0.65)', '&:hover': { borderColor: '#fff' } }}
+                  >
                     Đăng nhập
                   </Button>
-                  <Button size="small" variant="contained" onClick={() => navigate('/auth/register')}>
+                  <Button size="small" variant="contained" color="secondary" onClick={() => navigate('/auth/register')}>
                     Đăng ký
                   </Button>
                 </>
               ) : (
                 <Stack direction="row" spacing={1} alignItems="center">
-                  <Button size="small" variant="contained" onClick={() => navigate(getDashboardPathByRole(user?.role))}>
+                  <Button size="small" variant="contained" color="secondary" onClick={() => navigate(getDashboardPathByRole(user?.role))}>
                     Vào dashboard
                   </Button>
                   <IconButton onClick={handleMenuOpen} sx={{ p: 0.25 }}>
@@ -205,7 +212,7 @@ const HomePage = () => {
                 </Stack>
               )}
             </Stack>
-          </Stack>
+          </Toolbar>
         </Container>
       </AppBar>
 
@@ -295,12 +302,7 @@ const HomePage = () => {
                     variant="contained"
                     size="large"
                     onClick={() => navigate('/auth/login')}
-                    sx={{
-                      px: 3,
-                      py: 1.2,
-                      bgcolor: '#1666b2',
-                      '&:hover': { bgcolor: '#145491' },
-                    }}
+                    sx={{ px: 3, py: 1.2 }}
                   >
                     Đăng nhập
                   </Button>
@@ -308,13 +310,7 @@ const HomePage = () => {
                     variant="outlined"
                     size="large"
                     onClick={() => navigate('/auth/register')}
-                    sx={{
-                      px: 3,
-                      py: 1.2,
-                      borderColor: '#1666b2',
-                      color: '#1666b2',
-                      '&:hover': { borderColor: '#145491', bgcolor: '#eaf4ff' },
-                    }}
+                    sx={{ px: 3, py: 1.2 }}
                   >
                     Tạo tài khoản
                   </Button>
@@ -322,19 +318,10 @@ const HomePage = () => {
               )}
 
               <Button
-                variant={isAuthenticated ? 'contained' : 'text'}
+                variant={isAuthenticated ? 'contained' : 'outlined'}
                 endIcon={<TouchApp />}
                 onClick={() => navigate(getDashboardPathByRole(user?.role))}
-                sx={{
-                  px: 2.2,
-                  py: 1.2,
-                  fontWeight: 700,
-                  color: isAuthenticated ? '#ffffff' : '#0f5a95',
-                  bgcolor: isAuthenticated ? '#0f8b7a' : 'transparent',
-                  '&:hover': {
-                    bgcolor: isAuthenticated ? '#0d7769' : '#e8f2fa',
-                  },
-                }}
+                sx={{ px: 2.2, py: 1.2, fontWeight: 700 }}
               >
                 {isAuthenticated ? 'Vào khu vực của tôi' : 'Khám phá bản dùng thử'}
               </Button>
