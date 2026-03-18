@@ -43,11 +43,12 @@ import MaterialDetailPage from "../pages/teacher/MaterialDetailPage";
 import StudentClassDetail from "../pages/student/StudentClassDetail";
 import QuizTakingInterface from "../components/student/quizTakingInterface";
 import QuizResultView from "../pages/student/QuizResultView";
+import HomePage from "../pages/HomePage";
 
 export const routes: RouteObject[] = [
   {
     path: "/",
-    element: <Navigate to="/dashboard" replace />,
+    element: <HomePage />,
   },
   {
     path: "/auth",
@@ -262,6 +263,6 @@ export const routes: RouteObject[] = [
   },
   {
     path: "*",
-    element: <Navigate to="/dashboard" replace />,
+    element: <Navigate to="/" replace />,
   },
 ];

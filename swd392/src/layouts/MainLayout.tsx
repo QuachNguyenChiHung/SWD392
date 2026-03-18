@@ -19,6 +19,7 @@ import {
 } from '@mui/material';
 import {
   Menu as MenuIcon,
+  HomeRounded,
   Dashboard,
   School,
   Class,
@@ -47,6 +48,12 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
+  {
+    text: 'Trang chủ',
+    icon: <HomeRounded />,
+    path: '/',
+    roles: [UserRole.GUEST, UserRole.STUDENT, UserRole.TEACHER, UserRole.MODERATOR, UserRole.ADMIN],
+  },
   {
     text: 'Dashboard',
     icon: <Dashboard />,
@@ -206,6 +213,14 @@ const MainLayout = () => {
             {user?.role === UserRole.MODERATOR && 'Kiểm duyệt viên'}
             {user?.role === UserRole.GUEST && 'Khách'}
           </Typography>
+          <IconButton
+            color="inherit"
+            onClick={() => navigate('/')}
+            aria-label="go home"
+            sx={{ mr: 1 }}
+          >
+            <HomeRounded />
+          </IconButton>
           <IconButton onClick={handleMenuOpen} sx={{ p: 0 }}>
             <Avatar alt={user?.name} src={user?.avatar}>
               {user?.name?.charAt(0).toUpperCase()}
