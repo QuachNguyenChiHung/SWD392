@@ -63,7 +63,7 @@ class UserService {
     async findByMail(email: string) {
         return await UserRepo.findByMail(email);
     }
-    async findByKeyWord(keyword: string, page: number) {
+    async findByKeyWord(keyword: string = '', page: number) {
         return await UserRepo.findByKeyWord(keyword, page);
     }
 
