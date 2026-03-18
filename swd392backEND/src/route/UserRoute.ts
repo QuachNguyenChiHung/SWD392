@@ -24,6 +24,7 @@ route.get('/me', UserController.getUserInfo);
 route.get('/user/profile', verifyRole.verifyStudent, UserController.getUserProfile);
 route.get('/admin/profile', verifyRole.verifyAdmin, UserController.getUserAdminProfile);
 route.get('/teacher/profile', verifyRole.verifyTeacher, UserController.getUserTeacherProfile);
+route.patch('/teacher/profile/password', verifyRole.verifyTeacher, UserController.updateSelf);
 route.get('/admin/moderators', verifyRole.verifyAdmin, UserController.getListModerators);
 route.delete('/admin/moderators/:id', verifyRole.verifyAdmin, UserController.deleteModerator);
 // Update own profile, but needs to update token(fix this later)

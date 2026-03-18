@@ -51,7 +51,13 @@ class UserService {
     return createdUser;
   }
   async updateUser(userId: string, updateData: UserUpdateDTO) {
-    return await UserRepo.updateUser(userId, updateData);
+    const safeUpdateData: UserUpdateDTO = { ...updateData };
+
+    if (typeof safeUpdateData.password === "string") {
+      safeUpdateData.password = await bcrypt.hash(safeUpdateData.password, SALT_ROUNDS);
+    }
+
+    return await UserRepo.updateUser(userId, safeUpdateData);
   }
   async deleteUser(userId: string) {
     const user = await UserRepo.getUserById(userId);

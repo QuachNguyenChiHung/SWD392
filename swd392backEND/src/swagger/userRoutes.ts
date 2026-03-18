@@ -98,6 +98,16 @@
  *           $ref: '#/components/schemas/User'
  *         admin:
  *           $ref: '#/components/schemas/Admin'
+ *     PasswordUpdateRequest:
+ *       type: object
+ *       required:
+ *         - password
+ *       properties:
+ *         password:
+ *           type: string
+ *           format: password
+ *           description: New password. Must be at least 10 characters and include uppercase, number, and special character.
+ *           example: "NewPassword123!"
  *     UserInput:
  *       type: object
  *       required:
@@ -624,6 +634,39 @@
  *         description: Forbidden - Teachers only
  *       404:
  *         description: Teacher profile not found
+ */
+
+/**
+ * @openapi
+ * /api/teacher/profile/password:
+ *   patch:
+ *     tags:
+ *       - Authentication
+ *     summary: Update current teacher password
+ *     description: "[Teacher] Update authenticated teacher password using verifyTeacher middleware."
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/PasswordUpdateRequest'
+ *     responses:
+ *       200:
+ *         description: Password updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/User'
+ *       400:
+ *         description: Bad request - Validation failed
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - Teachers only
+ *       404:
+ *         description: User not found
  */
 
 /**
