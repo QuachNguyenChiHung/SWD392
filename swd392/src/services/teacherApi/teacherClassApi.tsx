@@ -4,9 +4,9 @@ import type { Class, CreateClassData, UpdateClassData } from '../../types/teache
 // API functions for teacher class management
 export const teacherClassApi = {
     // Get all classes for the authenticated teacher
-    getClassesByTeacher: async (): Promise<Class[]> => {
+    getClassesByTeacher: async (page = 1): Promise<Class[]> => {
         try {
-            const response = await apiService.get('/teacher/class');
+            const response = await apiService.get(`/teacher/class?page=${page}`);
             return response;
         } catch (error) {
             console.error('Error fetching teacher classes:', error);

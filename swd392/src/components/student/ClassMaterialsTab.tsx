@@ -93,8 +93,8 @@ export default function ClassMaterialsTab({
       {/* Tabs */}
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
         <Tabs value={tabValue} onChange={(_, val) => setTabValue(val)}>
-          <Tab label={`📄 Tài liệu (${files.length})`} />
-          <Tab label={`🎯 Slide (${slides.length})`} />
+          <Tab label={`Tài liệu (${files.length})`} />
+          <Tab label={`Slide (${slides.length})`} />
         </Tabs>
       </Box>
 
@@ -192,7 +192,7 @@ export default function ClassMaterialsTab({
               >
                 <Stack sx={{ flex: 1 }}>
                   <Typography variant="body2" fontWeight="600">
-                    🎯 {slide.slide_name}
+                    {slide.slide_name}
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
                     Slide • {slide.file_path?.split('/').pop()?.substring(0, 30) || 'Slide'}

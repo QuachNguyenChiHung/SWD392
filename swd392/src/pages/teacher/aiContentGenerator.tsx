@@ -177,7 +177,7 @@ Description: ${state.topic.description}
             setIsLoading(true);
 
             const p = await chadApi.getChadResponse(payload);
-
+            console.log("API response", JSON.parse(p.message));
             // apiService returns response.data, so p is the data object
             const s = p?.message;
             const aiResponse: ChatMessage = {
@@ -230,38 +230,7 @@ Description: ${state.topic.description}
         }, 2000);
     };
 
-    const buildQuizPrompt = (topicTitle: string, topicDescription: string | undefined, count: number, mcCount: number, tfCount: number) => {
-        return `You are an assistant that generates teacher-editable quizzes. Produce a single valid JSON object only (no commentary) with this exact shape:
-
-{
-    "title": "<quiz title>",            // editable by the teacher
-    "type": "interactive|standard",
-    "keyword": "<optional short keyword|null>",
-    "questions": [
-        {
-            "id": "q1",                     // stable short id to support editing in the UI
-            "content": "question text",     // editable by the teacher
-            "type": "multiple-choice",      // MUST be multiple-choice
-            "options": ["A","B","C"],    // 3–5 unique options (for true/false use exactly ["True","False"])
-            "correctAnswer": "A",           // must match exactly one option
-            "editable": true,                 // indicates this question is safe to edit in UI
-            "explanation": "optional short explanation for teachers" // optional, human-readable
-        }
-    ]
-}
-
-Constraints:
-- Return exactly ${count} questions in the "questions" array (no more, no less).
-- Include exactly ${tfCount} true/false style questions (represent them as multiple-choice with options exactly ["True","False"]).
-- Include exactly ${mcCount} non-true/false multiple-choice questions (each with 3–5 unique options).
-- EVERY question must use "type": "multiple-choice".
-- For true/false style items, represent as multiple-choice with options exactly ["True","False"] and correctAnswer either "True" or "False".
-- Options must be plain text (no HTML/markdown), trimmed, de-duplicated, and 3–5 items except TF.
-- correctAnswer must match one of the options exactly (case-sensitive).
-- Keep all text concise and focused on the topic.
-- Topic context: Title/description to use — Topic title: "${topicTitle}" Topic description: "${topicDescription || ''}".
-- Output JSON only, no surrounding text or explanation.`;
-    }
+    // buildQuizPrompt removed — quiz prompt construction now happens server-side
 
     // Fisher-Yates shuffle
     const shuffleArray = <T,>(arr: T[]) => {
@@ -307,26 +276,31 @@ Constraints:
                 needMC = Math.max(0, needMC - excess);
             }
 
-            const prompt = buildQuizPrompt(state.topic.title, state.topic.description, remaining, needMC, needTF);
             const userMessage: ChatMessage = {
                 id: Date.now().toString(),
-                content: prompt,
+                content: `Generate quiz: ${remaining} questions (${needMC} MC, ${needTF} TF)`,
                 sender: "user",
                 timestamp: new Date(),
             };
 
-            const p = await chadApi.getChadResponse([...messages, userMessage]);
-            const raw = p?.message ?? "";
+            // Call backend route to generate quiz JSON
+            const p = await chadApi.createQuiz(state.topic.title, state.topic.description, remaining, needMC, needTF);
+            let raw = p?.message ?? "";
+            raw = raw.replace('```json', '');
+            console.log("Raw AI response for quiz generation:", raw);
 
             let parsed: any = null;
-            try { parsed = JSON.parse(raw); } catch (e) {
+            let isParsed = false;
+            try { parsed = JSON.parse(raw); isParsed = true; } catch (e) {
                 const m = raw.match(/```(?:json)?([\s\S]*?)```/i) || raw.match(/\{[\s\S]*\}/);
                 if (m) {
                     const jsonText = m[1] ? m[1].trim() : m[0];
-                    try { parsed = JSON.parse(jsonText); } catch (er) { parsed = null; }
+                    try { parsed = JSON.parse(jsonText); isParsed = true; } catch (er) { parsed = null; }
                 }
             }
-
+            if (parsed) {
+                alert('AI response parsed successfully. Preview will be generated based on the content. Please review the questions and edit as needed before saving.');
+            }
             if (parsed && Array.isArray(parsed.questions)) {
                 const questionsRaw = parsed.questions.slice(0, remaining);
                 const newQuestions: FrontendQuestionData[] = questionsRaw.map((q: any) => {
@@ -387,9 +361,6 @@ Constraints:
                 if (typeof quizQuestionCount === 'number') {
                     const desiredTF = quizTFCount;
                     const desiredMC = quizMCCount;
-                    if (actualTF !== desiredTF || actualMC !== desiredMC) {
-                        alert(`AI returned ${actualMC} multiple-choice and ${actualTF} true/false questions (combined), but you requested ${desiredMC} MC and ${desiredTF} TF. You can edit the preview or regenerate.`);
-                    }
                 }
             } else {
                 const derivedTitle = `Quiz on ${state.topic.title}`;
@@ -490,13 +461,19 @@ Constraints:
             }
 
             setGeneratedMaterials(prev => [{ ...(materialWithContent ?? {}), type: 'quiz' } as ClassMaterial, ...prev]);
+            // Reset preview and quiz-specific form state so teacher can create another quiz immediately
             setQuizPreview(null);
             setQuizTitle("");
             setQuizMaxAttempts(3);
             setQuizStartDate("");
             setQuizEndDate("");
-            setSelectedContentType("");
-            setMessages(prev => [...prev, { id: Date.now().toString(), content: `Saved quiz "${(quizTitle && quizTitle.trim()) ? quizTitle : quizPreview.title}" and created class material.`, sender: 'assistant', timestamp: new Date() }]);
+            // Reset question counts to defaults
+            setQuizQuestionCount(5);
+            setQuizMCCount(5);
+            setQuizTFCount(0);
+            // Keep the quiz content type selected so user can create another quiz right away
+            setSelectedContentType("quiz");
+            setMessages(prev => [...prev, { id: Date.now().toString(), content: `Saved quiz "${(quizTitle && quizTitle.trim()) ? quizTitle : quizPreview?.title || ''}" and created class material.`, sender: 'assistant', timestamp: new Date() }]);
         } catch (error) {
             console.error('saveQuizAndCreateMaterial error', error);
             // try cleanup
@@ -556,7 +533,7 @@ Constraints:
                         {/* Selected Content Type Header (moved to AI generator tab) */}
                         {selectedContentType && (
                             <Card variant="outlined" sx={{ mb: 2, bgcolor: "primary.50" }}>
-                                <CardContent sx={{ py: 2, height: '300px' }}>
+                                <CardContent sx={{ py: 2, minHeight: '700px' }}>
                                     <Stack direction="column" alignItems="center" justifyContent="space-between" spacing={2}>
                                         <Stack direction="row" alignItems="center" spacing={1} sx={{ minWidth: 200 }}>
                                             {TYPE_META[selectedContentType].icon}

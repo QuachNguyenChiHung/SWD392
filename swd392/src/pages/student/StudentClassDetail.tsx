@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
     Box, Typography, Stack, Paper, Button, Chip, Skeleton, Grid, Divider,
-    LinearProgress, Alert, Tab, Tabs, Dialog, DialogTitle, DialogContent, DialogActions,
+    LinearProgress, Alert, Dialog, DialogTitle, DialogContent, DialogActions,
     Fab, IconButton
 } from '@mui/material';
 import {
@@ -11,8 +11,6 @@ import {
 import { apiService } from '../../services/api';
 import type { ClassItem, Topic, Enrollment } from '../../types/studentType';
 import ClassTopicsTab from '../../components/student/ClassTopicsTab';
-import ClassMaterialsTab from '../../components/student/ClassMaterialsTab';
-import ClassRender2D from '../../components/student/ClassRender2D';
 import StudentAIChat from '../../components/student/StudentAIChatBox';
 
 interface FileItem {
@@ -35,20 +33,6 @@ interface ProgressRecord {
     date_completed: string | null;
 }
 
-interface TabPanelProps {
-    children?: React.ReactNode;
-    index: number;
-    value: number;
-}
-
-function TabPanel({ children, value, index }: TabPanelProps) {
-    return (
-        <div role="tabpanel" hidden={value !== index}>
-            {value === index && <Box>{children}</Box>}
-        </div>
-    );
-}
-
 const getEnrollClassId = (enrollment: Enrollment): string => {
     if (typeof enrollment.class_id === 'object' && enrollment.class_id !== null) {
         return (enrollment.class_id as any)._id;
@@ -69,9 +53,9 @@ export default function StudentClassDetail() {
     const [enrollment, setEnrollment] = useState<Enrollment | null>(null);
     const [progressRecords, setProgressRecords] = useState<ProgressRecord[]>([]);
     const [render2dIds, setRender2dIds] = useState<string[]>([]);
+    const [allMaterials, setAllMaterials] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [tabValue, setTabValue] = useState(0);
     const [expandedTopic, setExpandedTopic] = useState<string | false>(false);
     const [previewItem, setPreviewItem] = useState<{ file: FileItem | Slide; type: 'file' | 'slide' } | null>(null);
     const [chatOpen, setChatOpen] = useState(false);
@@ -88,8 +72,7 @@ export default function StudentClassDetail() {
     const allMaterialIds = useMemo(() => [
         ...files.map(f => f._id),
         ...slides.map(s => s._id),
-        ...render2dIds
-    ], [files, slides, render2dIds]);
+    ], [files, slides]);
 
     const progressStats = useMemo(() => {
         const total = allMaterialIds.length;
@@ -181,6 +164,21 @@ export default function StudentClassDetail() {
                     setFiles(fileItems);
                     setSlides(slideItems);
                     setRender2dIds(render2dList);
+
+                    // Build allMaterials with resolved file_path for ClassTopicsTab
+                    const resolvedMaterials = await Promise.all(materialsData.map(async (m) => {
+                        if (m.type === 'quiz') return null;
+                        if (m.type === '2d_render') return { _id: m._id, title: m.title, type: m.type, topic_id: m.topic_id, file_path: '' };
+                        if (!m.content_id) return { _id: m._id, title: m.title, type: m.type, topic_id: m.topic_id, file_path: '' };
+                        try {
+                            const isSlide = m.type === 'slide' || m.type === 'slides';
+                            const data: any = await apiService.get(isSlide ? `/slides/${m.content_id}` : `/files/${m.content_id}`);
+                            return { _id: m._id, title: m.title, type: m.type, topic_id: m.topic_id, file_path: data?.file_path || '' };
+                        } catch {
+                            return { _id: m._id, title: m.title, type: m.type, topic_id: m.topic_id, file_path: '' };
+                        }
+                    }));
+                    setAllMaterials(resolvedMaterials.filter(Boolean));
                 } catch (err) {
                     console.warn('Failed to fetch materials:', err);
                 }
@@ -241,8 +239,7 @@ export default function StudentClassDetail() {
             try {
                 await apiService.post(`/progress/${classId}/${item._id}`, {});
             } catch (err: any) {
-                const errorMessage = err.response?.data?.error || '';
-                if (!errorMessage.includes('already exists')) throw err;
+                /* ignore already exists */
             }
 
             // Mark as completed
@@ -343,7 +340,8 @@ export default function StudentClassDetail() {
                                             }}
                                         />
                                         <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center' }}>
-                                            <Typography sx={{ mr: 0.5 }}>Ngày tạo:</Typography> {formatDate(cls.date_create)}
+                                            <CalendarToday sx={{ fontSize: 14, mr: 0.5 }} />
+                                            {formatDate(cls.date_create)}
                                         </Typography>
                                     </Stack>
                                     {cls.keywords && (
@@ -377,40 +375,26 @@ export default function StudentClassDetail() {
                         </Paper>
                     )}
 
-                    <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-                        <Tabs value={tabValue} onChange={(_, val) => setTabValue(val)}>
-                            <Tab label={`Nội dung khóa học`} />
-                            <Tab label={`Tài liệu & Slide`} />
-                            {render2dIds.length > 0 && <Tab label={`2D Render`} />}
-                        </Tabs>
-                    </Box>
-
-                    <TabPanel value={tabValue} index={0}>
-                        <ClassTopicsTab
+                    <ClassTopicsTab
                             courseName={courseName}
                             gradeLevel={gradeLevel}
                             topics={topics}
+                            materials={allMaterials}
+                            completedMaterials={completedMaterials}
                             expandedTopic={expandedTopic}
                             onExpandTopic={handleExpandTopic}
+                            onPreviewMaterial={(mat) => setPreviewItem({ file: { _id: mat._id, file_name: mat.title, file_path: mat.file_path || '' }, type: 'file' })}
+                            onMarkCompleted={async (mat) => {
+                                if (!classId || !enrollment) return;
+                                if (completedMaterials.includes(mat._id)) return;
+                                try {
+                                    try { await apiService.post(`/progress/${classId}/${mat._id}`, {}); } catch (e: any) { /* ignore already exists */ }
+                                    await apiService.patch(`/progress/${classId}/${mat._id}/completed`);
+                                    const fresh = await apiService.get(`/progress/${enrollment._id}`) as any[];
+                                    setProgressRecords(Array.isArray(fresh) ? fresh : []);
+                                } catch (err) { console.error('Failed to mark completed:', err); }
+                            }}
                         />
-                    </TabPanel>
-
-                    <TabPanel value={tabValue} index={1}>
-                        <ClassMaterialsTab
-                            files={files}
-                            slides={slides}
-                            onPreview={(item, type) => setPreviewItem({ file: item, type })}
-                            onMarkCompleted={handleMarkMaterialCompleted}
-                            completedMaterials={completedMaterials}
-                            isLoading={false}
-                        />
-                    </TabPanel>
-
-                    {render2dIds.length > 0 && (
-                        <TabPanel value={tabValue} index={2}>
-                            <ClassRender2D materialIds={render2dIds} />
-                        </TabPanel>
-                    )}
                 </Grid>
 
                 <Grid size={{ xs: 12, md: 4 }}>
@@ -450,13 +434,6 @@ export default function StudentClassDetail() {
                     </Paper>
 
                     <Stack spacing={2}>
-                        <Button
-                            fullWidth variant="outlined" color="inherit"
-                            sx={{ textTransform: 'none', fontWeight: 600 }}
-                            onClick={() => setTabValue([0,1,2].find(i => i !== tabValue) || 0)}
-                        >
-                            Bắt đầu học
-                        </Button>
                         <Button
                             fullWidth variant="outlined" color="inherit"
                             onClick={() => navigate('/student/classes')}
