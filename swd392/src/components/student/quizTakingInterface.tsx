@@ -92,12 +92,17 @@ const QuizTakingInterface = () => {
     setSubmitting(true);
     try {
       // Build answers array theo format API
-      const answersPayload = questions.map((question, idx) => ({
-        question_id: question._id,
-        options_picked_index: answers[idx] !== undefined ? answers[idx] : 0,
-        text: '',
-        option: {}
-      }));
+      const answersPayload = questions.map((question, idx) => {
+        const payload: any = {
+          question_id: question._id,
+          text: '',
+          option: {}
+        };
+        if (answers[idx] !== undefined) {
+          payload.options_picked_index = answers[idx];
+        }
+        return payload;
+      });
 
       await apiService.post('/quiz-attempts/submit', {
         quiz_id: quizInfo?._id,
