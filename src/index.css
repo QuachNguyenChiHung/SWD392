@@ -1,0 +1,43 @@
+
+/* config global font */
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Space+Grotesk:wght@500;600;700&display=swap');
+
+.modal {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  min-width: 80vw;
+  transform: translate(-50%, -50%);
+  background-color: #fff;
+  border: 2px solid #000;
+  box-shadow: 24;
+  padding: 32px;
+
+}
+
+.MuiFormControl-root {
+  flex: 0 0 calc(50% - 0.5rem);
+}
+
+.text-input-container {
+  display: flex;
+  flex-wrap: wrap;
+
+  gap: 1rem;
+}
+
+.w-100 {
+  width: 100%;
+}
+
+.w-50 {
+  width: 50%;
+}
+
+.w-25 {
+  width: 25%;
+}
+
+.w-75 {
+  width: 75%;
+}
