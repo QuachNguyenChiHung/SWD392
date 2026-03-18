@@ -11,9 +11,17 @@ import {
   TextField,
   Snackbar,
   Alert,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  Select,
+  Grid,
+  InputAdornment,
+  CircularProgress,
+  Paper,
 } from "@mui/material";
-import { suspendUser, unsuspendUser } from "../../services/moderation";
-import { filterUsers } from "../../services/moderatorFilterApi";
+import { Search } from "@mui/icons-material";
+import { suspendUser, unsuspendUser, searchUsers } from "../../services/moderatorService";
 
 type UserItem = {
   id: string;
@@ -23,6 +31,7 @@ type UserItem = {
   suspendReason?: string;
   status?: string;
   latestReason?: string;
+  role?: string;
 };
 
 const ModeratorUserSuspension: React.FC = () => {
@@ -30,7 +39,7 @@ const ModeratorUserSuspension: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState({
     role: "",
-    status: "banned",
+    status: "", // Default to all statuses
     keyword: "",
   });
 
@@ -38,26 +47,74 @@ const ModeratorUserSuspension: React.FC = () => {
   const fetchData = async (params = filter) => {
     setLoading(true);
     try {
-      const data = await filterUsers({ ...params, status: "banned" });
-      setUsers(data);
+      // Backend /api/users/search currently ONLY supports "keyword" and "page".
+      // "role" and "status" filters are applied client-side below.
+      const requestParams: any = {};
+      if (params.keyword) requestParams.keyword = params.keyword;
+
+      const data = await searchUsers(requestParams);
+
+      // Normalize backend user objects to the expected frontend shape.
+      const list: any[] = Array.isArray(data) ? data : data?.users || [];
+      const normalized: UserItem[] = list.map((u: any, i: number) => ({
+        id: u.id || u._id || `user-${i}`,
+        username:
+          u.username ||
+          u.name ||
+          (u.email ? u.email.split("@")[0] : `user-${i}`),
+        email: u.email,
+        suspended: !!(
+          u.suspended ||
+          u.isSuspended ||
+          u.status === "banned" ||
+          u.banned
+        ),
+        suspendReason: u.suspendReason || u.reason,
+        status: u.status || (u.banned ? "banned" : "active"),
+        latestReason: u.latestReason || u.latest_reason || u.suspendReason,
+        role: u.role,
+      }));
+
+      // ==========================================
+      // CLIENT-SIDE FILTERING 
+      // ==========================================
+      let filteredUsers = normalized;
+
+      // Lọc theo vai trò (nếu chọn)
+      if (params.role) {
+        const rolesToMatch = params.role.split(",");
+        filteredUsers = filteredUsers.filter((u) => u.role && rolesToMatch.includes(u.role));
+      }
+
+      // Lọc theo trạng thái (nếu chọn)
+      if (params.status) {
+        if (params.status === "banned") {
+          filteredUsers = filteredUsers.filter((u) => u.suspended);
+        } else if (params.status === "active") {
+          filteredUsers = filteredUsers.filter((u) => !u.suspended);
+        }
+      }
+
+      setUsers(filteredUsers);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchData();
+    // On initial mount request only teacher & student roles for the moderation list
+    // (this keeps the previous behavior for first load). When the user submits
+    // the filter form with role === "" we'll omit the role param and request all roles.
+    fetchData({ ...filter, role: "teacher,student" });
     // eslint-disable-next-line
   }, []);
 
-  const handleInput = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
-  ) => {
-    setFilter((f) => ({ ...f, [e.target.name]: e.target.value }));
+  const handleFilterChange = (name: string, value: any) => {
+    setFilter((f) => ({ ...f, [name]: value }));
   };
 
-  const handleFilter = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleFilter = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     fetchData(filter);
   };
   const [reasonInput, setReasonInput] = useState<Record<string, string>>({});
@@ -136,83 +193,142 @@ const ModeratorUserSuspension: React.FC = () => {
   };
 
   return (
-    <Box>
-      <Typography variant="h6" gutterBottom>
+    <Box p={3}>
+      <Typography variant="h5" fontWeight="bold" gutterBottom>
         Quản lý đình chỉ người dùng
       </Typography>
-      <form style={{ marginBottom: 16 }} onSubmit={handleFilter}>
-        <input
-          name="keyword"
-          placeholder="Tìm kiếm..."
-          value={filter.keyword}
-          onChange={handleInput}
-        />
-        <select name="role" value={filter.role} onChange={handleInput}>
-          <option value="">Tất cả vai trò</option>
-          <option value="teacher">Giáo viên</option>
-          <option value="student">Học sinh</option>
-          <option value="moderator">Kiểm duyệt viên</option>
-        </select>
-        <button type="submit">Lọc</button>
-      </form>
+
+      <Paper sx={{ p: 3, mb: 4 }}>
+        <Grid container spacing={2} alignItems="center">
+          <Grid size={{ xs: 12, sm: 4 }}>
+            <TextField
+              fullWidth
+              label="Tìm kiếm người dùng..."
+              name="keyword"
+              value={filter.keyword}
+              onChange={(e) => handleFilterChange("keyword", e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleFilter()}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Search />
+                  </InputAdornment>
+                ),
+              }}
+              size="small"
+            />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 3 }}>
+            <FormControl fullWidth size="small">
+              <InputLabel>Vai trò</InputLabel>
+              <Select
+                value={filter.role}
+                label="Vai trò"
+                onChange={(e) => handleFilterChange("role", e.target.value)}
+              >
+                <MenuItem value="">Tất cả vai trò</MenuItem>
+                <MenuItem value="teacher">Giáo viên</MenuItem>
+                <MenuItem value="student">Học sinh</MenuItem>
+                <MenuItem value="moderator">Kiểm duyệt viên</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid size={{ xs: 12, sm: 3 }}>
+            <FormControl fullWidth size="small">
+              <InputLabel>Trạng thái</InputLabel>
+              <Select
+                value={filter.status}
+                label="Trạng thái"
+                onChange={(e) => handleFilterChange("status", e.target.value)}
+              >
+                <MenuItem value="">Tất cả trạng thái</MenuItem>
+                <MenuItem value="active">Đang hoạt động</MenuItem>
+                <MenuItem value="banned">Bị đình chỉ</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid size={{ xs: 12, sm: 2 }}>
+            <Button
+              fullWidth
+              variant="contained"
+              onClick={() => handleFilter()}
+            >
+              Lọc
+            </Button>
+          </Grid>
+        </Grid>
+      </Paper>
+
       {loading ? (
-        <Typography>Đang tải...</Typography>
+        <Box display="flex" justifyContent="center" py={5}>
+          <CircularProgress />
+        </Box>
       ) : (
         <Stack spacing={2}>
-          {users.map((u) => (
-            <Card key={u.id} variant="outlined">
-              <CardContent>
-                <Stack direction="row" spacing={2} alignItems="center">
-                  <Avatar sx={{ width: 36, height: 36 }}>
-                    {u.username[0].toUpperCase()}
-                  </Avatar>
-                  <Box sx={{ flex: 1 }}>
-                    <Typography fontWeight="bold">{u.username}</Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {u.email}
-                    </Typography>
-                    {u.suspended && (
-                      <Chip
-                        label={`Đã đình chỉ (${u.status || "banned"}): ${u.latestReason || u.suspendReason || "(không có lý do)"}`}
-                        color="error"
-                        size="small"
-                        sx={{ mt: 1 }}
-                      />
-                    )}
-                  </Box>
+          {users.length === 0 ? (
+            <Typography align="center" color="text.secondary" py={5}>
+              Không tìm thấy người dùng nào phù hợp với bộ lọc.
+            </Typography>
+          ) : (
+            users.map((u) => (
+              <Card key={u.id} variant="outlined">
+                <CardContent>
+                  <Stack direction="row" spacing={2} alignItems="center">
+                    <Avatar sx={{ width: 44, height: 44 }}>
+                      {u.username[0].toUpperCase()}
+                    </Avatar>
+                    <Box sx={{ flex: 1 }}>
+                      <Typography fontWeight="bold" variant="subtitle1">
+                        {u.username}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {u.email}
+                      </Typography>
+                      {u.suspended && (
+                        <Chip
+                          label={`Đã đình chỉ (${u.status || "banned"}): ${u.latestReason || u.suspendReason || "(không có lý do)"}`}
+                          color="error"
+                          size="small"
+                          sx={{ mt: 1 }}
+                        />
+                      )}
+                    </Box>
 
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    {!u.suspended && (
-                      <TextField
-                        size="small"
-                        placeholder="Lý do đình chỉ (tùy chọn)"
-                        value={reasonInput[u.id] ?? ""}
-                        onChange={(e) =>
-                          setReasonInput((r) => ({
-                            ...r,
-                            [u.id]: e.target.value,
-                          }))
-                        }
-                      />
-                    )}
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      {!u.suspended && (
+                        <TextField
+                          size="small"
+                          placeholder="Lý do đình chỉ (tùy chọn)"
+                          value={reasonInput[u.id] ?? ""}
+                          onChange={(e) =>
+                            setReasonInput((r) => ({
+                              ...r,
+                              [u.id]: e.target.value,
+                            }))
+                          }
+                          sx={{ width: { xs: 150, sm: 250 } }}
+                        />
+                      )}
 
-                    <Button
-                      color={u.suspended ? "primary" : "error"}
-                      variant={u.suspended ? "outlined" : "contained"}
-                      onClick={() => toggleSuspend(u.id)}
-                      disabled={!!loadingIds[u.id]}
-                    >
-                      {loadingIds[u.id]
-                        ? "Đang xử lý..."
-                        : u.suspended
-                          ? "Gỡ đình chỉ"
-                          : "Đình chỉ"}
-                    </Button>
+                      <Button
+                        color={u.suspended ? "success" : "error"}
+                        variant={u.suspended ? "outlined" : "contained"}
+                        onClick={() => toggleSuspend(u.id)}
+                        disabled={!!loadingIds[u.id]}
+                        sx={{ minWidth: 120 }}
+                      >
+                        {loadingIds[u.id]
+                          ? "Đang xử lý..."
+                          : u.suspended
+                            ? "Gỡ đình chỉ"
+                            : "Đình chỉ"}
+                      </Button>
+                    </Stack>
                   </Stack>
-                </Stack>
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            ))
+          )}
         </Stack>
       )}
 

@@ -25,15 +25,13 @@ import AiContentGenerator from "../pages/teacher/aiContentGenerator";
 
 // Moderator Pages
 import ModeratorDashboard from "../pages/moderator/ModeratorDashboard";
-import ModeratorPendingMaterialsPage from "../pages/moderator/ModeratorPendingMaterialsPage";
-import ModeratorMaterialReviewPage from "../pages/moderator/ModeratorMaterialReviewPage";
 import ModeratorFlaggedMaterialPage from "../pages/moderator/ModeratorFlaggedMaterialPage";
-import ModeratorAuditLogPage from "../pages/moderator/ModeratorAuditLogPage";
 import ModeratorUserSuspension from "../pages/moderator/ModeratorUserSuspension";
-import ModeratorTeacherApprovals from "../pages/moderator/ModeratorTeacherApprovals";
 import ModeratorCoursesPage from "../pages/moderator/ModeratorCoursesPage";
-import ModeratorClassesPage from "../pages/moderator/ModeratorClassesPage";
 import ModeratorTopicsPage from "../pages/moderator/ModeratorTopicsPage";
+import ModeratorMaterialsPage from "../pages/moderator/ModeratorMaterialsPage";
+import ModeratorClassesPage from "../pages/moderator/ModeratorClassesPage";
+import ModeratorClassMaterialsPage from "../pages/moderator/ModeratorClassMaterialsPage";
 
 // Admin Pages
 import AdminDashboard from "../pages/admin/AdminDashboard";
@@ -140,14 +138,6 @@ export const routes: RouteObject[] = [
               </ProtectedRoute>
             ),
           },
-          {
-            path: "audit-log",
-            element: (
-              <ProtectedRoute allowedRoles={[UserRole.MODERATOR]}>
-                <ModeratorAuditLogPage />
-              </ProtectedRoute>
-            ),
-          },
         ],
       },
 
@@ -211,22 +201,6 @@ export const routes: RouteObject[] = [
             ),
           },
           {
-            path: "pending",
-            element: (
-              <ProtectedRoute allowedRoles={[UserRole.MODERATOR]}>
-                <ModeratorPendingMaterialsPage />
-              </ProtectedRoute>
-            ),
-          },
-          {
-            path: "review/:id",
-            element: (
-              <ProtectedRoute allowedRoles={[UserRole.MODERATOR]}>
-                <ModeratorMaterialReviewPage />
-              </ProtectedRoute>
-            ),
-          },
-          {
             path: "flagged",
             element: (
               <ProtectedRoute allowedRoles={[UserRole.MODERATOR]}>
@@ -239,14 +213,6 @@ export const routes: RouteObject[] = [
             element: (
               <ProtectedRoute allowedRoles={[UserRole.MODERATOR]}>
                 <ModeratorUserSuspension />
-              </ProtectedRoute>
-            ),
-          },
-          {
-            path: "teacher-approvals",
-            element: (
-              <ProtectedRoute allowedRoles={[UserRole.MODERATOR]}>
-                <ModeratorTeacherApprovals />
               </ProtectedRoute>
             ),
           },
@@ -267,10 +233,26 @@ export const routes: RouteObject[] = [
             ),
           },
           {
+            path: "topics/:topicId/materials",
+            element: (
+              <ProtectedRoute allowedRoles={[UserRole.MODERATOR]}>
+                <ModeratorMaterialsPage />
+              </ProtectedRoute>
+            ),
+          },
+          {
             path: "classes",
             element: (
               <ProtectedRoute allowedRoles={[UserRole.MODERATOR]}>
                 <ModeratorClassesPage />
+              </ProtectedRoute>
+            ),
+          },
+          {
+            path: "classes/:classId/materials",
+            element: (
+              <ProtectedRoute allowedRoles={[UserRole.MODERATOR]}>
+                <ModeratorClassMaterialsPage />
               </ProtectedRoute>
             ),
           },

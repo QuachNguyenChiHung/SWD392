@@ -1,4 +1,4 @@
-import { Outlet } from 'react-router-dom';
+import { Outlet } from "react-router-dom";
 import {
   AppBar,
   Box,
@@ -16,28 +16,25 @@ import {
   Menu,
   MenuItem,
   Divider,
-} from '@mui/material';
+} from "@mui/material";
 import {
   Menu as MenuIcon,
   Dashboard,
   School,
   Class,
   Quiz,
-  Person,
   Group,
-  Settings,
   Logout,
   Science,
-  Assignment,
-} from '@mui/icons-material';
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { UserRole } from '../types';
+} from "@mui/icons-material";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
+import { UserRole } from "../types";
 
 const drawerWidth = 240;
 
-import type { ReactElement } from 'react';
+import type { ReactElement } from "react";
 
 interface NavItem {
   text: string;
@@ -48,69 +45,73 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   {
-    text: 'Dashboard',
+    text: "Dashboard",
     icon: <Dashboard />,
-    path: '/dashboard',
-    roles: [UserRole.GUEST, UserRole.STUDENT, UserRole.TEACHER, UserRole.MODERATOR, UserRole.ADMIN],
+    path: "/dashboard",
+    roles: [
+      UserRole.GUEST,
+      UserRole.STUDENT,
+      UserRole.TEACHER,
+    ],
   },
   {
-    text: 'Lớp học của tôi',
+    text: "Dashboard",
+    icon: <Dashboard />,
+    path: "/moderator/dashboard",
+    roles: [UserRole.MODERATOR],
+  },
+  {
+    text: "Dashboard",
+    icon: <Dashboard />,
+    path: "/admin/dashboard",
+    roles: [UserRole.ADMIN],
+  },
+  {
+    text: "Lớp học của tôi",
     icon: <Class />,
-    path: '/student/classes',
+    path: "/student/classes",
     roles: [UserRole.STUDENT],
   },
   {
-    text: 'Bài kiểm tra',
+    text: "Bài kiểm tra",
     icon: <Quiz />,
-    path: '/student/quizzes',
+    path: "/student/quizzes",
     roles: [UserRole.STUDENT],
   },
   {
-    text: 'Quản lý lớp học',
+    text: "Quản lý lớp học",
     icon: <School />,
-    path: '/teacher/classes',
+    path: "/teacher/classes",
     roles: [UserRole.TEACHER],
   },
   {
-    text: 'Kiểm duyệt',
-    icon: <Settings />,
-    path: '/moderator/dashboard',
-    roles: [UserRole.MODERATOR],
-  },
-  {
-    text: 'Quản lý người dùng',
+    text: "Quản lý người dùng",
     icon: <Group />,
-    path: '/moderator/user-suspension',
+    path: "/moderator/user-suspension",
     roles: [UserRole.MODERATOR],
   },
   {
-    text: 'Duyệt giáo viên',
-    icon: <Person />,
-    path: '/moderator/teacher-approvals',
+    text: "Tài liệu bị Flag",
+    icon: <Quiz />,
+    path: "/moderator/flagged",
     roles: [UserRole.MODERATOR],
   },
   {
-    text: 'Quản lý khóa học',
-    icon: <Assignment />,
-    path: '/moderator/courses',
-    roles: [UserRole.MODERATOR],
-  },
-  {
-    text: 'Quản lý lớp học',
+    text: "Quản lý lớp học",
     icon: <School />,
-    path: '/moderator/classes',
+    path: "/moderator/classes",
     roles: [UserRole.MODERATOR],
   },
   {
-    text: 'Tài liệu chờ duyệt',
-    icon: <Class />,
-    path: '/moderator/pending',
+    text: "Quản lý khóa học",
+    icon: <Science />,
+    path: "/moderator/courses",
     roles: [UserRole.MODERATOR],
   },
   {
-    text: 'Quản lý người dùng',
+    text: "Quản lý người dùng",
     icon: <Group />,
-    path: '/admin/users',
+    path: "/admin/users",
     roles: [UserRole.ADMIN],
   },
 ];
@@ -135,17 +136,21 @@ const MainLayout = () => {
 
   const handleLogout = () => {
     logout();
-    navigate('/auth/login');
+    navigate("/auth/login");
     handleMenuClose();
   };
 
   const handleNavigation = (path: string) => {
     // Special handling for role-specific dashboard redirects
-    if (path === '/dashboard') {
+    if (path === "/dashboard") {
       if (user?.role === UserRole.TEACHER) {
-        navigate('/teacher/dashboard');
+        navigate("/teacher/dashboard");
       } else if (user?.role === UserRole.STUDENT) {
-        navigate('/student/dashboard');
+        navigate("/student/dashboard");
+      } else if (user?.role === UserRole.MODERATOR) {
+        navigate("/moderator/dashboard");
+      } else if (user?.role === UserRole.ADMIN) {
+        navigate("/admin/dashboard");
       } else {
         navigate(path);
       }
@@ -156,7 +161,7 @@ const MainLayout = () => {
   };
 
   const filteredNavItems = navItems.filter((item) =>
-    user ? item.roles.includes(user.role) : false
+    user ? item.roles.includes(user.role) : false,
   );
 
   const drawer = (
@@ -170,7 +175,7 @@ const MainLayout = () => {
       <Divider />
       <List>
         {filteredNavItems.map((item) => (
-          <ListItem key={item.text} disablePadding>
+          <ListItem key={item.path} disablePadding>
             <ListItemButton onClick={() => handleNavigation(item.path)}>
               <ListItemIcon>{item.icon}</ListItemIcon>
               <ListItemText primary={item.text} />
@@ -182,7 +187,7 @@ const MainLayout = () => {
   );
 
   return (
-    <Box sx={{ display: 'flex' }}>
+    <Box sx={{ display: "flex" }}>
       <CssBaseline />
       <AppBar
         position="fixed"
@@ -197,16 +202,16 @@ const MainLayout = () => {
             aria-label="open drawer"
             edge="start"
             onClick={handleDrawerToggle}
-            sx={{ mr: 2, display: { sm: 'none' } }}
+            sx={{ mr: 2, display: { sm: "none" } }}
           >
             <MenuIcon />
           </IconButton>
           <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-            {user?.role === UserRole.TEACHER && 'Giáo viên'}
-            {user?.role === UserRole.STUDENT && 'Học sinh'}
-            {user?.role === UserRole.ADMIN && 'Quản trị viên'}
-            {user?.role === UserRole.MODERATOR && 'Kiểm duyệt viên'}
-            {user?.role === UserRole.GUEST && 'Khách'}
+            {user?.role === UserRole.TEACHER && "Giáo viên"}
+            {user?.role === UserRole.STUDENT && "Học sinh"}
+            {user?.role === UserRole.ADMIN && "Quản trị viên"}
+            {user?.role === UserRole.MODERATOR && "Kiểm duyệt viên"}
+            {user?.role === UserRole.GUEST && "Khách"}
           </Typography>
           <IconButton onClick={handleMenuOpen} sx={{ p: 0 }}>
             <Avatar alt={user?.name} src={user?.avatar}>
@@ -218,12 +223,14 @@ const MainLayout = () => {
             open={Boolean(anchorEl)}
             onClose={handleMenuClose}
             anchorOrigin={{
-              vertical: 'bottom',
-              horizontal: 'right',
+              vertical: "bottom",
+              horizontal: "right",
             }}
           >
             <MenuItem disabled>
-              <Person sx={{ mr: 1 }} />
+              <Avatar sx={{ mr: 1, width: 24, height: 24 }}>
+                {user?.name?.charAt(0).toUpperCase()}
+              </Avatar>
               {user?.name}
             </MenuItem>
             <MenuItem disabled>
@@ -251,8 +258,11 @@ const MainLayout = () => {
             keepMounted: true,
           }}
           sx={{
-            display: { xs: 'block', sm: 'none' },
-            '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
+            display: { xs: "block", sm: "none" },
+            "& .MuiDrawer-paper": {
+              boxSizing: "border-box",
+              width: drawerWidth,
+            },
           }}
         >
           {drawer}
@@ -260,8 +270,11 @@ const MainLayout = () => {
         <Drawer
           variant="permanent"
           sx={{
-            display: { xs: 'none', sm: 'block' },
-            '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
+            display: { xs: "none", sm: "block" },
+            "& .MuiDrawer-paper": {
+              boxSizing: "border-box",
+              width: drawerWidth,
+            },
           }}
           open
         >
@@ -274,7 +287,7 @@ const MainLayout = () => {
           flexGrow: 1,
           p: 3,
           width: { sm: `calc(100% - ${drawerWidth}px)` },
-          minHeight: '100vh',
+          minHeight: "100vh",
           backgroundColor: (theme) => theme.palette.grey[100],
         }}
       >

@@ -11,10 +11,8 @@ import {
   ListItemText,
   Button,
 } from "@mui/material";
-import { Assignment, Flag, Gavel, PersonOff } from "@mui/icons-material";
-import {
-  getModeratorSummary,
-} from "../../services/moderatorApi";
+import { Flag, Gavel, PersonOff } from "@mui/icons-material";
+import { getDashboardSummary } from "../../services/moderatorService";
 
 const ModeratorDashboard: React.FC = () => {
   const [summary, setSummary] = useState<any>(null);
@@ -22,7 +20,7 @@ const ModeratorDashboard: React.FC = () => {
 
   useEffect(() => {
     let mounted = true;
-    Promise.all([getModeratorSummary()])
+    Promise.all([getDashboardSummary()])
       .then(([sum]) => {
         if (!mounted) return;
         setSummary(sum);
@@ -44,26 +42,50 @@ const ModeratorDashboard: React.FC = () => {
 
       {/* System Overview Stats */}
       {summary && (
-        <Stack direction="row" spacing={2} sx={{ mb: 4, overflowX: "auto", pb: 1 }}>
+        <Stack
+          direction="row"
+          spacing={2}
+          sx={{ mb: 4, overflowX: "auto", pb: 1 }}
+        >
           <Paper sx={{ p: 2, textAlign: "center", minWidth: 120 }}>
-            <Typography variant="h6" fontWeight="bold" color="primary">{summary.totalStudents}</Typography>
-            <Typography variant="body2" color="text.secondary">Học sinh</Typography>
+            <Typography variant="h6" fontWeight="bold" color="primary">
+              {summary.totalStudents}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Học sinh
+            </Typography>
           </Paper>
           <Paper sx={{ p: 2, textAlign: "center", minWidth: 120 }}>
-            <Typography variant="h6" fontWeight="bold" color="primary">{summary.totalTeachers}</Typography>
-            <Typography variant="body2" color="text.secondary">Giáo viên</Typography>
+            <Typography variant="h6" fontWeight="bold" color="primary">
+              {summary.totalTeachers}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Giáo viên
+            </Typography>
           </Paper>
           <Paper sx={{ p: 2, textAlign: "center", minWidth: 120 }}>
-            <Typography variant="h6" fontWeight="bold" color="primary">{summary.totalClasses}</Typography>
-            <Typography variant="body2" color="text.secondary">Lớp học</Typography>
+            <Typography variant="h6" fontWeight="bold" color="primary">
+              {summary.totalClasses}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Lớp học
+            </Typography>
           </Paper>
           <Paper sx={{ p: 2, textAlign: "center", minWidth: 120 }}>
-            <Typography variant="h6" fontWeight="bold" color="primary">{summary.totalTopics}</Typography>
-            <Typography variant="body2" color="text.secondary">Chủ đề</Typography>
+            <Typography variant="h6" fontWeight="bold" color="primary">
+              {summary.totalTopics}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Chủ đề
+            </Typography>
           </Paper>
           <Paper sx={{ p: 2, textAlign: "center", minWidth: 120 }}>
-            <Typography variant="h6" fontWeight="bold" color="primary">{summary.totalMaterials}</Typography>
-            <Typography variant="body2" color="text.secondary">Tài liệu</Typography>
+            <Typography variant="h6" fontWeight="bold" color="primary">
+              {summary.totalMaterials}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Tài liệu
+            </Typography>
           </Paper>
         </Stack>
       )}
@@ -79,35 +101,7 @@ const ModeratorDashboard: React.FC = () => {
           flexWrap="wrap"
           sx={{ mb: 4 }}
         >
-          <Box sx={{ flex: "1 1 200px", minWidth: 200 }}>
-            <Paper
-              sx={{
-                p: 3,
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                backgroundColor: "#1976d2",
-                color: "white",
-              }}
-            >
-              <Box sx={{ fontSize: 40, mb: 1 }}>
-                <Assignment />
-              </Box>
-              <Typography variant="h4" fontWeight="bold">
-                {summary?.pendingMaterials ?? 0}
-              </Typography>
-              <Typography variant="body2">Tài liệu chờ duyệt</Typography>
-              <Button
-                component={Link}
-                to="/moderator/pending"
-                sx={{ mt: 1 }}
-                variant="contained"
-                color="secondary"
-              >
-                Xem chi tiết
-              </Button>
-            </Paper>
-          </Box>
+          {/* Pending materials card removed per request */}
           <Box sx={{ flex: "1 1 200px", minWidth: 200 }}>
             <Paper
               sx={{

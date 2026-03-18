@@ -10,72 +10,65 @@ import {
   TableHead,
   TableRow,
   IconButton,
-  TextField,
   CircularProgress,
-  Stack,
-  Snackbar,
-  Alert,
+  Breadcrumbs,
+  TextField,
   InputAdornment,
-  Avatar,
-  TablePagination,
+  Tooltip,
 } from "@mui/material";
-import { Delete, Search, School } from "@mui/icons-material";
-import { searchClasses, deleteClass } from "../../services/managementApi";
+import { Visibility, NavigateNext, Search } from "@mui/icons-material";
+import { useNavigate, Link } from "react-router-dom";
+import { searchClasses } from "../../services/moderatorService";
 
 const ModeratorClassesPage: React.FC = () => {
+  const navigate = useNavigate();
   const [classes, setClasses] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-  const [keyword, setKeyword] = useState("");
-  const [page, setPage] = useState(0);
-  const [total, setTotal] = useState(0);
-  const [snack, setSnack] = useState({ open: false, message: "", severity: "info" as "info" | "success" | "error" });
+  const [search, setSearch] = useState("");
 
-  const fetchClasses = async (searchKeyword: string, pageNum: number) => {
+  const fetchClasses = async (keyword = "") => {
     setLoading(true);
     try {
-      // Backend expects 1-indexed page
-      const res = await searchClasses(searchKeyword, pageNum + 1);
-      setClasses(res.data || []);
-      setTotal(res.total || 0);
+      const res = await searchClasses(keyword);
+      // searchClasses returns { classes: [...], total: ... } based on typical patterns, 
+      // but let's handle both array and object responses
+      setClasses(Array.isArray(res) ? res : res.classes || []);
     } catch (err) {
-      setSnack({ open: true, message: "Lỗi khi tìm kiếm lớp học", severity: "error" });
+      console.error("Lỗi khi tải danh sách lớp học:", err);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      fetchClasses(keyword, page);
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [keyword, page]);
+    fetchClasses();
+  }, []);
 
-  const handleDelete = async (id: string) => {
-    if (window.confirm("Bạn có chắc chắn muốn xóa lớp học này? Tất cả tài liệu liên quan sẽ bị ảnh hưởng.")) {
-      try {
-        await deleteClass(id);
-        setSnack({ open: true, message: "Xóa lớp học thành công", severity: "success" });
-        fetchClasses(keyword, page);
-      } catch (err: any) {
-        setSnack({ open: true, message: err.message || "Lỗi khi xóa lớp học", severity: "error" });
-      }
-    }
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    fetchClasses(search);
   };
 
   return (
-    <Box>
-      <Typography variant="h5" fontWeight="bold" mb={3}>Quản lý Lớp học</Typography>
+    <Box p={3}>
+      <Breadcrumbs separator={<NavigateNext fontSize="small" />} sx={{ mb: 2 }}>
+        <Link to="/moderator/dashboard" style={{ textDecoration: "none", color: "inherit" }}>
+          Kiểm duyệt
+        </Link>
+        <Typography color="text.primary">Quản lý lớp học</Typography>
+      </Breadcrumbs>
 
-      <Paper sx={{ mb: 3, p: 2 }}>
+      <Typography variant="h5" fontWeight="bold" mb={3}>
+        Xem Lớp học (Kiểm duyệt viên)
+      </Typography>
+
+      <Paper component="form" onSubmit={handleSearch} sx={{ p: 2, mb: 3, display: 'flex', alignItems: 'center' }}>
         <TextField
           fullWidth
-          placeholder="Tìm kiếm lớp học theo tên..."
-          value={keyword}
-          onChange={(e) => {
-              setKeyword(e.target.value);
-              setPage(0);
-          }}
+          size="small"
+          placeholder="Tìm kiếm lớp học bằng mã hoặc tên..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
@@ -87,65 +80,52 @@ const ModeratorClassesPage: React.FC = () => {
       </Paper>
 
       {loading ? (
-        <Box display="flex" justifyContent="center" my={5}><CircularProgress /></Box>
+        <Box display="flex" justifyContent="center" my={5}>
+          <CircularProgress />
+        </Box>
       ) : (
         <TableContainer component={Paper}>
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell>Lớp học</TableCell>
+                <TableCell>Mã lớp</TableCell>
+                <TableCell>Tên lớp</TableCell>
+                <TableCell>Khóa học</TableCell>
                 <TableCell>Giáo viên</TableCell>
-                <TableCell>Học sinh</TableCell>
-                <TableCell>Ngày tạo</TableCell>
                 <TableCell align="right">Hành động</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {classes.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} align="center">Không tìm thấy lớp học nào.</TableCell>
+                  <TableCell colSpan={5} align="center">
+                    Không tìm thấy lớp học nào.
+                  </TableCell>
                 </TableRow>
               ) : (
                 classes.map((cls) => (
                   <TableRow key={cls._id}>
-                    <TableCell>
-                      <Stack direction="row" spacing={2} alignItems="center">
-                        <Avatar sx={{ bgcolor: 'primary.main' }} src={cls.image_cover}>
-                          <School />
-                        </Avatar>
-                        <Box>
-                          <Typography fontWeight="medium">{cls.class_name}</Typography>
-                          <Typography variant="caption" color="text.secondary">ID: {cls._id}</Typography>
-                        </Box>
-                      </Stack>
-                    </TableCell>
-                    <TableCell>{cls.teacher_id?.name || "Không rõ"}</TableCell>
-                    <TableCell>{cls.students?.length || 0}</TableCell>
-                    <TableCell>{new Date(cls.created_at).toLocaleDateString()}</TableCell>
+                    <TableCell sx={{ fontWeight: "bold" }}>{cls.keypass}</TableCell>
+                    <TableCell>{cls.class_name}</TableCell>
+                    <TableCell>{cls.course_id?.course_name || "-"}</TableCell>
+                    <TableCell>{cls.teacher_id?.name || cls.teacher_id?.username || "-"}</TableCell>
                     <TableCell align="right">
-                      <IconButton color="error" onClick={() => handleDelete(cls._id)}>
-                        <Delete />
-                      </IconButton>
+                      <Tooltip title="Xem tài liệu trong lớp">
+                        <IconButton
+                          color="info"
+                          onClick={() => navigate(`/moderator/classes/${cls._id}/materials`)}
+                        >
+                          <Visibility />
+                        </IconButton>
+                      </Tooltip>
                     </TableCell>
                   </TableRow>
                 ))
               )}
             </TableBody>
           </Table>
-          <TablePagination
-            rowsPerPageOptions={[12]}
-            component="div"
-            count={total}
-            rowsPerPage={12}
-            page={page}
-            onPageChange={(_e, newPage) => setPage(newPage)}
-          />
         </TableContainer>
       )}
-
-      <Snackbar open={snack.open} autoHideDuration={4000} onClose={() => setSnack({ ...snack, open: false })}>
-        <Alert severity={snack.severity}>{snack.message}</Alert>
-      </Snackbar>
     </Box>
   );
 };
