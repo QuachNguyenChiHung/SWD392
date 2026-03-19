@@ -4,7 +4,7 @@ import verifyRole from "../ultis/verifyRole.ts";
 const route = Router();
 
 // Admin statistics for classes
-route.get("/admin/stats/classes", verifyRole.verifyAdmin, ClassController.getAdminClassStats);
+route.get("/admin/stats/classes", verifyRole.verifyAdminOrModerator, ClassController.getAdminClassStats);
 
 // Admin delete class (no ownership check)
 route.delete("/admin/classes/:id", verifyRole.verifyAdmin, ClassController.deleteClassForAdmin);

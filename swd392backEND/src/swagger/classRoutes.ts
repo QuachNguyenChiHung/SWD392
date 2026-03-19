@@ -35,7 +35,7 @@
  *           example: "https://res.cloudinary.com/demo/image/upload/sample.jpg"
  *         status:
  *           type: string
- *           enum: [active, inactive, archived]
+*           enum: [active, inactive, archived, deleted]
  *           description: Class status
  *           example: "active"
  *         date_create:
@@ -73,7 +73,7 @@
  *           example: "newKey123"
  *         status:
  *           type: string
- *           enum: [active, inactive, archived]
+*           enum: [active, inactive, archived, deleted]
  *           example: "inactive"
  *         img_cover_link:
  *           type: string
@@ -105,6 +105,7 @@
  *               $ref: '#/components/schemas/Class'
  *       404:
  *         description: Class not found
+ */
 /**
  * @openapi
  * /api/classes/search:
@@ -125,6 +126,12 @@
  *           type: integer
  *           default: 1
  *         description: Page number
+*       - in: query
+*         name: view_hidden
+*         schema:
+*           type: boolean
+*           default: true
+*         description: Whether to include hidden/deleted classes in the response
  *     responses:
  *       200:
  *         description: Array of classes matching the search
@@ -137,42 +144,46 @@
  *       400:
  *         description: Validation error
  */
- * put:
- * tags:
- * - Classes
-    * summary: Update class
- * description: "[Teacher] Update class details. Only the teacher who owns this class can update it."
-    * security:
- * - cookieAuth: []
-    * parameters:
- * - in: path
-    * name: id
-        * required: true
-            * schema:
- * type: string
-    * description: Class ID
-        * requestBody:
- * required: true
-    * content:
- * application / json:
- * schema:
- * $ref: '#/components/schemas/ClassUpdateInput'
-    * responses:
- * 200:
- * description: Class updated successfully
-    * content:
- * application / json:
- * schema:
- * $ref: '#/components/schemas/Class'
-    * 400:
- * description: Validation error
-    * 401:
- * description: Unauthorized
-    * 403:
- * description: Forbidden - You can only update your own class
- * 404:
- * description: Class not found
-    */
+
+/**
+ * @openapi
+ * /api/class/{id}:
+ *   put:
+ *     tags:
+ *       - Classes
+ *     summary: Update class
+ *     description: "[Teacher] Update class details. Only the teacher who owns this class can update it."
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Class ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ClassUpdateInput'
+ *     responses:
+ *       200:
+ *         description: Class updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Class'
+ *       400:
+ *         description: Validation error
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - You can only update your own class
+ *       404:
+ *         description: Class not found
+ */
 
 /**
  * @openapi

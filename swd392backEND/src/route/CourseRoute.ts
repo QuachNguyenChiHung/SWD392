@@ -5,16 +5,16 @@ import verifyRole from "../ultis/verifyRole.ts";
 const router = Router();
 
 // Create new course
-router.post("/courses",verifyRole.verifyAdmin, CourseController.createCourse);
+router.post("/courses",verifyRole.verifyAdminOrModerator, CourseController.createCourse);
 
 // Update course by ID
-router.put("/courses/:id", verifyRole.verifyAdmin, CourseController.updateCourse);
+router.put("/courses/:id", verifyRole.verifyAdminOrModerator, CourseController.updateCourse);
 
 // Delete course by ID
-router.delete("/courses/:id", verifyRole.verifyAdmin, CourseController.deleteCourse);
+router.delete("/courses/:id", verifyRole.verifyAdminOrModerator, CourseController.deleteCourse);
 
 // Toggle course status (active/inactive)
-router.patch("/courses/:id/toggle-status", verifyRole.verifyAdmin, CourseController.toggleCourseStatus);
+router.patch("/courses/:id/toggle-status", verifyRole.verifyAdminOrModerator, CourseController.toggleCourseStatus);
 
 // Search courses by keyword
 router.get("/courses/search", CourseController.searchCoursesByKeyword);

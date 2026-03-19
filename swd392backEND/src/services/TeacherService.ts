@@ -1,13 +1,24 @@
-import TeacherRepo from '../repository/TeacherRepo.ts';
+import TeacherRepo from "../repository/TeacherRepo.ts";
+import UserRepo from "../repository/UserRepo.ts";
 
 class TeacherService {
-    /** Returns teacher document with populated user (password excluded by repo). */
-    async getTeacherById(id: string) {
-        return await TeacherRepo.getById(id);
-    }
+    async getUserTeacherProfile(userId: string, teacherId: string) {
+        const [user, teacher] = await Promise.all([
+            UserRepo.getUserById(userId),
+            TeacherRepo.getTeacherById(teacherId),
+        ]);
 
-    async getTeacherByUserId(userId: string) {
-        return await TeacherRepo.getByUserId(userId);
+        if (!user || !teacher) {
+            return null;
+        }
+
+        const userObject = user.toObject();
+        const { password, ...safeUser } = userObject;
+
+        return {
+            user: safeUser,
+            teacher,
+        };
     }
 }
 

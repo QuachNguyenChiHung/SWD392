@@ -192,7 +192,12 @@ class ClassController {
         try {
             const teacher_id = req.teacher?._id?.toString();
             const page = parseInt(req.query.page as string) || 1;
-            const classes = await ClassService.getClassesByTeacher(teacher_id as string, page);
+            const viewHiddenQuery = req.query.view_hidden as string | undefined;
+            const viewHidden =
+                viewHiddenQuery === undefined
+                    ? true
+                    : !["false", "0", "no"].includes(viewHiddenQuery.toLowerCase());
+            const classes = await ClassService.getClassesByTeacher(teacher_id as string, page, viewHidden);
             return res.status(200).json(classes);
         } catch (error) {
             next(error);

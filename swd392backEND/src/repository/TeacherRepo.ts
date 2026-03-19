@@ -1,14 +1,21 @@
-import { Teacher } from '../entities/Teacher.ts';
+import { Teacher } from "../entities/Teacher.ts";
 
 class TeacherRepo {
-    /** Get teacher by teacher document id and populate user (exclude password). */
-    async getById(id: string) {
-        return await Teacher.findById(id).populate('user_id', '-password -__v');
+    async getTeacherById(teacherId: string) {
+        return await Teacher.findById(teacherId);
     }
 
-    /** Get teacher by user id and populate user (exclude password). */
-    async getByUserId(userId: string) {
-        return await Teacher.findOne({ user_id: userId }).populate('user_id', '-password -__v');
+    async createTeacher(userId: string, credentialLink: string, fileName: string) {
+        const teacher = new Teacher({
+            user_id: userId,
+            credential: credentialLink,
+            fileName,
+        });
+        return await teacher.save();
+    }
+
+    async deleteTeacherByUserId(userId: string) {
+        return await Teacher.findOneAndDelete({ user_id: userId });
     }
 }
 

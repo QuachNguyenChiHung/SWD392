@@ -42,11 +42,16 @@ class ClassMaterialRepo {
     async getClassMaterialCount(classId: string) {
         return await ClassMaterial.countDocuments({ class_assign_id: classId });
     }
-    async getActiveClassMaterialsByClass(classId: string) {
+    async getActiveClassMaterialsByClass(classId: string, page: number = 1) {
+        const limit = 12;
+        const skip = (page - 1) * limit;
         return await ClassMaterial.find({
             class_assign_id: classId,
             status: { $nin: ['draft', 'deleted'] }
-        }).sort({ order_num: 1 });
+        })
+            .sort({ order_num: 1 })
+            .skip(skip)
+            .limit(limit);
     }
     async getActiveClassMaterialCount(classId: string) {
         return await ClassMaterial.countDocuments({
