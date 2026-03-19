@@ -115,10 +115,10 @@ export default function ClassMaterial({ topics, classId }: ClassMaterialProps) {
             <Stack
               direction="row"
               justifyContent="space-between"
-              alignItems="center"
+              alignItems="flex-start"
             >
-              <Typography variant="h6">{topic.title}</Typography>
-              <div style={{ display: "flex", gap: "8px" }}>
+              <Typography variant="h6" flex={3}>{topic.title}</Typography>
+              <div style={{ display: "flex", gap: "8px", height: "2rem" }}>
                 <Button variant="contained" size="small" startIcon={<Add />} onClick={() => handleOpenModal(getTopicId(topic))}>
                   Thêm tài liệu
                 </Button>
@@ -135,7 +135,7 @@ export default function ClassMaterial({ topics, classId }: ClassMaterialProps) {
 
             </Stack>
             <Box>
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" color="text.secondary" marginBottom={1}>
                 {topic.description}
               </Typography>
               <Typography variant="caption" color="text.secondary">
