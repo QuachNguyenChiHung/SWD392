@@ -230,51 +230,51 @@ class ClassMaterialController {
         }
     }
 
-    // // PATCH /api/class-materials/:id/flag
-    // async flagMaterial(req: Request, res: Response, next: NextFunction) {
-    //     try {
-    //         const { id } = req.params;
-    //         const result = await ClassMaterialService.flagMaterial(id as string);
-    //         if ((result as any)?.error) {
-    //             return res.status(400).json({ message: (result as any).error });
-    //         }
-    //         return res.status(200).json(result);
-    //     } catch (error) {
-    //         next(error);
-    //     }
-    // }
+    // PATCH /api/class-materials/:id/flag
+    async flagMaterial(req: Request, res: Response, next: NextFunction) {
+        try {
+            const { id } = req.params;
+            const result = await ClassMaterialService.flagMaterial(id as string);
+            if ((result as any)?.error) {
+                return res.status(400).json({ message: (result as any).error });
+            }
+            return res.status(200).json(result);
+        } catch (error) {
+            next(error);
+        }
+    }
 
-    // // PATCH /api/class-materials/:id/status
-    // async changeStatus(req: Request, res: Response, next: NextFunction) {
-    //     try {
-    //         const { id } = req.params;
-    //         const { status } = req.body;
-    //         if (!status) {
-    //             return res.status(400).json({ message: "status is required" });
-    //         }
-    //         const result = await ClassMaterialService.toggleClassMaterialStatus(id as string, status);
-    //         if ((result as any)?.error) {
-    //             return res.status(400).json({ message: (result as any).error });
-    //         }
-    //         return res.status(200).json(result);
-    //     } catch (error) {
-    //         next(error);
-    //     }
-    // }
+    // PATCH /api/class-materials/:id/status
+    async changeStatus(req: Request, res: Response, next: NextFunction) {
+        try {
+            const { id } = req.params;
+            const { status } = req.body;
+            if (!status) {
+                return res.status(400).json({ message: "status is required" });
+            }
+            const result = await ClassMaterialService.toggleClassMaterialStatus(id as string, status);
+            if ((result as any)?.error) {
+                return res.status(400).json({ message: (result as any).error });
+            }
+            return res.status(200).json(result);
+        } catch (error) {
+            next(error);
+        }
+    }
 
-    // // PATCH /api/class-materials/:id/verify
-    // async verifyAfterFlag(req: Request, res: Response, next: NextFunction) {
-    //     try {
-    //         const { id } = req.params;
-    //         const result = await ClassMaterialService.verifyAfterFlag(id as string);
-    //         if ((result as any)?.error) {
-    //             return res.status(400).json({ message: (result as any).error });
-    //         }
-    //         return res.status(200).json(result);
-    //     } catch (error) {
-    //         next(error);
-    //     }
-    // }
+    // PATCH /api/class-materials/:id/verify
+    async verifyAfterFlag(req: Request, res: Response, next: NextFunction) {
+        try {
+            const { id } = req.params;
+            const result = await ClassMaterialService.verifyAfterFlag(id as string);
+            if ((result as any)?.error) {
+                return res.status(400).json({ message: (result as any).error });
+            }
+            return res.status(200).json(result);
+        } catch (error) {
+            next(error);
+        }
+    }
 }
 
 export default new ClassMaterialController();
