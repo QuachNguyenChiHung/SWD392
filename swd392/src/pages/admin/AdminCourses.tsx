@@ -1,4 +1,4 @@
-import { Box, Typography, Paper, Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip, IconButton, TextField, InputAdornment, Dialog, DialogTitle, DialogContent, DialogActions, Alert, Stack, CircularProgress, Pagination, List, ListItem, ListItemText, Breadcrumbs, Divider } from '@mui/material';
+import { Box, Typography, Paper, Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip, IconButton, TextField, InputAdornment, Dialog, DialogTitle, DialogContent, DialogActions, Alert, Stack, CircularProgress, Pagination, List, ListItem, Breadcrumbs, Divider } from '@mui/material';
 import { useState, useEffect } from 'react';
 import { Add, Search, Edit, Delete, School, ToggleOn, ToggleOff, Topic, ArrowBack, NavigateNext, InsertDriveFile, ViewInAr } from '@mui/icons-material';
 import type { AdminCourse, AdminTopic, AdminClassMaterial, CreateCourseRequest, UpdateCourseRequest, CreateTopicRequest, UpdateTopicRequest } from '../../types/adminType';
@@ -814,21 +814,59 @@ const AdminCourses = () => {
                     <ListItem
                       key={topic._id}
                       divider
-                      secondaryAction={
-                        <Stack direction="row" spacing={1}>
-                          <Button size="small" variant="outlined" startIcon={<Topic />} onClick={() => handleViewTopicMaterials(topic)}>
+                      sx={{ py: 2, px: 0, alignItems: 'flex-start' }}
+                    >
+                      <Stack
+                        direction={{ xs: 'column', md: 'row' }}
+                        spacing={1.5}
+                        sx={{ width: '100%', alignItems: { xs: 'stretch', md: 'flex-start' } }}
+                      >
+                        <Box sx={{ flex: 1, minWidth: 0, pr: { md: 1 } }}>
+                          <Typography variant="subtitle1" fontWeight={600}>
+                            {topic.title}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, wordBreak: 'break-word' }}>
+                            {topic.description || 'Không có mô tả'}
+                          </Typography>
+                        </Box>
+                        <Stack
+                          direction="row"
+                          spacing={1}
+                          useFlexGap
+                          flexWrap="wrap"
+                          justifyContent={{ xs: 'flex-start', md: 'flex-end' }}
+                          sx={{ flexShrink: 0 }}
+                        >
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            startIcon={<Topic />}
+                            sx={{ whiteSpace: 'nowrap' }}
+                            onClick={() => handleViewTopicMaterials(topic)}
+                          >
                             Xem tài liệu
                           </Button>
-                          <Button size="small" variant="outlined" startIcon={<Edit />} onClick={() => handleOpenEditTopic(topic)}>
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            startIcon={<Edit />}
+                            sx={{ whiteSpace: 'nowrap' }}
+                            onClick={() => handleOpenEditTopic(topic)}
+                          >
                             Sửa
                           </Button>
-                          <Button size="small" color="error" variant="outlined" startIcon={<Delete />} onClick={() => handleOpenDeleteTopic(topic)}>
+                          <Button
+                            size="small"
+                            color="error"
+                            variant="outlined"
+                            startIcon={<Delete />}
+                            sx={{ whiteSpace: 'nowrap' }}
+                            onClick={() => handleOpenDeleteTopic(topic)}
+                          >
                             Xóa
                           </Button>
                         </Stack>
-                      }
-                    >
-                      <ListItemText primary={topic.title} secondary={topic.description || 'Không có mô tả'} />
+                      </Stack>
                     </ListItem>
                   ))}
                 </List>
