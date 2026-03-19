@@ -130,56 +130,18 @@ class ClassMaterialService {
         if (!validStatuses.includes(status)) return { error: "Invalid status value" };
 
         const previous = await ClassMaterialRepo.getClassMaterialById(id);
-        // Using any since the repo function expects any
-        const result = await ClassMaterialRepo.updateClassMaterial(id, { status } as any);
-
-        if (result && status) {
-            const wasActive = previous && !['draft', 'deleted'].includes(previous.status);
-            const isActive = !['draft', 'deleted'].includes(status);
-    async flagMaterial(id: string) {
-        const material = await ClassMaterialRepo.getClassMaterialById(id);
-        if (!material) return { error: "Class material not found" };
-
-        if (material.status !== 'published') {
-            return { error: "Only published materials can be flagged" };
-        }
-        if (!material.isFlaggable) {
-            return { error: "This material cannot be flagged again" };
-        }
-
-        return await ClassMaterialRepo.updateClassMaterial(id, {
-            isFlagged: true
-        });
-    }
-
-    async toggleClassMaterialStatus(id: string, status: string) {
-        const validStatuses = ['published', 'draft', 'reviewed', 'deleted'];
-        if (!validStatuses.includes(status)) {
-            return { error: "Invalid status" };
-        }
-
-        const material = await ClassMaterialRepo.getClassMaterialById(id);
-        if (!material) return { error: "Class material not found" };
+        if (!previous) return { error: "Class material not found" };
 
         const updateData: any = { status, isFlagged: false };
         if (status === 'reviewed') {
             updateData.isFlaggable = false;
         }
 
-        return await ClassMaterialRepo.updateClassMaterial(id, updateData);
-    }
+        const result = await ClassMaterialRepo.updateClassMaterial(id, updateData);
 
-    async verifyAfterFlag(id: string) {
-        const material = await ClassMaterialRepo.getClassMaterialById(id);
-        if (!material) return { error: "Class material not found" };
-
-        return await ClassMaterialRepo.updateClassMaterial(id, {
-            status: 'reviewed',
-            isFlagged: false,
-            isFlaggable: false
-        });
-    }
-
+        if (result) {
+            const wasActive = !['draft', 'deleted'].includes(previous.status);
+            const isActive = !['draft', 'deleted'].includes(status);
 
             if (!wasActive && isActive) {
                 await ProgressClassMaterialService.bulkCreateForMaterial(
@@ -190,6 +152,7 @@ class ClassMaterialService {
                 await ProgressClassMaterialService.bulkDeleteForMaterial(result._id.toString());
             }
         }
+
         return result;
     }
 
