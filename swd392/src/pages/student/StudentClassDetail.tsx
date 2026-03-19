@@ -12,6 +12,8 @@ import { apiService } from '../../services/api';
 import type { ClassItem, Topic, Enrollment } from '../../types/studentType';
 import ClassTopicsTab from '../../components/student/ClassTopicsTab';
 import StudentAIChat from '../../components/student/StudentAIChatBox';
+import FileViewer from '../../components/materialViewers/FileViewer';
+import SlideViewer from '../../components/materialViewers/SlideViewer';
 
 interface FileItem {
     _id: string;
@@ -185,15 +187,15 @@ export default function StudentClassDetail() {
 
                     // Build allMaterials with resolved file_path for ClassTopicsTab
                     const resolvedMaterials = await Promise.all(materialsData.map(async (m) => {
-                        if (m.type === 'quiz') return { _id: m._id, title: m.title, type: m.type, topic_id: m.topic_id, content_id: m.content_id, file_path: '' };
-                        if (m.type === '2d_render') return { _id: m._id, title: m.title, type: m.type, topic_id: m.topic_id, file_path: '' };
-                        if (!m.content_id) return { _id: m._id, title: m.title, type: m.type, topic_id: m.topic_id, file_path: '' };
+                        if (m.type === 'quiz') return { _id: m._id, title: m.title, type: m.type, topic_id: m.topic_id, content_id: m.content_id, file_path: '', status: m.status, isFlagged: m.isFlagged, isFlaggable: m.isFlaggable };
+                        if (m.type === '2d_render') return { _id: m._id, title: m.title, type: m.type, topic_id: m.topic_id, file_path: '', status: m.status, isFlagged: m.isFlagged, isFlaggable: m.isFlaggable };
+                        if (!m.content_id) return { _id: m._id, title: m.title, type: m.type, topic_id: m.topic_id, file_path: '', status: m.status, isFlagged: m.isFlagged, isFlaggable: m.isFlaggable };
                         try {
                             const isSlide = m.type === 'slide' || m.type === 'slides';
                             const data: any = await apiService.get(isSlide ? `/slides/${m.content_id}` : `/files/${m.content_id}`);
-                            return { _id: m._id, title: m.title, type: m.type, topic_id: m.topic_id, file_path: data?.file_path || '' };
+                            return { _id: m._id, title: m.title, type: m.type, topic_id: m.topic_id, file_path: data?.file_path || '', status: m.status, isFlagged: m.isFlagged, isFlaggable: m.isFlaggable };
                         } catch {
-                            return { _id: m._id, title: m.title, type: m.type, topic_id: m.topic_id, file_path: '' };
+                            return { _id: m._id, title: m.title, type: m.type, topic_id: m.topic_id, file_path: '', status: m.status, isFlagged: m.isFlagged, isFlaggable: m.isFlaggable };
                         }
                     }));
                     setAllMaterials(resolvedMaterials.filter(Boolean));
@@ -273,6 +275,17 @@ export default function StudentClassDetail() {
             // Note: enrollment status update is Teacher-only, handled by backend
         } catch (err: any) {
             console.error('Failed to mark material as completed:', err);
+        }
+    };
+
+    const handleFlagMaterial = async (mat: any) => {
+        if (!classId) return;
+        try {
+            await apiService.patch(`/class-materials/${mat._id}/flag`, {});
+            setAllMaterials(prev => prev.map(m => m._id === mat._id ? { ...m, isFlagged: true } : m));
+        } catch (err: any) {
+            console.error('Failed to flag material:', err);
+            // Optionally add toast later
         }
     };
 
@@ -401,18 +414,12 @@ export default function StudentClassDetail() {
                         completedMaterials={completedMaterials}
                         expandedTopic={expandedTopic}
                         onExpandTopic={handleExpandTopic}
-                        onPreviewMaterial={(mat) => setPreviewItem({ file: { _id: mat._id, file_name: mat.title, file_path: mat.file_path || '' }, type: 'file' })}
+                        onPreviewMaterial={(mat) => setPreviewItem({ 
+                            file: { _id: mat._id, file_name: mat.title, slide_name: mat.title, file_path: mat.file_path || '' } as any, 
+                            type: (mat.type === 'slide' || mat.type === 'slides') ? 'slide' : 'file' 
+                        })}
                         onOpenQuiz={(mat) => navigate(`/student/take-quiz/${mat._id}`)}
-                        onMarkCompleted={async (mat) => {
-                            if (!classId || !enrollment) return;
-                            if (completedMaterials.includes(mat._id)) return;
-                            try {
-                                try { await apiService.post(`/progress/${classId}/${mat._id}`, {}); } catch (e: any) { /* ignore already exists */ }
-                                await apiService.patch(`/progress/${classId}/${mat._id}/completed`);
-                                const fresh = await apiService.get(`/progress/${enrollment._id}`) as any[];
-                                setProgressRecords(Array.isArray(fresh) ? fresh : []);
-                            } catch (err) { console.error('Failed to mark completed:', err); }
-                        }}
+                        onFlagMaterial={handleFlagMaterial}
                     />
                 </Grid>
 
@@ -477,45 +484,44 @@ export default function StudentClassDetail() {
                             : (previewItem.file as Slide).slide_name
                     ) : 'Preview'}
                 </DialogTitle>
-                <DialogContent>
-                    <Box sx={{ mt: 2 }}>
-                        <Typography variant="subtitle2" gutterBottom>
-                            Loại: {previewItem?.type === 'file' ? 'Tài liệu' : 'Slide'}
-                        </Typography>
-                        {previewItem && previewItem.file.file_path && (
-                            <Box sx={{ mt: 3, p: 2, bgcolor: '#f3f4f6', borderRadius: 1 }}>
-                                <Typography variant="body2" gutterBottom>Liên kết:</Typography>
-                                <Typography
-                                    component="a"
-                                    href={previewItem.file.file_path}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    sx={{ color: '#6366f1', textDecoration: 'none', wordBreak: 'break-all', '&:hover': { textDecoration: 'underline' } }}
-                                >
-                                    {previewItem.file.file_path}
-                                </Typography>
-                            </Box>
-                        )}
-                        {previewItem && !previewItem.file.file_path && (
+                <DialogContent dividers>
+                    <Box sx={{ mt: 1, minHeight: '600px', display: 'flex', flexDirection: 'column' }}>
+                        {previewItem && previewItem.file.file_path ? (
+                            previewItem.type === 'file' ? (
+                                <FileViewer content={previewItem.file as any} />
+                            ) : (
+                                <SlideViewer content={previewItem.file as any} />
+                            )
+                        ) : (
                             <Alert severity="warning" sx={{ mt: 2 }}>
                                 Tài liệu này chưa có file đính kèm
                             </Alert>
+                        )}
+                        
+                        {/* Nút Hoàn thành ở dưới cùng của Modal Content */}
+                        {previewItem && (
+                            <Box sx={{ mt: 'auto', pt: 4, display: 'flex', justifyContent: 'center' }}>
+                                {!completedMaterials.includes(previewItem.file._id) ? (
+                                    <Button 
+                                        variant="contained" 
+                                        color="success" 
+                                        size="large"
+                                        startIcon={<CheckCircle />}
+                                        onClick={() => handleMarkMaterialCompleted(previewItem.file, previewItem.type)}
+                                    >
+                                        Đánh dấu hoàn thành tài liệu
+                                    </Button>
+                                ) : (
+                                    <Button variant="outlined" color="success" size="large" disabled startIcon={<CheckCircle />}>
+                                        Tài liệu này đã hoàn thành
+                                    </Button>
+                                )}
+                            </Box>
                         )}
                     </Box>
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={() => setPreviewItem(null)}>Đóng</Button>
-                    {previewItem?.file.file_path && (
-                        <Button
-                            variant="contained"
-                            component="a"
-                            href={previewItem.file.file_path}
-                            download
-                            target="_blank"
-                        >
-                            Tải về
-                        </Button>
-                    )}
                 </DialogActions>
             </Dialog>
 

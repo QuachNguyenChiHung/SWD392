@@ -1,5 +1,5 @@
 import { Stack, Typography, Alert, Box, Chip, Accordion, AccordionSummary, AccordionDetails, Divider, Paper, Button } from '@mui/material';
-import { ExpandMore, Info, CheckCircle, MenuBook, School, FileDownload, Visibility as Eye, Brush, Quiz } from '@mui/icons-material';
+import { ExpandMore, Info, CheckCircle, MenuBook, School, FileDownload, Visibility as Eye, Brush, Quiz, Flag } from '@mui/icons-material';
 import type { Topic } from '../../types/studentType';
 
 const TOPIC_COLORS = ['#6366f1', '#0ea5e9', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6'];
@@ -11,6 +11,9 @@ interface MaterialItem {
   file_path?: string;
   topic_id?: string;
   content_id?: string;
+  status?: string;
+  isFlagged?: boolean;
+  isFlaggable?: boolean;
 }
 
 interface TopicWithContent extends Topic {
@@ -29,8 +32,8 @@ interface ClassTopicsTabProps {
   expandedTopic: string | false;
   onExpandTopic: (topicId: string) => void;
   onPreviewMaterial?: (material: MaterialItem) => void;
-  onMarkCompleted?: (material: MaterialItem) => void;
   onOpenQuiz?: (material: MaterialItem) => void;
+  onFlagMaterial?: (material: MaterialItem) => void;
 }
 
 const getMaterialIcon = (type: string) => {
@@ -47,7 +50,7 @@ const getMaterialIcon = (type: string) => {
 export default function ClassTopicsTab({
   topics, materials = [], completedMaterials = [],
   courseName, gradeLevel, expandedTopic, onExpandTopic,
-  onPreviewMaterial, onMarkCompleted, onOpenQuiz
+  onPreviewMaterial, onOpenQuiz, onFlagMaterial
 }: ClassTopicsTabProps) {
   if (!topics.length) {
     return <Alert severity="info" icon={<Info />}>Chưa có chủ đề nào trong khóa học này</Alert>;
@@ -190,8 +193,11 @@ export default function ClassTopicsTab({
                                         {mat.file_path && (
                                           <Button size="small" variant="outlined" component="a" href={mat.file_path} download target="_blank" startIcon={<FileDownload />} sx={{ borderColor: color, color }}>Tải</Button>
                                         )}
-                                        {onMarkCompleted && !isCompleted && (
-                                          <Button size="small" variant="outlined" onClick={() => onMarkCompleted(mat)} startIcon={<CheckCircle />} sx={{ borderColor: '#10b981', color: '#10b981' }}>✓</Button>
+                                        {onFlagMaterial && mat.status === 'published' && mat.isFlaggable !== false && !mat.isFlagged && (
+                                          <Button size="small" variant="outlined" onClick={() => onFlagMaterial(mat)} startIcon={<Flag />} sx={{ borderColor: '#ef4444', color: '#ef4444' }}>Báo cáo</Button>
+                                        )}
+                                        {mat.isFlagged && (
+                                          <Chip label="Đã báo cáo" size="small" icon={<Flag sx={{ fontSize: '14px !important' }} />} sx={{ bgcolor: '#fee2e2', color: '#ef4444', fontSize: '0.65rem' }} />
                                         )}
                                       </Stack>
                                     )}
