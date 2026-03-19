@@ -14,13 +14,15 @@ import {
   Autocomplete,
   CircularProgress,
   Alert,
+  Chip,
 } from "@mui/material";
 import { Add } from "@mui/icons-material";
 import ClassTableRow from "../../components/teacher/ClassTableRow";
-import type { Class, Course, CreateClassData } from "../../types/teacherType";
+import type { Class, Course, CreateClassData, Topic } from "../../types/teacherType";
 import { useState, useEffect } from "react";
 import { teacherClassApi } from "../../services/teacherApi/teacherClassApi";
 import { courseApi } from "../../services/teacherApi/courseApi";
+import { topicApi } from "../../services/teacherApi/topicApi";
 
 const TeacherClasses = () => {
   const [classes, setClasses] = useState<Class[]>([]);
@@ -30,6 +32,9 @@ const TeacherClasses = () => {
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [className, setClassName] = useState("");
   const [creating, setCreating] = useState(false);
+  const [showDeleted, setShowDeleted] = useState(false);
+  const [courseTopics, setCourseTopics] = useState<Topic[]>([]);
+  const [topicsLoading, setTopicsLoading] = useState(false);
 
   // Pagination states
   const [page, setPage] = useState(1);
@@ -42,19 +47,19 @@ const TeacherClasses = () => {
 
   // Fetch classes when page changes
   useEffect(() => {
-    fetchClasses(page);
-  }, [page]);
+    fetchClasses(page, showDeleted);
+  }, [page, showDeleted]);
 
-  const fetchClasses = async (pageNum = 1) => {
+  const fetchClasses = async (pageNum = 1, viewHidden = true) => {
     try {
       setLoading(true);
       setError(null);
       // Fetch current page
-      const currentPageClasses = await teacherClassApi.getClassesByTeacher(pageNum);
+      const currentPageClasses = await teacherClassApi.getClassesByTeacher(pageNum, viewHidden);
       setClasses(Array.isArray(currentPageClasses) ? currentPageClasses : []);
 
       // Prefetch next page
-      const nextPageClasses = await teacherClassApi.getClassesByTeacher(pageNum + 1);
+      const nextPageClasses = await teacherClassApi.getClassesByTeacher(pageNum + 1, viewHidden);
       setNextPageData(Array.isArray(nextPageClasses) ? nextPageClasses : []);
       setNextPageEmpty(!nextPageClasses || nextPageClasses.length === 0);
     } catch (err) {
@@ -70,11 +75,14 @@ const TeacherClasses = () => {
       setCoursesLoading(true);
       setError(null);
       const response = await courseApi.getActiveCourses(1);
-      setCourses(response.courses || response || []);
+      const courseList = response.courses || response || [];
+      setCourses(courseList);
+      return courseList as Course[];
     } catch (err) {
       console.error('Error fetching courses:', err);
       setError('Không thể tải danh sách khóa học. Vui lòng thử lại.');
       setCourses([]);
+      return [] as Course[];
     } finally {
       setCoursesLoading(false);
     }
@@ -92,11 +100,45 @@ const TeacherClasses = () => {
     setClassName("");
     setCreating(false);
     setCourses([]);
+    setCourseTopics([]);
+    setTopicsLoading(false);
     setError(null);
+  };
+
+  const fetchTopicsByCourse = async (courseId: string) => {
+    try {
+      setTopicsLoading(true);
+      const response = await topicApi.getTopicsByCourse(courseId, 1);
+      setCourseTopics(response?.topics || []);
+    } catch (err) {
+      console.error('Error fetching topics for selected course:', err);
+      setCourseTopics([]);
+    } finally {
+      setTopicsLoading(false);
+    }
   };
 
   const handleCourseSelection = (course: Course | null) => {
     setSelectedCourse(course);
+    if (!course?._id) {
+      setCourseTopics([]);
+      return;
+    }
+    fetchTopicsByCourse(course._id);
+  };
+
+  const handleStatusChange = async (
+    classItem: Class,
+    status: "active" | "inactive" | "archived" | "deleted",
+  ) => {
+    if (classItem.status === status) return;
+    try {
+      await teacherClassApi.updateClass(classItem._id, { status });
+      await fetchClasses(page);
+    } catch (err) {
+      console.error('Error updating class status:', err);
+      alert('Không thể cập nhật trạng thái lớp học. Vui lòng thử lại.');
+    }
   };
 
   const handleCreateClass = async () => {
@@ -120,7 +162,7 @@ const TeacherClasses = () => {
       await teacherClassApi.createClass(createData);
 
       // Refresh classes list
-      await fetchClasses();
+      await fetchClasses(page, showDeleted);
 
       // Close modal and reset form
       handleModalClose();
@@ -142,12 +184,18 @@ const TeacherClasses = () => {
           mb: 3,
         }}
       >
-        <Typography variant="h4" fontWeight="bold">
-          Quản lý lớp học
-        </Typography>
-        <Button variant="contained" startIcon={<Add />} onClick={handleModalOpen}>
-          Tạo lớp học mới
-        </Button>
+        <Typography variant="h4" fontWeight="bold">Quản lý lớp học</Typography>
+        <Stack direction="row" spacing={1.5}>
+          <Button
+            variant="outlined"
+            onClick={() => setShowDeleted((prev) => !prev)}
+          >
+            {showDeleted ? "Ẩn lớp đã xóa" : "Hiện lớp đã xóa"}
+          </Button>
+          <Button variant="contained" startIcon={<Add />} onClick={handleModalOpen}>
+            Tạo lớp học mới
+          </Button>
+        </Stack>
       </Box>
 
       <Stack spacing={1} mb={2}>
@@ -162,7 +210,6 @@ const TeacherClasses = () => {
             <TableRow>
               <TableCell>Lớp học</TableCell>
               <TableCell>Course ID</TableCell>
-              <TableCell>Trạng thái</TableCell>
               <TableCell>Ngày khởi tạo</TableCell>
               <TableCell>Khóa lớp</TableCell>
               <TableCell align="right">Thao tác</TableCell>
@@ -182,16 +229,20 @@ const TeacherClasses = () => {
               <TableRow key="empty">
                 <TableCell colSpan={6} sx={{ textAlign: 'center', py: 4 }}>
                   <Typography variant="body1" color="text.secondary">
-                    Chưa có lớp học nào
+                    Không có lớp học phù hợp
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Hãy tạo lớp học đầu tiên của bạn
+                    {showDeleted ? 'Chưa có lớp học nào.' : 'Bật "Hiện lớp đã xóa" để xem các lớp đã xóa.'}
                   </Typography>
                 </TableCell>
               </TableRow>
             ) : (
               classes.map((classItem) => (
-                <ClassTableRow key={classItem._id} {...classItem} />
+                <ClassTableRow
+                  key={classItem._id}
+                  {...classItem}
+                  onStatusChange={handleStatusChange}
+                />
               ))
             )}
           </TableBody>
@@ -307,6 +358,29 @@ const TeacherClasses = () => {
                     </Box>
                   )}
                 />
+
+                {selectedCourse && (
+                  <Box>
+                    <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                      Chủ đề của khóa học đã chọn
+                    </Typography>
+                    {topicsLoading ? (
+                      <Typography variant="body2" color="text.secondary">
+                        Đang tải chủ đề...
+                      </Typography>
+                    ) : courseTopics.length > 0 ? (
+                      <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+                        {courseTopics.map((topic) => (
+                          <Chip key={topic._id} label={topic.title} size="small" />
+                        ))}
+                      </Stack>
+                    ) : (
+                      <Typography variant="body2" color="text.secondary">
+                        Khóa học này chưa có chủ đề.
+                      </Typography>
+                    )}
+                  </Box>
+                )}
               </Stack>
 
               {error && (
@@ -337,6 +411,7 @@ const TeacherClasses = () => {
           )}
         </Box>
       </Modal>
+
     </Box >
   );
 };

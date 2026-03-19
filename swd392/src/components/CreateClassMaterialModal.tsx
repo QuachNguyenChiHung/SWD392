@@ -53,6 +53,7 @@ export default function CreateClassMaterialModal({
     >("");
     const [selectedQuizType, setSelectedQuizType] = useState("standard");
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [selectedStatus, setSelectedStatus] = useState<"published" | "draft">("draft");
     const [materialName, setMaterialName] = useState("");
     const [materialDescription, setMaterialDescription] = useState("");
     const [quizQuestions, setQuizQuestions] = useState<Question[]>([]);
@@ -68,6 +69,7 @@ export default function CreateClassMaterialModal({
         setSelectedMaterialType("");
         setSelectedQuizType("standard");
         setSelectedFile(null);
+        setSelectedStatus("draft");
         setMaterialName("");
         setMaterialDescription("");
         setQuizQuestions([]);
@@ -191,6 +193,7 @@ export default function CreateClassMaterialModal({
             // Step 3: Create ClassMaterial linking to the content
             const newMaterial: CreateClassMaterialDTO = {
                 type: selectedMaterialType as ClassMaterialType,
+                status: selectedStatus,
                 order_num: currentMaterialCount + 1,
                 class_assign_id: classId,
                 title:
@@ -311,6 +314,24 @@ export default function CreateClassMaterialModal({
                                 <MenuItem value="slide">Slide thuyết trình</MenuItem>
                                 <MenuItem value="2d_render">Mô hình hóa 2D</MenuItem>
                                 <MenuItem value="quiz">Bài kiểm tra</MenuItem>
+                            </Select>
+                        </FormControl>
+
+                        <FormControl fullWidth>
+                            <InputLabel id="material-status-select-label">
+                                Trạng thái
+                            </InputLabel>
+                            <Select
+                                labelId="material-status-select-label"
+                                id="material-status-select"
+                                value={selectedStatus}
+                                onChange={(e) =>
+                                    setSelectedStatus(e.target.value as "published" | "draft")
+                                }
+                                label="Trạng thái"
+                            >
+                                <MenuItem value="draft">Bản nháp</MenuItem>
+                                <MenuItem value="published">Xuất bản</MenuItem>
                             </Select>
                         </FormControl>
 

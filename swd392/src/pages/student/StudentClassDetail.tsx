@@ -12,6 +12,8 @@ import { apiService } from '../../services/api';
 import type { ClassItem, Topic, Enrollment } from '../../types/studentType';
 import ClassTopicsTab from '../../components/student/ClassTopicsTab';
 import StudentAIChat from '../../components/student/StudentAIChatBox';
+import FileViewer from '../../components/materialViewers/FileViewer';
+import SlideViewer from '../../components/materialViewers/SlideViewer';
 
 interface FileItem {
     _id: string;
@@ -23,6 +25,13 @@ interface Slide {
     _id: string;
     slide_name: string;
     file_path: string;
+}
+
+interface QuizItem {
+    _id: string;
+    title: string;
+    content_id?: string;
+    topic_id?: string;
 }
 
 interface ProgressRecord {
@@ -50,8 +59,10 @@ export default function StudentClassDetail() {
     const [gradeLevel, setGradeLevel] = useState<number | undefined>(undefined);
     const [files, setFiles] = useState<FileItem[]>([]);
     const [slides, setSlides] = useState<Slide[]>([]);
+    const [quizzes, setQuizzes] = useState<QuizItem[]>([]);
     const [enrollment, setEnrollment] = useState<Enrollment | null>(null);
     const [progressRecords, setProgressRecords] = useState<ProgressRecord[]>([]);
+    const [quizAttempts, setQuizAttempts] = useState<any[]>([]);
     const [render2dIds, setRender2dIds] = useState<string[]>([]);
     const [allMaterials, setAllMaterials] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -62,26 +73,37 @@ export default function StudentClassDetail() {
 
     // completedMaterials = list of classmaterial_id that are completed
     const completedMaterials = useMemo(() => {
-        return progressRecords
-            .filter(p => p.completion_status === 'completed')
+        const quizMaterialIds = quizzes.map(q => q._id);
+        
+        // Exclude quizzes from generic progress records to prevent old "Mark Complete" clicks from skewing progress
+        const fromProgress = progressRecords
+            .filter(p => p.completion_status === 'completed' && !quizMaterialIds.includes(p.classmaterial_id))
             .map(p => p.classmaterial_id);
-    }, [progressRecords]);
+            
+        const fromQuizzes = quizzes
+            .filter(q => quizAttempts.some(a => {
+                const qId = typeof a.quiz_id === 'object' ? a.quiz_id._id : a.quiz_id;
+                return qId === q.content_id;
+            }))
+            .map(q => q._id);
+
+        return [...fromProgress, ...fromQuizzes];
+    }, [progressRecords, quizzes, quizAttempts]);
     // Note: progressStats uses allMaterialIds to filter correctly
 
     // Progress stats — only count materials that belong to this class
     const allMaterialIds = useMemo(() => [
-        ...files.map(f => f._id),
-        ...slides.map(s => s._id),
-    ], [files, slides]);
+        ...allMaterials
+            .filter(m => m.type !== '2d_render')
+            .map(m => m._id),
+    ], [allMaterials]);
 
     const progressStats = useMemo(() => {
         const total = allMaterialIds.length;
-        const completed = progressRecords.filter(
-            p => p.completion_status === 'completed' && allMaterialIds.includes(p.classmaterial_id)
-        ).length;
+        const completed = completedMaterials.filter(id => allMaterialIds.includes(id)).length;
         const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
         return { total, completed, percentage };
-    }, [progressRecords, allMaterialIds]);
+    }, [completedMaterials, allMaterialIds]);
 
     useEffect(() => {
         if (!classId) return;
@@ -116,6 +138,7 @@ export default function StudentClassDetail() {
 
                     const fileItems: FileItem[] = [];
                     const slideItems: Slide[] = [];
+                    const quizItems: QuizItem[] = [];
                     const render2dList: string[] = [];
 
                     await Promise.all(materialsData.map(async (m) => {
@@ -123,8 +146,15 @@ export default function StudentClassDetail() {
                             render2dList.push(m._id);
                             return;
                         }
-                        // Skip quiz type - handled separately
-                        if (m.type === 'quiz') return;
+                        if (m.type === 'quiz') {
+                            quizItems.push({
+                                _id: m._id,
+                                title: m.title,
+                                content_id: m.content_id,
+                                topic_id: m.topic_id,
+                            });
+                            return;
+                        }
                         const isSlide = m.type === 'slide' || m.type === 'slides';
                         // Skip nếu content_id là null
                         if (!m.content_id) {
@@ -163,19 +193,20 @@ export default function StudentClassDetail() {
 
                     setFiles(fileItems);
                     setSlides(slideItems);
+                    setQuizzes(quizItems);
                     setRender2dIds(render2dList);
 
                     // Build allMaterials with resolved file_path for ClassTopicsTab
                     const resolvedMaterials = await Promise.all(materialsData.map(async (m) => {
-                        if (m.type === 'quiz') return null;
-                        if (m.type === '2d_render') return { _id: m._id, title: m.title, type: m.type, topic_id: m.topic_id, file_path: '' };
-                        if (!m.content_id) return { _id: m._id, title: m.title, type: m.type, topic_id: m.topic_id, file_path: '' };
+                        if (m.type === 'quiz') return { _id: m._id, title: m.title, type: m.type, topic_id: m.topic_id, content_id: m.content_id, file_path: '', status: m.status, isFlagged: m.isFlagged, isFlaggable: m.isFlaggable };
+                        if (m.type === '2d_render') return { _id: m._id, title: m.title, type: m.type, topic_id: m.topic_id, file_path: '', status: m.status, isFlagged: m.isFlagged, isFlaggable: m.isFlaggable };
+                        if (!m.content_id) return { _id: m._id, title: m.title, type: m.type, topic_id: m.topic_id, file_path: '', status: m.status, isFlagged: m.isFlagged, isFlaggable: m.isFlaggable };
                         try {
                             const isSlide = m.type === 'slide' || m.type === 'slides';
                             const data: any = await apiService.get(isSlide ? `/slides/${m.content_id}` : `/files/${m.content_id}`);
-                            return { _id: m._id, title: m.title, type: m.type, topic_id: m.topic_id, file_path: data?.file_path || '' };
+                            return { _id: m._id, title: m.title, type: m.type, topic_id: m.topic_id, file_path: data?.file_path || '', status: m.status, isFlagged: m.isFlagged, isFlaggable: m.isFlaggable };
                         } catch {
-                            return { _id: m._id, title: m.title, type: m.type, topic_id: m.topic_id, file_path: '' };
+                            return { _id: m._id, title: m.title, type: m.type, topic_id: m.topic_id, file_path: '', status: m.status, isFlagged: m.isFlagged, isFlaggable: m.isFlaggable };
                         }
                     }));
                     setAllMaterials(resolvedMaterials.filter(Boolean));
@@ -192,18 +223,24 @@ export default function StudentClassDetail() {
                     if (classEnrollment) {
                         setEnrollment(classEnrollment);
 
-                        // 5. Get progress — API returns array directly
+                        // 5. Get progress
                         try {
                             const progressData: ProgressRecord[] = await apiService.get(
                                 `/progress/${classEnrollment._id}`
                             );
                             const records = Array.isArray(progressData) ? progressData : [];
                             setProgressRecords(records);
-
-                            // Note: PATCH /enroll/{id}/completed is Teacher-only
-                            // enrollment status update handled by backend
                         } catch (err) {
                             console.warn('Failed to fetch progress:', err);
+                        }
+                        
+                        // 6. Get quiz attempts
+                        try {
+                            const myAttempts: any[] = await apiService.get('/my-quiz-attempts');
+                            const attemptsData = myAttempts.map(item => item.attempt);
+                            setQuizAttempts(attemptsData);
+                        } catch (err) {
+                            console.warn('Failed to fetch quiz attempts:', err);
                         }
                     }
                 } catch (err) {
@@ -228,7 +265,7 @@ export default function StudentClassDetail() {
         setExpandedTopic(prev => prev === topicId ? false : topicId);
     };
 
-    const handleMarkMaterialCompleted = async (item: FileItem | Slide, type: 'file' | 'slide') => {
+    const handleMarkMaterialCompleted = async (item: FileItem | Slide, type: 'file' | 'slide' | 'quiz') => {
         if (!classId || !enrollment) return;
 
         // Đã completed rồi thì không làm gì
@@ -255,6 +292,17 @@ export default function StudentClassDetail() {
             // Note: enrollment status update is Teacher-only, handled by backend
         } catch (err: any) {
             console.error('Failed to mark material as completed:', err);
+        }
+    };
+
+    const handleFlagMaterial = async (mat: any) => {
+        if (!classId) return;
+        try {
+            await apiService.patch(`/class-materials/${mat._id}/flag`, {});
+            setAllMaterials(prev => prev.map(m => m._id === mat._id ? { ...m, isFlagged: true } : m));
+        } catch (err: any) {
+            console.error('Failed to flag material:', err);
+            // Optionally add toast later
         }
     };
 
@@ -376,25 +424,21 @@ export default function StudentClassDetail() {
                     )}
 
                     <ClassTopicsTab
-                            courseName={courseName}
-                            gradeLevel={gradeLevel}
-                            topics={topics}
-                            materials={allMaterials}
-                            completedMaterials={completedMaterials}
-                            expandedTopic={expandedTopic}
-                            onExpandTopic={handleExpandTopic}
-                            onPreviewMaterial={(mat) => setPreviewItem({ file: { _id: mat._id, file_name: mat.title, file_path: mat.file_path || '' }, type: 'file' })}
-                            onMarkCompleted={async (mat) => {
-                                if (!classId || !enrollment) return;
-                                if (completedMaterials.includes(mat._id)) return;
-                                try {
-                                    try { await apiService.post(`/progress/${classId}/${mat._id}`, {}); } catch (e: any) { /* ignore already exists */ }
-                                    await apiService.patch(`/progress/${classId}/${mat._id}/completed`);
-                                    const fresh = await apiService.get(`/progress/${enrollment._id}`) as any[];
-                                    setProgressRecords(Array.isArray(fresh) ? fresh : []);
-                                } catch (err) { console.error('Failed to mark completed:', err); }
-                            }}
-                        />
+                        courseName={courseName}
+                        gradeLevel={gradeLevel}
+                        topics={topics}
+                        materials={allMaterials}
+                        completedMaterials={completedMaterials}
+                        expandedTopic={expandedTopic}
+                        onExpandTopic={handleExpandTopic}
+                        onPreviewMaterial={(mat) => setPreviewItem({ 
+                            file: { _id: mat._id, file_name: mat.title, slide_name: mat.title, file_path: mat.file_path || '' } as any, 
+                            type: (mat.type === 'slide' || mat.type === 'slides') ? 'slide' : 'file' 
+                        })}
+                        onOpenQuiz={(mat, isDone) => navigate(isDone ? `/student/quiz-result/${mat._id}` : `/student/take-quiz/${mat._id}`)}
+                        onFlagMaterial={handleFlagMaterial}
+                        quizAttempts={quizAttempts}
+                    />
                 </Grid>
 
                 <Grid size={{ xs: 12, md: 4 }}>
@@ -416,7 +460,7 @@ export default function StudentClassDetail() {
                             </Box>
                             <Box>
                                 <Typography variant="caption" color="text.secondary">Tài liệu & Slide</Typography>
-                                <Typography variant="body2" fontWeight="600">{files.length + slides.length} tài liệu</Typography>
+                                <Typography variant="body2" fontWeight="600">{files.length + slides.length + quizzes.length} tài liệu</Typography>
                             </Box>
 
                             {enrollment && (
@@ -458,45 +502,44 @@ export default function StudentClassDetail() {
                             : (previewItem.file as Slide).slide_name
                     ) : 'Preview'}
                 </DialogTitle>
-                <DialogContent>
-                    <Box sx={{ mt: 2 }}>
-                        <Typography variant="subtitle2" gutterBottom>
-                            Loại: {previewItem?.type === 'file' ? 'Tài liệu' : 'Slide'}
-                        </Typography>
-                        {previewItem && previewItem.file.file_path && (
-                            <Box sx={{ mt: 3, p: 2, bgcolor: '#f3f4f6', borderRadius: 1 }}>
-                                <Typography variant="body2" gutterBottom>Liên kết:</Typography>
-                                <Typography
-                                    component="a"
-                                    href={previewItem.file.file_path}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    sx={{ color: '#6366f1', textDecoration: 'none', wordBreak: 'break-all', '&:hover': { textDecoration: 'underline' } }}
-                                >
-                                    {previewItem.file.file_path}
-                                </Typography>
-                            </Box>
-                        )}
-                        {previewItem && !previewItem.file.file_path && (
+                <DialogContent dividers>
+                    <Box sx={{ mt: 1, minHeight: '600px', display: 'flex', flexDirection: 'column' }}>
+                        {previewItem && previewItem.file.file_path ? (
+                            previewItem.type === 'file' ? (
+                                <FileViewer content={previewItem.file as any} />
+                            ) : (
+                                <SlideViewer content={previewItem.file as any} />
+                            )
+                        ) : (
                             <Alert severity="warning" sx={{ mt: 2 }}>
                                 Tài liệu này chưa có file đính kèm
                             </Alert>
+                        )}
+                        
+                        {/* Nút Hoàn thành ở dưới cùng của Modal Content */}
+                        {previewItem && (
+                            <Box sx={{ mt: 'auto', pt: 4, display: 'flex', justifyContent: 'center' }}>
+                                {!completedMaterials.includes(previewItem.file._id) ? (
+                                    <Button 
+                                        variant="contained" 
+                                        color="success" 
+                                        size="large"
+                                        startIcon={<CheckCircle />}
+                                        onClick={() => handleMarkMaterialCompleted(previewItem.file, previewItem.type)}
+                                    >
+                                        Đánh dấu hoàn thành tài liệu
+                                    </Button>
+                                ) : (
+                                    <Button variant="outlined" color="success" size="large" disabled startIcon={<CheckCircle />}>
+                                        Tài liệu này đã hoàn thành
+                                    </Button>
+                                )}
+                            </Box>
                         )}
                     </Box>
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={() => setPreviewItem(null)}>Đóng</Button>
-                    {previewItem?.file.file_path && (
-                        <Button
-                            variant="contained"
-                            component="a"
-                            href={previewItem.file.file_path}
-                            download
-                            target="_blank"
-                        >
-                            Tải về
-                        </Button>
-                    )}
                 </DialogActions>
             </Dialog>
 

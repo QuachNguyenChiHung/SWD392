@@ -63,48 +63,35 @@ export default function MaterialEditModal({
         const formDataToUpload = new FormData();
 
         if (material.type === "file") {
-          const fileContent = material.content as FileMaterial;
+          const fileContent = material.content as FileMaterial | null | undefined;
 
           formDataToUpload.append("file", formData.selectedFile);
           formDataToUpload.append("file_name", formData.fileName || formData.selectedFile.name);
 
-          const uploadedFile = await fileApiService.updateFileWithUpload(fileContent._id as string, formDataToUpload);
+          const uploadedFile = fileContent?._id
+            ? await fileApiService.updateFileWithUpload(fileContent._id as string, formDataToUpload)
+            : await fileApiService.uploadFile(formDataToUpload);
           console.log("Uploaded file response:", uploadedFile);
           updatedContent = uploadedFile;
         } else if (material.type === "slide") {
-          const slideContent = material.content as SlideMaterial;
+          const slideContent = material.content as SlideMaterial | null | undefined;
 
           formDataToUpload.append("slide", formData.selectedFile);
           formDataToUpload.append("slide_name", formData.slideName || formData.selectedFile.name);
 
-          const uploadedSlide = await slideApiService.updateSlideWithUpload(slideContent._id as string, formDataToUpload);
+          const uploadedSlide = slideContent?._id
+            ? await slideApiService.updateSlideWithUpload(slideContent._id as string, formDataToUpload)
+            : await slideApiService.uploadSlide(formDataToUpload);
           console.log("Uploaded slide response:", uploadedSlide);
           updatedContent = uploadedSlide;
         }
       } else {
-
-        if (material.type === "file") {
-          const fileContent = (material.content as FileMaterial) || {};
-          if (fileContent._id) {
-            const updatedFile = await fileApiService.updateFile(fileContent._id as string, {
-              file_name: formData.fileName,
-            });
-            updatedContent = updatedFile;
-          } else {
-            updatedContent = { ...fileContent, file_name: formData.fileName };
-          }
-        } else if (material.type === "slide") {
-          const slideContent = (material.content as SlideMaterial) || {};
-          if (slideContent._id) {
-            const updatedSlide = await slideApiService.updateSlide(slideContent._id as string, {
-              slide_name: formData.slideName,
-            });
-            updatedContent = updatedSlide;
-          } else {
-            updatedContent = { ...slideContent, slide_name: formData.slideName };
-          }
-        } else if (material.type === "quiz") {
+        if (material.type === "quiz") {
           const q = (material.content as Quiz) || {};
+
+          if (!q?._id) {
+            throw new Error("Quiz content is missing");
+          }
 
           const updatedQuiz = await quizApiService.updateQuiz(q._id, {
             title: formData.quizTitle,
@@ -152,7 +139,6 @@ export default function MaterialEditModal({
 
           updatedContent = {
             ...updatedQuiz,
-            keyword: formData.quizKeyword || null,
             questions: persistedQuestions,
           };
         }
@@ -161,6 +147,7 @@ export default function MaterialEditModal({
       const updatedMaterial = {
         ...material,
         title: formData.title,
+        status: formData.classMaterialStatus,
         order_num: formData.orderNum,
         is_ai_material: formData.isAi,
         dateUpdate: new Date(),

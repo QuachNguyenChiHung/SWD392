@@ -36,6 +36,7 @@ export interface MaterialFormData {
   isAi: boolean;
   description?: string;
   materialType: ClassMaterialType | "";
+  classMaterialStatus: "published" | "draft" | "deleted";
 
   // File/Slide specific
   selectedFile: File | null;
@@ -44,7 +45,6 @@ export interface MaterialFormData {
 
   // Quiz specific
   quizTitle: string;
-  quizKeyword: string;
   quizType: "interactive" | "standard";
   quizMaxAttempts: number | "";
   quizStatus: boolean;
@@ -64,11 +64,11 @@ export default function MaterialForm({
     isAi: false,
     description: "",
     materialType: "",
+    classMaterialStatus: "draft",
     selectedFile: null,
     fileName: "",
     slideName: "",
     quizTitle: "",
-    quizKeyword: "",
     quizType: "standard",
     quizMaxAttempts: 3,
     quizStatus: true,
@@ -86,6 +86,8 @@ export default function MaterialForm({
         isAi: material.is_ai_material,
         description: "",
         materialType: material.type,
+        classMaterialStatus:
+          material.status === "published" ? "published" : "draft",
         selectedFile: null,
         fileName:
           material.type === "file" && material.content
@@ -96,7 +98,6 @@ export default function MaterialForm({
             ? (material.content as SlideMaterial)?.slide_name || ""
             : "",
         quizTitle: "",
-        quizKeyword: "",
         quizType: "standard",
         quizMaxAttempts: 3,
         quizStatus: true,
@@ -109,7 +110,6 @@ export default function MaterialForm({
       if (material.type === "quiz" && material.content) {
         const q = material.content as Quiz;
         initialData.quizTitle = q?.title || "";
-        initialData.quizKeyword = q?.keyword ?? "";
         initialData.quizType = q?.type || "standard";
         initialData.quizMaxAttempts = q?.max_attempt_number ?? 3;
         initialData.quizStatus = q?.status ?? true;
@@ -205,6 +205,25 @@ export default function MaterialForm({
               }
               label="Tài liệu do AI tạo"
             />
+
+            <FormControl fullWidth>
+              <InputLabel>Trạng thái tài liệu</InputLabel>
+              <Select
+                value={formData.classMaterialStatus}
+                onChange={(e) =>
+                  updateFormData({
+                    classMaterialStatus: e.target.value as
+                      | "published"
+                      | "draft"
+                      | "deleted",
+                  })
+                }
+                label="Trạng thái tài liệu"
+              >
+                <MenuItem value="draft">Bản nháp</MenuItem>
+                <MenuItem value="published">Xuất bản</MenuItem>
+              </Select>
+            </FormControl>
           </>
         )}
 
@@ -259,14 +278,6 @@ export default function MaterialForm({
         {/* Quiz Form */}
         {formData.materialType === "quiz" && (
           <Stack spacing={2}>
-            <TextField
-              label="Từ khoá"
-              value={formData.quizKeyword}
-              onChange={(e) => updateFormData({ quizKeyword: e.target.value })}
-              fullWidth
-              placeholder="Nhập từ khoá cho bài kiểm tra (tùy chọn)..."
-            />
-
             {mode === "edit" && (
               <FormControlLabel
                 control={

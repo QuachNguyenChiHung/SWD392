@@ -6,7 +6,7 @@ export interface Class {
   teacher_id: string;
   img_cover_link: string;
   date_create: Date;
-  status: "active" | "inactive" | "archived";
+  status: "active" | "inactive" | "archived" | "deleted";
   course_name: string;
   description?: string;
   image_cover_id?: string;
@@ -23,6 +23,7 @@ export interface UpdateClassData {
   class_name?: string;
   description?: string;
   course_id?: string;
+  status?: "active" | "inactive" | "archived" | "deleted";
 }
 
 export interface ClassCompletionStat {

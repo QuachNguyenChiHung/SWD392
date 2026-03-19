@@ -23,7 +23,6 @@ import {
   Dashboard,
   School,
   Class,
-  Quiz,
   Person,
   Group,
   Settings,
@@ -66,12 +65,7 @@ const navItems: NavItem[] = [
     path: '/student/classes',
     roles: [UserRole.STUDENT],
   },
-  {
-    text: 'Bài kiểm tra',
-    icon: <Quiz />,
-    path: '/student/quizzes',
-    roles: [UserRole.STUDENT],
-  },
+
   {
     text: 'Quản lý lớp học',
     icon: <School />,
