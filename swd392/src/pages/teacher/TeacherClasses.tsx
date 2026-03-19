@@ -29,7 +29,6 @@ const TeacherClasses = () => {
   const [modalClassCreation, setModalClassCreation] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [className, setClassName] = useState("");
-  const [classDescription, setClassDescription] = useState("");
   const [creating, setCreating] = useState(false);
 
   // Pagination states
@@ -91,7 +90,6 @@ const TeacherClasses = () => {
     setModalClassCreation(false);
     setSelectedCourse(null);
     setClassName("");
-    setClassDescription("");
     setCreating(false);
     setCourses([]);
     setError(null);
@@ -116,7 +114,6 @@ const TeacherClasses = () => {
 
       const createData: CreateClassData = {
         class_name: className.trim(),
-        description: classDescription.trim() || undefined,
         course_id: selectedCourse._id,
       };
 
@@ -155,7 +152,7 @@ const TeacherClasses = () => {
 
       <Stack spacing={1} mb={2}>
         <Typography variant="subtitle1" color="text.secondary">
-          Theo dõi mã lớp học, mô tả, course ID, trạng thái, ngày khởi tạo và khóa truy cập (ẩn mặc định).
+          Theo dõi mã lớp học, course ID, trạng thái, ngày khởi tạo và khóa truy cập (ẩn mặc định).
         </Typography>
       </Stack>
 
@@ -164,7 +161,6 @@ const TeacherClasses = () => {
           <TableHead>
             <TableRow>
               <TableCell>Lớp học</TableCell>
-              <TableCell>Mô tả</TableCell>
               <TableCell>Course ID</TableCell>
               <TableCell>Trạng thái</TableCell>
               <TableCell>Ngày khởi tạo</TableCell>
@@ -175,7 +171,7 @@ const TeacherClasses = () => {
           <TableBody>
             {loading ? (
               <TableRow key="loading">
-                <TableCell colSpan={7} sx={{ textAlign: 'center', py: 4 }}>
+                <TableCell colSpan={6} sx={{ textAlign: 'center', py: 4 }}>
                   <CircularProgress size={30} />
                   <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
                     Đang tải danh sách lớp học...
@@ -184,7 +180,7 @@ const TeacherClasses = () => {
               </TableRow>
             ) : !classes?.length ? (
               <TableRow key="empty">
-                <TableCell colSpan={7} sx={{ textAlign: 'center', py: 4 }}>
+                <TableCell colSpan={6} sx={{ textAlign: 'center', py: 4 }}>
                   <Typography variant="body1" color="text.secondary">
                     Chưa có lớp học nào
                   </Typography>
@@ -271,18 +267,6 @@ const TeacherClasses = () => {
                   value={className}
                   onChange={(e) => setClassName(e.target.value)}
                   placeholder="VD: Hóa học 9A"
-                  disabled={creating}
-                />
-
-                <TextField
-                  label="Mô tả lớp học"
-                  variant="outlined"
-                  fullWidth
-                  multiline
-                  rows={3}
-                  value={classDescription}
-                  onChange={(e) => setClassDescription(e.target.value)}
-                  placeholder="Mô tả ngắn về lớp học (tùy chọn)"
                   disabled={creating}
                 />
 
