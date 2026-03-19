@@ -1,6 +1,7 @@
 import { Router } from "express";
 import ClassController from "../controller/ClassController.ts";
 import verifyRole from "../ultis/verifyRole.ts";
+import { imageMulterUpload } from "../ultis/cloudinary.ts";
 const route = Router();
 
 // Admin statistics for classes
@@ -16,8 +17,8 @@ route.get("/class/:classId/students", verifyRole.verifyTeacher, ClassController.
 route.post("/class", verifyRole.verifyTeacher, ClassController.createClass);
 route.put("/class/:id", verifyRole.verifyTeacher, ClassController.updateClass);
 route.post("/class/:classId/generate-keypass", verifyRole.verifyTeacher, ClassController.generateKeypass);
-route.post("/teacher/upload-image", verifyRole.verifyTeacher, ClassController.uploadImageCover);
-route.put("/teacher/update-image", verifyRole.verifyTeacher, ClassController.updateImageCover);
+route.post("/teacher/upload-image", verifyRole.verifyTeacher, imageMulterUpload.single("image"), ClassController.uploadImageCover);
+route.put("/teacher/update-image", verifyRole.verifyTeacher, imageMulterUpload.single("image"), ClassController.updateImageCover);
 route.delete("/teacher/delete-image", verifyRole.verifyTeacher, ClassController.deleteImageCover);
 
 // Teacher delete class (with ownership check)
