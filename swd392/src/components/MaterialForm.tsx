@@ -34,7 +34,6 @@ export interface MaterialFormData {
   title: string;
   orderNum: number;
   isAi: boolean;
-  description?: string;
   materialType: ClassMaterialType | "";
   classMaterialStatus: "published" | "draft" | "deleted";
 
@@ -62,7 +61,6 @@ export default function MaterialForm({
     title: "",
     orderNum: 1,
     isAi: false,
-    description: "",
     materialType: "",
     classMaterialStatus: "draft",
     selectedFile: null,
@@ -84,7 +82,6 @@ export default function MaterialForm({
         title: material.title,
         orderNum: material.order_num,
         isAi: material.is_ai_material,
-        description: "",
         materialType: material.type,
         classMaterialStatus:
           material.status === "published" ? "published" : "draft",
@@ -154,16 +151,6 @@ export default function MaterialForm({
 
         {mode === "create" && (
           <>
-            <TextField
-              label="Mô tả tài liệu"
-              multiline
-              rows={3}
-              value={formData.description}
-              onChange={(e) => updateFormData({ description: e.target.value })}
-              fullWidth
-              placeholder="Nhập mô tả cho tài liệu (tùy chọn)..."
-            />
-
             <FormControl fullWidth>
               <InputLabel>Loại tài liệu</InputLabel>
               <Select

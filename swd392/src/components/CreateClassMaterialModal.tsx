@@ -55,7 +55,6 @@ export default function CreateClassMaterialModal({
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [selectedStatus, setSelectedStatus] = useState<"published" | "draft">("draft");
     const [materialName, setMaterialName] = useState("");
-    const [materialDescription, setMaterialDescription] = useState("");
     const [quizQuestions, setQuizQuestions] = useState<Question[]>([]);
     const [isLoading, setIsLoading] = useState(false);
 
@@ -71,7 +70,6 @@ export default function CreateClassMaterialModal({
         setSelectedFile(null);
         setSelectedStatus("draft");
         setMaterialName("");
-        setMaterialDescription("");
         setQuizQuestions([]);
         setQuizTitle("");
         setQuizStartDate("");
@@ -203,7 +201,6 @@ export default function CreateClassMaterialModal({
                         : `Tài liệu ${currentMaterialCount + 1}`),
                 topic_id: topicId,
                 content_id: content_id || undefined,
-                description: materialDescription || undefined,
             };
 
             const createdMaterial = await classMaterialApi.createMaterial(
@@ -284,17 +281,6 @@ export default function CreateClassMaterialModal({
                             value={materialName}
                             onChange={(e) => setMaterialName(e.target.value)}
                             placeholder="Nhập tên tài liệu..."
-                        />
-
-                        <TextField
-                            label="Mô tả tài liệu"
-                            variant="outlined"
-                            multiline
-                            rows={3}
-                            fullWidth
-                            value={materialDescription}
-                            onChange={(e) => setMaterialDescription(e.target.value)}
-                            placeholder="Nhập mô tả cho tài liệu (tùy chọn)..."
                         />
 
                         <FormControl fullWidth>
