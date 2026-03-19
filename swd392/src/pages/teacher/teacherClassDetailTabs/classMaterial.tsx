@@ -125,9 +125,19 @@ export default function ClassMaterial({ topics, classId }: ClassMaterialProps) {
                 <Button
                   variant="contained"
                   startIcon={<AutoAwesome />}
-                  onClick={() => navigate(`/teacher/class/${classId}/ai-generator`, {
-                    state: { topic: topic, classId: classId }
-                  })}
+                  onClick={() => {
+                    const topicId = getTopicId(topic);
+                    const topicMaterials = materialsByTopic[topicId] || [];
+                    navigate(`/teacher/class/${classId}/ai-generator`, {
+                      state: {
+                        topic: {
+                          ...topic,
+                          classMaterials: topicMaterials,
+                        },
+                        classId,
+                      }
+                    });
+                  }}
                 >
                   Tạo với AI
                 </Button>

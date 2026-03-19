@@ -229,7 +229,6 @@ export interface CreateClassMaterialDTO {
   ai_content_id?: string;
   isFlagged?: boolean;
   isFlaggable?: boolean;
-  description: any;
 }
 
 export interface UpdateClassMaterialDTO {
