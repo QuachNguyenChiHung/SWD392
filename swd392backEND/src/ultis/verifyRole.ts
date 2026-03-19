@@ -23,6 +23,30 @@ class VerifyRole {
             return res.status(403).json({ message: "Forbidden: Invalid token" });
         }
     }
+    async verifyAdminOrModerator(req: Request, res: Response, next: NextFunction) {// verify if the user is an admin or moderator
+        try {
+            const token = req.signedCookies.Authorization;
+            const user = await UserService.getUserByToken(token as string);
+            const verified = UserGetFromTokenSchema.parse(user);
+            // Check if user is admin (authorization_lvl === 2)
+            const admin = await Admin.findOne({ user_id: verified.id });
+            if (admin && admin.authorization_lvl === 2) {
+                req.user = verified;
+                req.admin = admin;
+                return next();
+            }
+            // Check if user is moderator (authorization_lvl === 1)
+            if (admin && admin.authorization_lvl === 1) {
+                req.user = verified;
+                req.admin = admin;
+                return next();
+            }
+            return res.status(403).json({ message: "Forbidden: Admins or moderators only" });
+        } catch (error) {
+            return res.status(403).json({ message: "Forbidden: Invalid token" });
+        }
+    }
+
     async verifyTeacher(req: Request, res: Response, next: NextFunction) {// verify if the user is a teacher
         try {
             const token = req.signedCookies.Authorization;
@@ -39,6 +63,19 @@ class VerifyRole {
                 return next();
             }
             return res.status(403).json({ message: "Forbidden: Teachers only" });
+        } catch (error) {
+            return res.status(403).json({ message: "Forbidden: Invalid token" });
+        }
+    }
+    async verifyUser(req: Request, res: Response, next: NextFunction) {// verify if the user is a teacher
+        try {
+            const token = req.signedCookies.Authorization;
+            const user = await UserService.getUserByToken(token as string);
+            const verified = UserGetFromTokenSchema.parse(user);
+            console.log("Verified user from token:", verified);
+            req.user = verified;
+            // Query Teacher entity to get teacher_id
+            return next();
         } catch (error) {
             return res.status(403).json({ message: "Forbidden: Invalid token" });
         }

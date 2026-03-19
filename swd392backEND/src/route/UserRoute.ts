@@ -14,7 +14,7 @@ route.post('/users', verifyRole.verifyAdmin, filesMulterUpload.single('credentia
 route.patch('/users/:id', verifyRole.verifyAdmin, UserController.updateUser);
 route.delete('/users/:id', verifyRole.verifyAdmin, UserController.deleteUser);
 
-// User status toggle route, only for admin or moderator to use
+// User status toggle route, only for admin to use, prevent user from updating their own status by themselves
 route.patch('/users/:id/status', verifyRole.verifyAdminOrModerator, UserController.toggleStatus);
 
 // Authentication routes

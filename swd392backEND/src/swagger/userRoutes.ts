@@ -180,7 +180,7 @@
  *         name: keyword
  *         schema:
  *           type: string
- *         required: true
+ *         required: false
  *         description: Search keyword
  *       - in: query
  *         name: page

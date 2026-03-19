@@ -94,49 +94,18 @@ router.get(
 router.get("/class-materials/:id", ClassMaterialController.getMaterialById);
 
 // Teacher-only writes
-router.post(
-  "/class-materials",
-  verifyRole.verifyTeacher,
-  ClassMaterialController.createMaterial,
-);
-router.put(
-  "/class-materials/:id",
-  verifyRole.verifyTeacher,
-  ClassMaterialController.updateMaterial,
-);
-router.delete(
-  "/class-materials/:id",
-  verifyRole.verifyTeacher,
-  ClassMaterialController.deleteMaterial,
-);
-router.patch(
-  "/class-materials/reorder",
-  verifyRole.verifyTeacher,
-  ClassMaterialController.reorderMaterials,
-);
-router.patch(
-  "/class-materials/:id/toggle-ai",
-  verifyRole.verifyTeacher,
-  ClassMaterialController.toggleAiMaterial,
-);
+router.post("/class-materials", verifyRole.verifyTeacher, ClassMaterialController.createMaterial);
+router.put("/class-materials/:id", verifyRole.verifyTeacher, ClassMaterialController.updateMaterial);
+router.delete("/class-materials/:id", verifyRole.verifyTeacher, ClassMaterialController.deleteMaterial);
+router.patch("/class-materials/reorder", verifyRole.verifyTeacher, ClassMaterialController.reorderMaterials);
+router.patch("/class-materials/:id/toggle-ai", verifyRole.verifyTeacher, ClassMaterialController.toggleAiMaterial);
+
 
 // Student: flag a reviewed material for re-moderation
-router.patch(
-  "/class-materials/:id/flag",
-  verifyRole.verifyStudent,
-  ClassMaterialController.flagMaterial,
-);
+router.patch("/class-materials/:id/flag", verifyRole.verifyStudent, ClassMaterialController.flagMaterial);
 
 // Moderator: change status / verify after student flag
-router.patch(
-  "/class-materials/:id/status",
-  verifyRole.verifyModerator,
-  ClassMaterialController.changeStatus,
-);
-router.patch(
-  "/class-materials/:id/verify",
-  verifyRole.verifyModerator,
-  ClassMaterialController.verifyAfterFlag,
-);
+router.patch("/class-materials/:id/status", verifyRole.verifyModerator, ClassMaterialController.changeStatus);
+router.patch("/class-materials/:id/verify", verifyRole.verifyModerator, ClassMaterialController.verifyAfterFlag);
 
 export default router;
