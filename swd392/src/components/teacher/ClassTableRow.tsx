@@ -20,6 +20,7 @@ interface ClassTableRowProps extends Class {
     classItem: Class,
     status: "active" | "inactive" | "archived" | "deleted",
   ) => void;
+  onChangeImage?: (classItem: Class) => void;
 }
 
 const maskKey = (key: string) => "•".repeat(Math.max(4, key.length));
@@ -42,6 +43,7 @@ const ClassTableRow = ({
   image_cover_id,
   date_update,
   onStatusChange,
+  onChangeImage,
 }: ClassTableRowProps) => {
   const [showKey, setShowKey] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState<"active" | "inactive" | "archived" | "deleted">(status);
@@ -122,6 +124,27 @@ const ClassTableRow = ({
             to={`/teacher/class/${_id}`}
           >
             Xem chi tiết
+          </Button>
+          <Button
+            size="small"
+            variant="outlined"
+            onClick={() =>
+              onChangeImage?.({
+                _id,
+                class_name,
+                course_id,
+                course_name,
+                status,
+                date_create,
+                date_update,
+                keypass,
+                teacher_id,
+                img_cover_link,
+                image_cover_id,
+              })
+            }
+          >
+            Đổi ảnh
           </Button>
         </Stack>
       </TableCell>

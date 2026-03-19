@@ -4,7 +4,7 @@ export interface Class {
   keypass: string;
   course_id: string;
   teacher_id: string;
-  img_cover_link: string;
+  img_cover_link?: string | null;
   date_create: Date;
   status: "active" | "inactive" | "archived" | "deleted";
   course_name: string;
@@ -17,6 +17,7 @@ export interface CreateClassData {
   class_name: string;
   description?: string;
   course_id: string;
+  img_cover_link?: string;
 }
 
 export interface UpdateClassData {
@@ -24,6 +25,7 @@ export interface UpdateClassData {
   description?: string;
   course_id?: string;
   status?: "active" | "inactive" | "archived" | "deleted";
+  img_cover_link?: string;
 }
 
 export interface ClassCompletionStat {
