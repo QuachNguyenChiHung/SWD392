@@ -208,6 +208,7 @@ export default function MaterialDetailPage() {
             await classMaterialApi.updateMaterial(materialId, {
                 title: updated.title,
                 type: updated.type,
+                status: updated.status,
                 order_num: updated.order_num,
                 is_ai_material: updated.is_ai_material,
                 content_id: contentId, // Pass the updated content_id
