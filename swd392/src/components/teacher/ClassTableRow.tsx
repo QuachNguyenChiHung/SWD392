@@ -55,9 +55,6 @@ const ClassTableRow = ({
     <TableRow hover>
       <TableCell>
         <Typography variant="subtitle2">{class_name}</Typography>
-        <Typography variant="body2" color="text.secondary">
-          {course_name || course_id}
-        </Typography>
       </TableCell>
       <TableCell>
         <Typography variant="body2" sx={{ fontFamily: "monospace" }}>
@@ -97,7 +94,6 @@ const ClassTableRow = ({
                 class_name,
                 course_id,
                 course_name,
-                description,
                 status,
                 date_create,
                 date_update,
