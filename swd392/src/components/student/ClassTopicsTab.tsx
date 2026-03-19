@@ -1,5 +1,5 @@
 import { Stack, Typography, Alert, Box, Chip, Accordion, AccordionSummary, AccordionDetails, Divider, Paper, Button } from '@mui/material';
-import { ExpandMore, Info, CheckCircle, MenuBook, School, FileDownload, Visibility as Eye, Brush } from '@mui/icons-material';
+import { ExpandMore, Info, CheckCircle, MenuBook, School, FileDownload, Visibility as Eye, Brush, Quiz } from '@mui/icons-material';
 import type { Topic } from '../../types/studentType';
 
 const TOPIC_COLORS = ['#6366f1', '#0ea5e9', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6'];
@@ -30,12 +30,14 @@ interface ClassTopicsTabProps {
   onExpandTopic: (topicId: string) => void;
   onPreviewMaterial?: (material: MaterialItem) => void;
   onMarkCompleted?: (material: MaterialItem) => void;
+  onOpenQuiz?: (material: MaterialItem) => void;
 }
 
 const getMaterialIcon = (type: string) => {
   switch (type) {
     case 'slide': case 'slides': return '🎯';
     case '2d_render': return '🎨';
+    case 'quiz': return '📝';
     case 'pdf': return '📄';
     case 'video': return '🎥';
     default: return '📎';
@@ -45,7 +47,7 @@ const getMaterialIcon = (type: string) => {
 export default function ClassTopicsTab({
   topics, materials = [], completedMaterials = [],
   courseName, gradeLevel, expandedTopic, onExpandTopic,
-  onPreviewMaterial, onMarkCompleted
+  onPreviewMaterial, onMarkCompleted, onOpenQuiz
 }: ClassTopicsTabProps) {
   if (!topics.length) {
     return <Alert severity="info" icon={<Info />}>Chưa có chủ đề nào trong khóa học này</Alert>;
@@ -150,6 +152,7 @@ export default function ClassTopicsTab({
                             <Stack spacing={1}>
                               {topicMaterials.map(mat => {
                                 const isRender2D = mat.type === '2d_render';
+                                const isQuiz = mat.type === 'quiz';
                                 const isCompleted = completedMaterials.includes(mat._id);
                                 return (
                                   <Paper key={mat._id} variant="outlined" sx={{ p: 1.5, borderRadius: 1.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center', '&:hover': { bgcolor: 'rgba(0,0,0,0.01)' } }}>
@@ -165,6 +168,20 @@ export default function ClassTopicsTab({
                                     </Stack>
                                     {isRender2D ? (
                                       <Chip label="Coming soon" size="small" icon={<Brush sx={{ fontSize: '14px !important' }} />} sx={{ bgcolor: '#f0f7ff', color: '#6366f1', fontSize: '0.65rem' }} />
+                                    ) : isQuiz ? (
+                                      <Stack direction="row" spacing={0.5}>
+                                        {onOpenQuiz && (
+                                          <Button
+                                            size="small"
+                                            variant="contained"
+                                            onClick={() => onOpenQuiz(mat)}
+                                            startIcon={<Quiz />}
+                                            sx={{ bgcolor: color, '&:hover': { bgcolor: `${color}dd` } }}
+                                          >
+                                            Làm bài
+                                          </Button>
+                                        )}
+                                      </Stack>
                                     ) : (
                                       <Stack direction="row" spacing={0.5}>
                                         {onPreviewMaterial && (

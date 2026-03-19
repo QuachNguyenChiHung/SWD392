@@ -25,6 +25,13 @@ interface Slide {
     file_path: string;
 }
 
+interface QuizItem {
+    _id: string;
+    title: string;
+    content_id?: string;
+    topic_id?: string;
+}
+
 interface ProgressRecord {
     _id: string;
     enroll_id: string;
@@ -50,6 +57,7 @@ export default function StudentClassDetail() {
     const [gradeLevel, setGradeLevel] = useState<number | undefined>(undefined);
     const [files, setFiles] = useState<FileItem[]>([]);
     const [slides, setSlides] = useState<Slide[]>([]);
+    const [quizzes, setQuizzes] = useState<QuizItem[]>([]);
     const [enrollment, setEnrollment] = useState<Enrollment | null>(null);
     const [progressRecords, setProgressRecords] = useState<ProgressRecord[]>([]);
     const [render2dIds, setRender2dIds] = useState<string[]>([]);
@@ -70,9 +78,10 @@ export default function StudentClassDetail() {
 
     // Progress stats — only count materials that belong to this class
     const allMaterialIds = useMemo(() => [
-        ...files.map(f => f._id),
-        ...slides.map(s => s._id),
-    ], [files, slides]);
+        ...allMaterials
+            .filter(m => m.type !== '2d_render')
+            .map(m => m._id),
+    ], [allMaterials]);
 
     const progressStats = useMemo(() => {
         const total = allMaterialIds.length;
@@ -116,6 +125,7 @@ export default function StudentClassDetail() {
 
                     const fileItems: FileItem[] = [];
                     const slideItems: Slide[] = [];
+                    const quizItems: QuizItem[] = [];
                     const render2dList: string[] = [];
 
                     await Promise.all(materialsData.map(async (m) => {
@@ -123,8 +133,15 @@ export default function StudentClassDetail() {
                             render2dList.push(m._id);
                             return;
                         }
-                        // Skip quiz type - handled separately
-                        if (m.type === 'quiz') return;
+                        if (m.type === 'quiz') {
+                            quizItems.push({
+                                _id: m._id,
+                                title: m.title,
+                                content_id: m.content_id,
+                                topic_id: m.topic_id,
+                            });
+                            return;
+                        }
                         const isSlide = m.type === 'slide' || m.type === 'slides';
                         // Skip nếu content_id là null
                         if (!m.content_id) {
@@ -163,11 +180,12 @@ export default function StudentClassDetail() {
 
                     setFiles(fileItems);
                     setSlides(slideItems);
+                    setQuizzes(quizItems);
                     setRender2dIds(render2dList);
 
                     // Build allMaterials with resolved file_path for ClassTopicsTab
                     const resolvedMaterials = await Promise.all(materialsData.map(async (m) => {
-                        if (m.type === 'quiz') return null;
+                        if (m.type === 'quiz') return { _id: m._id, title: m.title, type: m.type, topic_id: m.topic_id, content_id: m.content_id, file_path: '' };
                         if (m.type === '2d_render') return { _id: m._id, title: m.title, type: m.type, topic_id: m.topic_id, file_path: '' };
                         if (!m.content_id) return { _id: m._id, title: m.title, type: m.type, topic_id: m.topic_id, file_path: '' };
                         try {
@@ -228,7 +246,7 @@ export default function StudentClassDetail() {
         setExpandedTopic(prev => prev === topicId ? false : topicId);
     };
 
-    const handleMarkMaterialCompleted = async (item: FileItem | Slide, type: 'file' | 'slide') => {
+    const handleMarkMaterialCompleted = async (item: FileItem | Slide, type: 'file' | 'slide' | 'quiz') => {
         if (!classId || !enrollment) return;
 
         // Đã completed rồi thì không làm gì
@@ -376,25 +394,26 @@ export default function StudentClassDetail() {
                     )}
 
                     <ClassTopicsTab
-                            courseName={courseName}
-                            gradeLevel={gradeLevel}
-                            topics={topics}
-                            materials={allMaterials}
-                            completedMaterials={completedMaterials}
-                            expandedTopic={expandedTopic}
-                            onExpandTopic={handleExpandTopic}
-                            onPreviewMaterial={(mat) => setPreviewItem({ file: { _id: mat._id, file_name: mat.title, file_path: mat.file_path || '' }, type: 'file' })}
-                            onMarkCompleted={async (mat) => {
-                                if (!classId || !enrollment) return;
-                                if (completedMaterials.includes(mat._id)) return;
-                                try {
-                                    try { await apiService.post(`/progress/${classId}/${mat._id}`, {}); } catch (e: any) { /* ignore already exists */ }
-                                    await apiService.patch(`/progress/${classId}/${mat._id}/completed`);
-                                    const fresh = await apiService.get(`/progress/${enrollment._id}`) as any[];
-                                    setProgressRecords(Array.isArray(fresh) ? fresh : []);
-                                } catch (err) { console.error('Failed to mark completed:', err); }
-                            }}
-                        />
+                        courseName={courseName}
+                        gradeLevel={gradeLevel}
+                        topics={topics}
+                        materials={allMaterials}
+                        completedMaterials={completedMaterials}
+                        expandedTopic={expandedTopic}
+                        onExpandTopic={handleExpandTopic}
+                        onPreviewMaterial={(mat) => setPreviewItem({ file: { _id: mat._id, file_name: mat.title, file_path: mat.file_path || '' }, type: 'file' })}
+                        onOpenQuiz={(mat) => navigate(`/student/take-quiz/${mat._id}`)}
+                        onMarkCompleted={async (mat) => {
+                            if (!classId || !enrollment) return;
+                            if (completedMaterials.includes(mat._id)) return;
+                            try {
+                                try { await apiService.post(`/progress/${classId}/${mat._id}`, {}); } catch (e: any) { /* ignore already exists */ }
+                                await apiService.patch(`/progress/${classId}/${mat._id}/completed`);
+                                const fresh = await apiService.get(`/progress/${enrollment._id}`) as any[];
+                                setProgressRecords(Array.isArray(fresh) ? fresh : []);
+                            } catch (err) { console.error('Failed to mark completed:', err); }
+                        }}
+                    />
                 </Grid>
 
                 <Grid size={{ xs: 12, md: 4 }}>
@@ -416,7 +435,7 @@ export default function StudentClassDetail() {
                             </Box>
                             <Box>
                                 <Typography variant="caption" color="text.secondary">Tài liệu & Slide</Typography>
-                                <Typography variant="body2" fontWeight="600">{files.length + slides.length} tài liệu</Typography>
+                                <Typography variant="body2" fontWeight="600">{files.length + slides.length + quizzes.length} tài liệu</Typography>
                             </Box>
 
                             {enrollment && (

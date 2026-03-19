@@ -9,18 +9,13 @@ import {
     TableCell,
     Paper,
     Divider,
-    IconButton,
-    Tooltip,
-    CircularProgress,
 } from "@mui/material";
 import {
     Quiz,
     CheckCircle,
-    DeleteOutline,
 } from "@mui/icons-material";
 import { useState, useEffect } from "react";
 import type { Quiz as QuizType, Question } from "../../types/teacherType";
-import { questionApiService } from "../../services/teacherApi/materialApi/questionApi";
 import { quizAttemptResultApiService, type QuizAttemptWithResults } from "../../services/teacherApi/materialApi/quizAttemptResultApi";
 import QuizAttemptResultsTable from "./QuizAttemptResultsTable";
 
@@ -34,9 +29,8 @@ const TYPE_LABEL: Record<Question["type"], string> = {
     true_false: "Đúng / Sai",
 };
 
-export default function QuizViewer({ content, onQuestionsChange }: QuizViewerProps) {
+export default function QuizViewer({ content, onQuestionsChange: _onQuestionsChange }: QuizViewerProps) {
     const [questions, setQuestions] = useState<Question[]>(content.questions ?? []);
-    const [saving, setSaving] = useState(false);
     const [attempts, setAttempts] = useState<QuizAttemptWithResults[]>([]);
     const [attemptsLoading, setAttemptsLoading] = useState(false);
 
@@ -70,8 +64,6 @@ export default function QuizViewer({ content, onQuestionsChange }: QuizViewerPro
         );
     }
 
-    const canEdit = !!onQuestionsChange;
-
     const formatDate = (d: Date | null) =>
         d
             ? new Date(d).toLocaleDateString("en-GB", {
@@ -80,23 +72,6 @@ export default function QuizViewer({ content, onQuestionsChange }: QuizViewerPro
                 year: "numeric",
             })
             : "\u2014";
-
-    const handleDeleteQuestion = async (id: string) => {
-        if (!window.confirm('Bạn có chắc muốn xoá câu hỏi này?')) return;
-        setSaving(true);
-        try {
-            await questionApiService.deleteQuestion(id);
-            if (!content?._id) return;
-            const fetched = await questionApiService.getQuestionsByQuizId(content._id);
-            setQuestions(fetched);
-            onQuestionsChange?.(fetched);
-        } catch (err) {
-            console.error('Failed to delete question:', err);
-            alert('Có lỗi xảy ra khi xoá câu hỏi');
-        } finally {
-            setSaving(false);
-        }
-    };
 
     return (
         <Box>
@@ -208,28 +183,9 @@ export default function QuizViewer({ content, onQuestionsChange }: QuizViewerPro
                                     )}
                                 </Box>
                             </Stack>
-                            {canEdit && (
-                                <Stack direction="row" spacing={0.5} flexShrink={0}>
-                                    <Tooltip title="Xoá">
-                                        <IconButton
-                                            size="small"
-                                            color="error"
-                                            onClick={() => handleDeleteQuestion(q._id as string)}
-                                        >
-                                            <DeleteOutline fontSize="small" />
-                                        </IconButton>
-                                    </Tooltip>
-                                </Stack>
-                            )}
                         </Box>
                     ))}
                 </Stack>
-            )}
-
-            {saving && (
-                <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
-                    <CircularProgress size={24} />
-                </Box>
             )}
 
             <QuizAttemptResultsTable attempts={attempts} loading={attemptsLoading} />
