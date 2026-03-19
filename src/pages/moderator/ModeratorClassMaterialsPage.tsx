@@ -15,8 +15,11 @@ import {
   Alert,
   Breadcrumbs,
   Chip,
+  Avatar,
+  Stack,
+  Tooltip,
 } from "@mui/material";
-import { Visibility, NavigateNext, Description, Slideshow, Quiz, ViewInAr } from "@mui/icons-material";
+import { Visibility, NavigateNext, Description, Slideshow, Quiz, ViewInAr, Block } from "@mui/icons-material";
 import { useParams, Link } from "react-router-dom";
 import { getClassMaterials, changeMaterialStatus } from "../../services/moderatorService";
 import MaterialViewDialog from "../../components/MaterialViewDialog";
@@ -78,11 +81,31 @@ const ModeratorClassMaterialsPage: React.FC = () => {
 
   const getTypeIcon = (type: string) => {
     switch (type) {
-      case "slide": return <Slideshow color="primary" />;
-      case "file": return <Description color="info" />;
-      case "quiz": return <Quiz color="warning" />;
-      case "2d_render": return <ViewInAr color="secondary" />;
+      case "slide": return <Slideshow />;
+      case "file": return <Description />;
+      case "quiz": return <Quiz />;
+      case "2d_render": return <ViewInAr />;
       default: return <Description />;
+    }
+  };
+
+  const getTypeColor = (type: string) => {
+    switch (type) {
+      case "slide": return { bg: "info.light", color: "info.dark" };
+      case "file": return { bg: "primary.light", color: "primary.dark" };
+      case "quiz": return { bg: "warning.light", color: "warning.dark" };
+      case "2d_render": return { bg: "secondary.light", color: "secondary.dark" };
+      default: return { bg: "grey.200", color: "grey.700" };
+    }
+  };
+
+  const getTypeLabel = (type: string) => {
+    switch (type) {
+      case "slide": return "Slide";
+      case "file": return "File PDF/Word";
+      case "quiz": return "Bài kiểm tra";
+      case "2d_render": return "Mô hình 2D";
+      default: return "Tài liệu khác";
     }
   };
 
@@ -90,15 +113,15 @@ const ModeratorClassMaterialsPage: React.FC = () => {
     <Box p={3}>
       <Breadcrumbs separator={<NavigateNext fontSize="small" />} sx={{ mb: 2 }}>
         <Link to="/moderator/dashboard" style={{ textDecoration: "none", color: "inherit" }}>
-          Kiểm duyệt
+          <Typography color="text.secondary" sx={{ "&:hover": { textDecoration: "underline" } }}>Kiểm duyệt</Typography>
         </Link>
         <Link to="/moderator/classes" style={{ textDecoration: "none", color: "inherit" }}>
-          Lớp học
+          <Typography color="text.secondary" sx={{ "&:hover": { textDecoration: "underline" } }}>Lớp học</Typography>
         </Link>
-        <Typography color="text.primary">Tài liệu lớp</Typography>
+        <Typography color="text.primary" fontWeight="medium">Tài liệu lớp</Typography>
       </Breadcrumbs>
 
-      <Typography variant="h5" fontWeight="bold" mb={3}>
+      <Typography variant="h5" fontWeight="bold" mb={3} sx={{ color: "primary.main" }}>
         Tài liệu trong lớp học
       </Typography>
 
@@ -107,59 +130,88 @@ const ModeratorClassMaterialsPage: React.FC = () => {
           <CircularProgress />
         </Box>
       ) : (
-        <TableContainer component={Paper}>
+        <TableContainer component={Paper} elevation={3} sx={{ borderRadius: 2, overflow: "hidden" }}>
           <Table>
-            <TableHead>
+            <TableHead sx={{ bgcolor: "grey.100" }}>
               <TableRow>
-                <TableCell width={50}>Loại</TableCell>
-                <TableCell>Tiêu đề</TableCell>
-                <TableCell>Trạng thái</TableCell>
-                <TableCell align="right">Hành động</TableCell>
+                <TableCell sx={{ fontWeight: "bold" }}>Tài liệu</TableCell>
+                <TableCell sx={{ fontWeight: "bold" }}>Phân loại</TableCell>
+                <TableCell sx={{ fontWeight: "bold" }}>Trạng thái</TableCell>
+                <TableCell align="center" sx={{ fontWeight: "bold" }}>Hành động</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {materials.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} align="center">
-                    Chưa có tài liệu nào trong lớp này.
+                  <TableCell colSpan={4} align="center" sx={{ py: 5 }}>
+                    <Typography color="text.secondary">Chưa có tài liệu nào trong lớp này.</Typography>
                   </TableCell>
                 </TableRow>
               ) : (
-                materials.map((mat) => (
-                  <TableRow key={mat._id}>
-                    <TableCell>{getTypeIcon(mat.type)}</TableCell>
-                    <TableCell sx={{ fontWeight: "medium" }}>{mat.title}</TableCell>
+                materials.map((mat) => {
+                  const colors = getTypeColor(mat.type);
+                  return (
+                  <TableRow key={mat._id} hover sx={{ transition: "0.2s" }}>
+                    <TableCell>
+                      <Stack direction="row" spacing={2} alignItems="center">
+                        <Avatar sx={{ bgcolor: colors.bg, color: colors.color }}>
+                          {getTypeIcon(mat.type)}
+                        </Avatar>
+                        <Box>
+                          <Typography variant="subtitle2" fontWeight="bold">
+                            {mat.title}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            ID: {mat._id?.substring(mat._id.length - 6).toUpperCase()}
+                          </Typography>
+                        </Box>
+                      </Stack>
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2" color="text.secondary" fontWeight="medium">
+                         {getTypeLabel(mat.type)}
+                      </Typography>
+                    </TableCell>
                     <TableCell>
                       <Chip 
-                        label={mat.status} 
+                        label={mat.status === "published" ? "Đã duyệt" : mat.status === "rejected" ? "Bị đình chỉ" : mat.status === "draft" ? "Nháp" : mat.status} 
                         size="small" 
-                        color={mat.status === "reviewed" ? "success" : mat.status === "rejected" ? "error" : "default"} 
+                        color={mat.status === "published" || mat.status === "reviewed" ? "success" : mat.status === "rejected" ? "error" : "default"} 
+                        sx={{ fontWeight: "medium" }}
                       />
                     </TableCell>
-                    <TableCell align="right">
-                      <Button
-                        size="small"
-                        startIcon={<Visibility />}
-                        onClick={() => handleView(mat)}
-                        sx={{ mr: 1, textTransform: "none" }}
-                      >
-                         {mat.type === "slide" ? "Xem Slide" : 
-                          mat.type === "quiz" ? "Xem Quiz" : 
-                          mat.type === "file" ? "Xem File" : 
-                          mat.type === "2d_render" ? "Xem 2D" : "Xem"}
-                      </Button>
-                      <Button
-                        size="small"
-                        color="error"
-                        variant="outlined"
-                        onClick={() => handleSuspend(mat._id)}
-                        disabled={mat.status === "rejected"}
-                      >
-                        Đình chỉ
-                      </Button>
+                    <TableCell align="center">
+                      <Tooltip title={`Xem chi tiết nội dung ${getTypeLabel(mat.type).toLowerCase()}`}>
+                        <Button
+                          size="small"
+                          startIcon={<Visibility />}
+                          onClick={() => handleView(mat)}
+                          sx={{ mr: 1, textTransform: "none", borderRadius: 2 }}
+                          variant="outlined"
+                          color="info"
+                        >
+                          Xem
+                        </Button>
+                      </Tooltip>
+                      <Tooltip title={mat.status === "rejected" ? "Tài liệu này đã bị can thiệp" : "Đình chỉ hiển thị tài liệu này"}>
+                        <span>
+                          <Button
+                            size="small"
+                            color="error"
+                            variant="contained"
+                            startIcon={<Block fontSize="small" />}
+                            onClick={() => handleSuspend(mat._id)}
+                            disabled={mat.status === "rejected"}
+                            sx={{ textTransform: "none", borderRadius: 2, boxShadow: 0 }}
+                          >
+                            Đình chỉ
+                          </Button>
+                        </span>
+                      </Tooltip>
                     </TableCell>
                   </TableRow>
-                ))
+                  );
+                })
               )}
             </TableBody>
           </Table>

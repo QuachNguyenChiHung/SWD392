@@ -10,13 +10,17 @@ import {
   ListItem,
   ListItemText,
   Button,
+  Avatar,
 } from "@mui/material";
-import { Flag, Gavel, PersonOff } from "@mui/icons-material";
+import { Flag, Gavel, PersonOff, Visibility } from "@mui/icons-material";
 import { getDashboardSummary } from "../../services/moderatorService";
+import MaterialViewDialog from "../../components/MaterialViewDialog";
 
 const ModeratorDashboard: React.FC = () => {
   const [summary, setSummary] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  const [selectedMaterial, setSelectedMaterial] = useState<any>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -101,31 +105,38 @@ const ModeratorDashboard: React.FC = () => {
           flexWrap="wrap"
           sx={{ mb: 4 }}
         >
-          {/* Pending materials card removed per request */}
           <Box sx={{ flex: "1 1 200px", minWidth: 200 }}>
             <Paper
+              elevation={2}
               sx={{
                 p: 3,
+                height: "100%",
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
-                backgroundColor: "#ed6c02",
-                color: "white",
+                justifyContent: "center",
+                bgcolor: "background.paper",
+                borderRadius: 2,
+                borderTop: "4px solid",
+                borderColor: "warning.main",
               }}
             >
-              <Box sx={{ fontSize: 40, mb: 1 }}>
-                <Flag />
-              </Box>
-              <Typography variant="h4" fontWeight="bold">
+              <Avatar sx={{ bgcolor: "warning.light", color: "warning.dark", mb: 2, width: 56, height: 56 }}>
+                <Flag sx={{ fontSize: 32 }} />
+              </Avatar>
+              <Typography variant="h4" fontWeight="bold" color="text.primary">
                 {summary?.flaggedMaterials ?? 0}
               </Typography>
-              <Typography variant="body2">Tài liệu bị flag</Typography>
+              <Typography variant="body2" color="text.secondary" fontWeight="medium" mb={2}>
+                Tài liệu bị flag
+              </Typography>
               <Button
                 component={Link}
                 to="/moderator/flagged"
-                sx={{ mt: 1 }}
-                variant="contained"
-                color="secondary"
+                size="small"
+                variant="outlined"
+                color="warning"
+                sx={{ borderRadius: 2, textTransform: "none", mt: "auto" }}
               >
                 Xem chi tiết
               </Button>
@@ -133,28 +144,36 @@ const ModeratorDashboard: React.FC = () => {
           </Box>
           <Box sx={{ flex: "1 1 200px", minWidth: 200 }}>
             <Paper
+              elevation={2}
               sx={{
                 p: 3,
+                height: "100%",
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
-                backgroundColor: "#d32f2f",
-                color: "white",
+                justifyContent: "center",
+                bgcolor: "background.paper",
+                borderRadius: 2,
+                borderTop: "4px solid",
+                borderColor: "error.main",
               }}
             >
-              <Box sx={{ fontSize: 40, mb: 1 }}>
-                <PersonOff />
-              </Box>
-              <Typography variant="h4" fontWeight="bold">
+              <Avatar sx={{ bgcolor: "error.light", color: "error.dark", mb: 2, width: 56, height: 56 }}>
+                <PersonOff sx={{ fontSize: 32 }} />
+              </Avatar>
+              <Typography variant="h4" fontWeight="bold" color="text.primary">
                 {summary?.bannedUsers ?? 0}
               </Typography>
-              <Typography variant="body2">User bị đình chỉ</Typography>
+              <Typography variant="body2" color="text.secondary" fontWeight="medium" mb={2}>
+                User bị đình chỉ
+              </Typography>
               <Button
                 component={Link}
                 to="/moderator/user-suspension"
-                sx={{ mt: 1 }}
-                variant="contained"
-                color="secondary"
+                size="small"
+                variant="outlined"
+                color="error"
+                sx={{ borderRadius: 2, textTransform: "none", mt: "auto" }}
               >
                 Quản lý user
               </Button>
@@ -162,22 +181,37 @@ const ModeratorDashboard: React.FC = () => {
           </Box>
           <Box sx={{ flex: "1 1 200px", minWidth: 200 }}>
             <Paper
+              elevation={2}
               sx={{
                 p: 3,
+                height: "100%",
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
-                backgroundColor: "#2e7d32",
-                color: "white",
+                justifyContent: "center",
+                bgcolor: "background.paper",
+                borderRadius: 2,
+                borderTop: "4px solid",
+                borderColor: "success.main",
               }}
             >
-              <Box sx={{ fontSize: 40, mb: 1 }}>
-                <Gavel />
-              </Box>
-              <Typography variant="h4" fontWeight="bold">
+              <Avatar sx={{ bgcolor: "success.light", color: "success.dark", mb: 2, width: 56, height: 56 }}>
+                <Gavel sx={{ fontSize: 32 }} />
+              </Avatar>
+              <Typography variant="h4" fontWeight="bold" color="text.primary">
                 {summary?.reviewedToday ?? 0}
               </Typography>
-              <Typography variant="body2">Duyệt hôm nay</Typography>
+              <Typography variant="body2" color="text.secondary" fontWeight="medium" mb={2}>
+                Duyệt hôm nay
+              </Typography>
+              <Button
+                disabled
+                size="small"
+                variant="text"
+                sx={{ borderRadius: 2, textTransform: "none", mt: "auto", opacity: 0 }}
+              >
+                Spacer
+              </Button>
             </Paper>
           </Box>
         </Stack>
@@ -191,14 +225,14 @@ const ModeratorDashboard: React.FC = () => {
           <CircularProgress />
         ) : !summary?.violationReports?.length ? (
           <Typography variant="body2" color="text.secondary">
-            Không có báo cáo nào gần đây.
+            Không có báo cáo vi phạm nào gần đây.
           </Typography>
         ) : (
           <List>
             {summary.violationReports.map((report: any, idx: number) => (
-              <ListItem key={idx}>
+              <ListItem key={idx} sx={{ borderBottom: "1px solid #eee" }}>
                 <ListItemText
-                  primary={report.comment || "Báo cáo nội dung vi phạm"}
+                  primary={<Typography fontWeight="medium">{report.comment || "Báo cáo nội dung vi phạm"}</Typography>}
                   secondary={`Gửi bởi: ${report.user_id?.username || "Ẩn danh"} - ${
                     report.date ? new Date(report.date).toLocaleString() : ""
                   }`}
@@ -206,8 +240,13 @@ const ModeratorDashboard: React.FC = () => {
                 {report.material_id && (
                   <Button
                     size="small"
-                    component={Link}
-                    to={`/moderator/materials/${report.material_id._id}`}
+                    startIcon={<Visibility />}
+                    onClick={() => {
+                      setSelectedMaterial(report.material_id);
+                      setViewDialogOpen(true);
+                    }}
+                    variant="outlined"
+                    sx={{ borderRadius: 2, textTransform: "none" }}
                   >
                     Xem tài liệu
                   </Button>
@@ -217,6 +256,14 @@ const ModeratorDashboard: React.FC = () => {
           </List>
         )}
       </Paper>
+
+      {selectedMaterial && (
+        <MaterialViewDialog
+          open={viewDialogOpen}
+          onClose={() => setViewDialogOpen(false)}
+          material={selectedMaterial}
+        />
+      )}
     </Box>
   );
 };

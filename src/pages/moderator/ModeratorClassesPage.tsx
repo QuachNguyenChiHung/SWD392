@@ -15,8 +15,11 @@ import {
   TextField,
   InputAdornment,
   Tooltip,
+  Avatar,
+  Stack,
+  Chip,
 } from "@mui/material";
-import { Visibility, NavigateNext, Search } from "@mui/icons-material";
+import { Visibility, NavigateNext, Search, Class as ClassIcon } from "@mui/icons-material";
 import { useNavigate, Link } from "react-router-dom";
 import { searchClasses } from "../../services/moderatorService";
 
@@ -30,7 +33,7 @@ const ModeratorClassesPage: React.FC = () => {
     setLoading(true);
     try {
       const res = await searchClasses(keyword);
-      // searchClasses returns { classes: [...], total: ... } based on typical patterns, 
+      // searchClasses returns { classes: [...], total: ... } based on typical patterns,
       // but let's handle both array and object responses
       setClasses(Array.isArray(res) ? res : res.classes || []);
     } catch (err) {
@@ -53,16 +56,16 @@ const ModeratorClassesPage: React.FC = () => {
     <Box p={3}>
       <Breadcrumbs separator={<NavigateNext fontSize="small" />} sx={{ mb: 2 }}>
         <Link to="/moderator/dashboard" style={{ textDecoration: "none", color: "inherit" }}>
-          Kiểm duyệt
+          <Typography color="text.secondary" sx={{ "&:hover": { textDecoration: "underline" } }}>Kiểm duyệt</Typography>
         </Link>
-        <Typography color="text.primary">Quản lý lớp học</Typography>
+        <Typography color="text.primary" fontWeight="medium">Quản lý lớp học</Typography>
       </Breadcrumbs>
 
-      <Typography variant="h5" fontWeight="bold" mb={3}>
-        Xem Lớp học (Kiểm duyệt viên)
+      <Typography variant="h5" fontWeight="bold" mb={3} sx={{ color: "primary.main" }}>
+        Trang Lớp học (Kiểm duyệt viên)
       </Typography>
 
-      <Paper component="form" onSubmit={handleSearch} sx={{ p: 2, mb: 3, display: 'flex', alignItems: 'center' }}>
+      <Paper component="form" onSubmit={handleSearch} sx={{ p: 2, mb: 3, display: 'flex', alignItems: 'center', borderRadius: 2, elevation: 1 }}>
         <TextField
           fullWidth
           size="small"
@@ -72,10 +75,11 @@ const ModeratorClassesPage: React.FC = () => {
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
-                <Search />
+                <Search color="action" />
               </InputAdornment>
             ),
           }}
+          sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
         />
       </Paper>
 
@@ -84,43 +88,78 @@ const ModeratorClassesPage: React.FC = () => {
           <CircularProgress />
         </Box>
       ) : (
-        <TableContainer component={Paper}>
+        <TableContainer component={Paper} elevation={3} sx={{ borderRadius: 2, overflow: "hidden" }}>
           <Table>
-            <TableHead>
+            <TableHead sx={{ bgcolor: "grey.100" }}>
               <TableRow>
-                <TableCell>Mã lớp</TableCell>
-                <TableCell>Tên lớp</TableCell>
-                <TableCell>Khóa học</TableCell>
-                <TableCell>Giáo viên</TableCell>
-                <TableCell align="right">Hành động</TableCell>
+                <TableCell sx={{ fontWeight: "bold" }}>Lớp học</TableCell>
+                <TableCell sx={{ fontWeight: "bold" }}>Mã tham gia (Keypass)</TableCell>
+                <TableCell sx={{ fontWeight: "bold" }}>Khóa học</TableCell>
+                <TableCell sx={{ fontWeight: "bold" }}>Giáo viên</TableCell>
+                <TableCell align="center" sx={{ fontWeight: "bold" }}>Hành động</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {classes.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} align="center">
-                    Không tìm thấy lớp học nào.
+                  <TableCell colSpan={5} align="center" sx={{ py: 4 }}>
+                    <Typography color="text.secondary">Không tìm thấy lớp học nào.</Typography>
                   </TableCell>
                 </TableRow>
               ) : (
-                classes.map((cls) => (
-                  <TableRow key={cls._id}>
-                    <TableCell sx={{ fontWeight: "bold" }}>{cls.keypass}</TableCell>
-                    <TableCell>{cls.class_name}</TableCell>
-                    <TableCell>{cls.course_id?.course_name || "-"}</TableCell>
-                    <TableCell>{cls.teacher_id?.name || cls.teacher_id?.username || "-"}</TableCell>
-                    <TableCell align="right">
-                      <Tooltip title="Xem tài liệu trong lớp">
-                        <IconButton
-                          color="info"
-                          onClick={() => navigate(`/moderator/classes/${cls._id}/materials`)}
-                        >
-                          <Visibility />
-                        </IconButton>
-                      </Tooltip>
-                    </TableCell>
-                  </TableRow>
-                ))
+                classes.map((cls) => {
+                  // Fallback data correctly
+                  const courseName = cls.course_name || cls.course_id?.course_name || "-";
+                  const teacherName = cls.teacher_name || cls.teacher_id?.name || cls.teacher_id?.username || "-";
+
+                  return (
+                    <TableRow key={cls._id} hover sx={{ transition: "0.2s" }}>
+                      <TableCell>
+                        <Stack direction="row" spacing={2} alignItems="center">
+                          <Avatar sx={{ bgcolor: "success.light", color: "success.dark" }}>
+                            <ClassIcon />
+                          </Avatar>
+                          <Box>
+                            <Typography variant="subtitle2" fontWeight="bold">
+                              {cls.class_name}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              ID: {cls._id?.substring(cls._id.length - 6).toUpperCase()}
+                            </Typography>
+                          </Box>
+                        </Stack>
+                      </TableCell>
+                      <TableCell>
+                        {cls.keypass ? (
+                          <Chip label={cls.keypass} size="small" variant="outlined" sx={{ fontFamily: 'monospace', fontWeight: "bold" }} />
+                        ) : (
+                          "-"
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" color="text.secondary" fontWeight="medium">
+                          {courseName}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2">
+                          {teacherName}
+                        </Typography>
+                      </TableCell>
+                      <TableCell align="center">
+                        <Tooltip title="Xem tài liệu trong lớp">
+                          <IconButton
+                            color="info"
+                            onClick={() => navigate(`/moderator/classes/${cls._id}/materials`)}
+                            sx={{ bgcolor: "info.light", color: "info.dark", "&:hover": { bgcolor: "info.main", color: "white" } }}
+                          >
+                            <Visibility fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
               )}
             </TableBody>
           </Table>
