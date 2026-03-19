@@ -1,5 +1,5 @@
 import { Stack, Typography, Alert, Box, Chip, Accordion, AccordionSummary, AccordionDetails, Divider, Paper, Button } from '@mui/material';
-import { ExpandMore, Info, CheckCircle, MenuBook, School, FileDownload, Visibility as Eye, Brush, Quiz, Flag, Timer, ChevronRight } from '@mui/icons-material';
+import { ExpandMore, Info, CheckCircle, MenuBook, School, FileDownload, Visibility as Eye, Brush, Quiz, Flag, Timer, ChevronRight, Slideshow, VideoFile, Article, PictureAsPdf, AttachFile } from '@mui/icons-material';
 import type { Topic } from '../../types/studentType';
 
 const TOPIC_COLORS = ['#6366f1', '#0ea5e9', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6'];
@@ -37,14 +37,15 @@ interface ClassTopicsTabProps {
   quizAttempts?: any[];
 }
 
-const getMaterialIcon = (type: string) => {
+const getMaterialMuiIcon = (type: string) => {
   switch (type) {
-    case 'slide': case 'slides': return '🎯';
-    case '2d_render': return '🎨';
-    case 'quiz': return '📝';
-    case 'pdf': return '📄';
-    case 'video': return '🎥';
-    default: return '📎';
+    case 'slide': case 'slides': return <Slideshow sx={{ fontSize: 20 }} />;
+    case '2d_render': return <Brush sx={{ fontSize: 20 }} />;
+    case 'quiz': return <Quiz sx={{ fontSize: 20 }} />;
+    case 'pdf': return <PictureAsPdf sx={{ fontSize: 20 }} />;
+    case 'video': return <VideoFile sx={{ fontSize: 20 }} />;
+    case 'file': return <Article sx={{ fontSize: 20 }} />;
+    default: return <AttachFile sx={{ fontSize: 20 }} />;
   }
 };
 
@@ -198,35 +199,41 @@ export default function ClassTopicsTab({
                                 }
 
                                 return (
-                                  <Paper key={mat._id} variant="outlined" sx={{ p: 1.5, mb: 1, borderRadius: 1.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center', '&:hover': { bgcolor: 'rgba(0,0,0,0.01)' } }}>
-                                    <Stack direction="row" spacing={1} alignItems="center" sx={{ flex: 1 }}>
-                                      <Typography variant="body2">{getMaterialIcon(mat.type)}</Typography>
-                                      <Box>
-                                        <Typography variant="body2" fontWeight="600">{mat.title}</Typography>
-                                        <Typography variant="caption" color="text.secondary">
-                                          {isRender2D ? '2D Render • Coming soon' : mat.type}
-                                          {isCompleted && ' ✅'}
-                                        </Typography>
-                                      </Box>
-                                    </Stack>
-                                    {isRender2D ? (
-                                      <Chip label="Coming soon" size="small" icon={<Brush sx={{ fontSize: '14px !important' }} />} sx={{ bgcolor: '#f0f7ff', color: '#6366f1', fontSize: '0.65rem' }} />
-                                    ) : (
-                                      <Stack direction="row" spacing={0.5}>
-                                        {onPreviewMaterial && (
-                                          <Button size="small" variant="outlined" onClick={() => onPreviewMaterial(mat)} startIcon={<Eye />} sx={{ borderColor: color, color }}>Xem</Button>
-                                        )}
-                                        {mat.file_path && (
-                                          <Button size="small" variant="outlined" component="a" href={mat.file_path} download target="_blank" startIcon={<FileDownload />} sx={{ borderColor: color, color }}>Tải</Button>
-                                        )}
-                                        {onFlagMaterial && mat.status === 'published' && mat.isFlaggable !== false && !mat.isFlagged && (
-                                          <Button size="small" variant="outlined" onClick={() => onFlagMaterial(mat)} startIcon={<Flag />} sx={{ borderColor: '#ef4444', color: '#ef4444' }}>Báo cáo</Button>
-                                        )}
-                                        {mat.isFlagged && (
-                                          <Chip label="Đã báo cáo" size="small" icon={<Flag sx={{ fontSize: '14px !important' }} />} sx={{ bgcolor: '#fee2e2', color: '#ef4444', fontSize: '0.65rem' }} />
-                                        )}
+                                  <Paper key={mat._id} variant="outlined" sx={{ mb: 1, p: 2, borderRadius: 2, transition: '0.2s', '&:hover': { borderColor: color, transform: 'translateX(4px)', boxShadow: `0 4px 12px ${color}15` } }}>
+                                    <Stack direction="row" justifyContent="space-between" alignItems="center">
+                                      <Stack direction="row" spacing={1.5} alignItems="center" sx={{ flex: 1 }}>
+                                        <Box sx={{ p: 1, bgcolor: isCompleted ? '#d1fae520' : `${color}12`, borderRadius: 1.5, display: 'flex', color: isCompleted ? '#059669' : color }}>
+                                          {getMaterialMuiIcon(mat.type)}
+                                        </Box>
+                                        <Box>
+                                          <Stack direction="row" spacing={1} alignItems="center">
+                                            <Typography fontWeight="700" variant="body2">{mat.title}</Typography>
+                                            {isCompleted && <Chip label="Đã xem" size="small" color="success" sx={{ height: 18, fontSize: '0.6rem', fontWeight: 900 }} />}
+                                          </Stack>
+                                          <Typography variant="caption" color="text.secondary">
+                                            {isRender2D ? '2D Render • Coming soon' : mat.type}
+                                          </Typography>
+                                        </Box>
                                       </Stack>
-                                    )}
+                                      {isRender2D ? (
+                                        <Chip label="Coming soon" size="small" icon={<Brush sx={{ fontSize: '14px !important' }} />} sx={{ bgcolor: '#f0f7ff', color: '#6366f1', fontSize: '0.65rem' }} />
+                                      ) : (
+                                      <Stack direction="row" spacing={1}>
+                                          {onPreviewMaterial && (
+                                            <Button size="small" variant="contained" onClick={() => onPreviewMaterial(mat)} startIcon={<Eye />} sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600, bgcolor: color, color: '#fff', '&:hover': { bgcolor: `${color}dd` }, boxShadow: 'none' }}>Xem</Button>
+                                          )}
+                                          {mat.file_path && (
+                                            <Button size="small" variant="outlined" component="a" href={mat.file_path} download target="_blank" startIcon={<FileDownload />} sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600, borderColor: `${color}80`, color: color, '&:hover': { borderColor: color, bgcolor: `${color}10` } }}>Tải</Button>
+                                          )}
+                                          {onFlagMaterial && mat.status === 'published' && mat.isFlaggable !== false && !mat.isFlagged && (
+                                            <Button size="small" variant="outlined" onClick={() => onFlagMaterial(mat)} startIcon={<Flag />} sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600, borderColor: '#ef444480', color: '#ef4444', '&:hover': { borderColor: '#ef4444', bgcolor: '#fef2f2' } }}>Báo cáo</Button>
+                                          )}
+                                          {mat.isFlagged && (
+                                            <Chip label="Đã báo cáo" size="small" icon={<Flag sx={{ fontSize: '14px !important' }} />} sx={{ borderRadius: 2, bgcolor: '#fee2e2', color: '#ef4444', fontSize: '0.75rem', fontWeight: 600 }} />
+                                          )}
+                                        </Stack>
+                                      )}
+                                    </Stack>
                                   </Paper>
                                 );
                               })}
