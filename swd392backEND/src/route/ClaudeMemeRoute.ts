@@ -7,6 +7,21 @@ import puppeteer from "puppeteer";
 
 const route = Router();
 
+const extractJsonArray = (raw: string) => {
+    const cleaned = raw.replace(/```json/gi, "").replace(/```/g, "").trim();
+    try {
+        return JSON.parse(cleaned);
+    } catch {
+        const match = cleaned.match(/\[[\s\S]*\]/);
+        if (!match) return null;
+        try {
+            return JSON.parse(match[0]);
+        } catch {
+            return null;
+        }
+    }
+};
+
 route.post("/claude", async (req, res, next) => {
     try {
         const { prompt } = req.body;
@@ -41,8 +56,14 @@ route.post("/teacher/ai-create-quiz", verifyRole.verifyTeacher, async (req, res,
             return res.status(400).json({ message: "topicTitle is required" });
         }
 
-        const buildQuizPrompt = (title: string, description: string | undefined, total: number, mc: number, tf: number) => {
-            return `You are an assistant that generates teacher-editable quizzes. Produce a single valid JSON object only (no commentary) with this exact shape:\n\n{\n  "title": "<quiz title>",\n  "type": "interactive|standard",\n  "keyword": "<optional short keyword|null>",\n  "questions": [ { "id": "q1", "content": "question text", "type": "multiple-choice", "options": ["A","B","C"], "correctAnswer": "A", "editable": true } ]\n}\n\nConstraints:\n- Return exactly ${total} questions in the \"questions\" array (no more, no less).\n- Include exactly ${tf} true/false style questions (represent them as multiple-choice with options exactly [\"True\",\"False\"]).\n- Include exactly ${mc} non-true/false multiple-choice questions (each with 3–5 unique options).\n- EVERY question must use \"type\": \"multiple-choice\".\n- Topic context: Title: \"${title}\" Description: \"${description || ''}\".\n- Output JSON only, no surrounding text or explanation.`;
+        const buildQuizPrompt = (
+            title: string,
+            description: string | undefined,
+            total: number,
+            mc: number,
+            tf: number,
+        ) => {
+            return `You are an assistant that generates teacher-editable quizzes. Produce ONE valid JSON object only (no commentary, no markdown) with this exact shape:\n\n{\n  "title": "<quiz title>",\n  "type": "interactive",\n  "keyword": "<optional short keyword|null>",\n  "status": true,\n  "questions": [\n    {\n      "title": "question text",\n      "type": "multiple_choice|true_false",\n      "options": ["A","B","C"],\n      "correct_index": 0\n    }\n  ]\n}\n\nConstraints:\n- Return exactly ${total} questions in the "questions" array (no more, no less).\n- Include exactly ${tf} true/false questions with type "true_false" and options exactly ["True","False"].\n- Include exactly ${mc} multiple-choice questions with type "multiple_choice" and 3–5 unique options.\n- "correct_index" must be a 0-based index into the options array.\n- Keep all values JSON-safe strings (no HTML).\n- Topic context: Title: "${title}" Description: "${description || ""}".\n- Output JSON only, no surrounding text or explanation.`;
         };
 
         const prompt = buildQuizPrompt(topicTitle, topicDescription, Number(count), Number(mcCount), Number(tfCount));
@@ -61,17 +82,20 @@ route.post("/teacher/ai-create-slide", verifyRole.verifyTeacher, async (req, res
         }
         const buildSlidePrompt = (title: string, description: string | undefined, notes: string | undefined) => {
             return `Create a 40-slide presentation about: "${title}".
-    Description: "${description || ''}"
-    Additional Notes: "${notes || ''}"
+    Description: "${description || ""}"
+    Additional Notes: "${notes || ""}"
     Add the main title as the first slide, and then 20 slides with a title and body text. Include speaker notes for each slide.
       Respond ONLY with a JSON array (no markdown) in this format:
       [{ "title": "...", "body": "...", "notes": "..." }]`;
         }
         const prompt = buildSlidePrompt(topicTitle, topicDescription, notes);
         const aiResponse = await runModel(prompt);
-        const rawText = aiResponse.replace('```json', '').replace('```', '');
-        console.log("Raw AI Response:", rawText);
-        const slides = JSON.parse(rawText);
+        const slides = extractJsonArray(aiResponse);
+        if (!Array.isArray(slides)) {
+            return res.status(502).json({
+                message: "AI returned invalid slide JSON. Please retry.",
+            });
+        }
 
         // Step 3: Build the PPTX
         // Support both ESM default export and CommonJS interop
@@ -109,15 +133,18 @@ route.post("/teacher/ai-create-pdf", verifyRole.verifyTeacher, async (req, res, 
         }
         const buildSlidePrompt = (title: string, description: string | undefined, notes: string | undefined) => {
             return `Write a clean HTML document about "${title}".
-    Description: "${description || ''}"
-    Additional Notes: "${notes || ''}"
+    Description: "${description || ""}"
+    Additional Notes: "${notes || ""}"
       Include inline CSS. Output ONLY raw HTML starting with <!DOCTYPE html>.`;
         }
         const prompt = buildSlidePrompt(topicTitle, topicDescription, notes);
         const aiResponse = await runModel(prompt);
-        const rawText = aiResponse.replace('```json', '').replace('```', '');
-        console.log("Raw AI Response:", rawText);
-        const html = rawText.replace('```html', '').replace('```', '');
+        const html = aiResponse.replace(/```html/gi, "").replace(/```/g, "").trim();
+        if (!html.toLowerCase().includes("<html")) {
+            return res.status(502).json({
+                message: "AI returned invalid HTML. Please retry.",
+            });
+        }
 
         const browser = await puppeteer.launch({ args: ['--no-sandbox'] });
         const page = await browser.newPage();
