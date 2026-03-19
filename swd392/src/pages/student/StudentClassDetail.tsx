@@ -62,6 +62,7 @@ export default function StudentClassDetail() {
     const [quizzes, setQuizzes] = useState<QuizItem[]>([]);
     const [enrollment, setEnrollment] = useState<Enrollment | null>(null);
     const [progressRecords, setProgressRecords] = useState<ProgressRecord[]>([]);
+    const [quizAttempts, setQuizAttempts] = useState<any[]>([]);
     const [render2dIds, setRender2dIds] = useState<string[]>([]);
     const [allMaterials, setAllMaterials] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -72,10 +73,22 @@ export default function StudentClassDetail() {
 
     // completedMaterials = list of classmaterial_id that are completed
     const completedMaterials = useMemo(() => {
-        return progressRecords
-            .filter(p => p.completion_status === 'completed')
+        const quizMaterialIds = quizzes.map(q => q._id);
+        
+        // Exclude quizzes from generic progress records to prevent old "Mark Complete" clicks from skewing progress
+        const fromProgress = progressRecords
+            .filter(p => p.completion_status === 'completed' && !quizMaterialIds.includes(p.classmaterial_id))
             .map(p => p.classmaterial_id);
-    }, [progressRecords]);
+            
+        const fromQuizzes = quizzes
+            .filter(q => quizAttempts.some(a => {
+                const qId = typeof a.quiz_id === 'object' ? a.quiz_id._id : a.quiz_id;
+                return qId === q.content_id;
+            }))
+            .map(q => q._id);
+
+        return [...fromProgress, ...fromQuizzes];
+    }, [progressRecords, quizzes, quizAttempts]);
     // Note: progressStats uses allMaterialIds to filter correctly
 
     // Progress stats — only count materials that belong to this class
@@ -87,12 +100,10 @@ export default function StudentClassDetail() {
 
     const progressStats = useMemo(() => {
         const total = allMaterialIds.length;
-        const completed = progressRecords.filter(
-            p => p.completion_status === 'completed' && allMaterialIds.includes(p.classmaterial_id)
-        ).length;
+        const completed = completedMaterials.filter(id => allMaterialIds.includes(id)).length;
         const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
         return { total, completed, percentage };
-    }, [progressRecords, allMaterialIds]);
+    }, [completedMaterials, allMaterialIds]);
 
     useEffect(() => {
         if (!classId) return;
@@ -212,18 +223,24 @@ export default function StudentClassDetail() {
                     if (classEnrollment) {
                         setEnrollment(classEnrollment);
 
-                        // 5. Get progress — API returns array directly
+                        // 5. Get progress
                         try {
                             const progressData: ProgressRecord[] = await apiService.get(
                                 `/progress/${classEnrollment._id}`
                             );
                             const records = Array.isArray(progressData) ? progressData : [];
                             setProgressRecords(records);
-
-                            // Note: PATCH /enroll/{id}/completed is Teacher-only
-                            // enrollment status update handled by backend
                         } catch (err) {
                             console.warn('Failed to fetch progress:', err);
+                        }
+                        
+                        // 6. Get quiz attempts
+                        try {
+                            const myAttempts: any[] = await apiService.get('/my-quiz-attempts');
+                            const attemptsData = myAttempts.map(item => item.attempt);
+                            setQuizAttempts(attemptsData);
+                        } catch (err) {
+                            console.warn('Failed to fetch quiz attempts:', err);
                         }
                     }
                 } catch (err) {
@@ -418,8 +435,9 @@ export default function StudentClassDetail() {
                             file: { _id: mat._id, file_name: mat.title, slide_name: mat.title, file_path: mat.file_path || '' } as any, 
                             type: (mat.type === 'slide' || mat.type === 'slides') ? 'slide' : 'file' 
                         })}
-                        onOpenQuiz={(mat) => navigate(`/student/take-quiz/${mat._id}`)}
+                        onOpenQuiz={(mat, isDone) => navigate(isDone ? `/student/quiz-result/${mat._id}` : `/student/take-quiz/${mat._id}`)}
                         onFlagMaterial={handleFlagMaterial}
+                        quizAttempts={quizAttempts}
                     />
                 </Grid>
 

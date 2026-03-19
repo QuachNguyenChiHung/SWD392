@@ -1,5 +1,5 @@
 import { Stack, Typography, Alert, Box, Chip, Accordion, AccordionSummary, AccordionDetails, Divider, Paper, Button } from '@mui/material';
-import { ExpandMore, Info, CheckCircle, MenuBook, School, FileDownload, Visibility as Eye, Brush, Quiz, Flag } from '@mui/icons-material';
+import { ExpandMore, Info, CheckCircle, MenuBook, School, FileDownload, Visibility as Eye, Brush, Quiz, Flag, Timer, ChevronRight } from '@mui/icons-material';
 import type { Topic } from '../../types/studentType';
 
 const TOPIC_COLORS = ['#6366f1', '#0ea5e9', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6'];
@@ -32,8 +32,9 @@ interface ClassTopicsTabProps {
   expandedTopic: string | false;
   onExpandTopic: (topicId: string) => void;
   onPreviewMaterial?: (material: MaterialItem) => void;
-  onOpenQuiz?: (material: MaterialItem) => void;
+  onOpenQuiz?: (material: MaterialItem, isCompleted: boolean) => void;
   onFlagMaterial?: (material: MaterialItem) => void;
+  quizAttempts?: any[];
 }
 
 const getMaterialIcon = (type: string) => {
@@ -50,7 +51,7 @@ const getMaterialIcon = (type: string) => {
 export default function ClassTopicsTab({
   topics, materials = [], completedMaterials = [],
   courseName, gradeLevel, expandedTopic, onExpandTopic,
-  onPreviewMaterial, onOpenQuiz, onFlagMaterial
+  onPreviewMaterial, onOpenQuiz, onFlagMaterial, quizAttempts
 }: ClassTopicsTabProps) {
   if (!topics.length) {
     return <Alert severity="info" icon={<Info />}>Chưa có chủ đề nào trong khóa học này</Alert>;
@@ -157,8 +158,47 @@ export default function ClassTopicsTab({
                                 const isRender2D = mat.type === '2d_render';
                                 const isQuiz = mat.type === 'quiz';
                                 const isCompleted = completedMaterials.includes(mat._id);
+
+                                if (isQuiz) {
+                                  const attempt = quizAttempts?.find(a => {
+                                    const qId = typeof a.quiz_id === 'object' ? a.quiz_id._id : a.quiz_id;
+                                    return qId === mat.content_id;
+                                  });
+                                  
+                                  return (
+                                    <Paper key={mat._id} variant="outlined" sx={{ mb: 1, p: 2, borderRadius: 2, transition: '0.2s', '&:hover': { borderColor: color, transform: 'translateX(4px)', boxShadow: `0 4px 12px ${color}15` } }}>
+                                      <Stack direction="row" justifyContent="space-between" alignItems="center">
+                                        <Stack direction="row" spacing={1.5} alignItems="center">
+                                          <Box sx={{ p: 1, bgcolor: isCompleted ? '#d1fae520' : `${color}12`, borderRadius: 1.5, display: 'flex', color: isCompleted ? '#059669' : color }}>
+                                            {isCompleted ? <CheckCircle sx={{ fontSize: 20 }} /> : <Quiz sx={{ fontSize: 20 }} />}
+                                          </Box>
+                                          <Box>
+                                            <Stack direction="row" spacing={1} alignItems="center">
+                                              <Typography fontWeight="700" variant="body2">{mat.title}</Typography>
+                                              {isCompleted && <Chip label="Đã làm" size="small" color="success" sx={{ height: 18, fontSize: '0.6rem', fontWeight: 900 }} />}
+                                            </Stack>
+                                            {attempt && (
+                                              <Stack direction="row" alignItems="center" spacing={0.5}>
+                                                <Timer sx={{ fontSize: 12, color: 'text.disabled' }} />
+                                                <Typography variant="caption" color="text.secondary">Lần {attempt.attempt_number} • {new Date(attempt.date).toLocaleDateString('vi-VN')}</Typography>
+                                              </Stack>
+                                            )}
+                                          </Box>
+                                        </Stack>
+                                        {onOpenQuiz && (
+                                          <Button size="small" variant={isCompleted ? 'outlined' : 'contained'} endIcon={!isCompleted ? <ChevronRight /> : undefined}
+                                            onClick={() => onOpenQuiz(mat, isCompleted)}
+                                            sx={{ borderRadius: 2, px: 2.5, textTransform: 'none', fontWeight: 700, borderColor: isCompleted ? color : undefined, color: isCompleted ? color : undefined, bgcolor: !isCompleted ? color : undefined, '&:hover': { bgcolor: !isCompleted ? `${color}dd` : undefined } }}>
+                                            {isCompleted ? 'Xem lại' : 'Làm bài'}
+                                          </Button>
+                                        )}
+                                      </Stack>
+                                    </Paper>
+                                  );
+                                }
+
                                 return (
-                                  <Paper key={mat._id} variant="outlined" sx={{ p: 1.5, borderRadius: 1.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center', '&:hover': { bgcolor: 'rgba(0,0,0,0.01)' } }}>
+                                  <Paper key={mat._id} variant="outlined" sx={{ p: 1.5, mb: 1, borderRadius: 1.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center', '&:hover': { bgcolor: 'rgba(0,0,0,0.01)' } }}>
                                     <Stack direction="row" spacing={1} alignItems="center" sx={{ flex: 1 }}>
                                       <Typography variant="body2">{getMaterialIcon(mat.type)}</Typography>
                                       <Box>
@@ -171,20 +211,6 @@ export default function ClassTopicsTab({
                                     </Stack>
                                     {isRender2D ? (
                                       <Chip label="Coming soon" size="small" icon={<Brush sx={{ fontSize: '14px !important' }} />} sx={{ bgcolor: '#f0f7ff', color: '#6366f1', fontSize: '0.65rem' }} />
-                                    ) : isQuiz ? (
-                                      <Stack direction="row" spacing={0.5}>
-                                        {onOpenQuiz && (
-                                          <Button
-                                            size="small"
-                                            variant="contained"
-                                            onClick={() => onOpenQuiz(mat)}
-                                            startIcon={<Quiz />}
-                                            sx={{ bgcolor: color, '&:hover': { bgcolor: `${color}dd` } }}
-                                          >
-                                            Làm bài
-                                          </Button>
-                                        )}
-                                      </Stack>
                                     ) : (
                                       <Stack direction="row" spacing={0.5}>
                                         {onPreviewMaterial && (
