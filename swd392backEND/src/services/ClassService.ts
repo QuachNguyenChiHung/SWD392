@@ -21,8 +21,8 @@ class ClassService {
     async getClassById(id: string) {
         return await ClassRepo.getClassById(id);
     }
-    async getClassesByTeacher(teacherId: string, page: number) {
-        return await ClassRepo.getClassesByTeacher(teacherId, page);
+    async getClassesByTeacher(teacherId: string, page: number, viewHidden: boolean = true) {
+        return await ClassRepo.getClassesByTeacher(teacherId, page, viewHidden);
     }
     async getClassesByStudent(studentId: string, page: number) {
         return await ClassRepo.getClassesByStudent(studentId, page);

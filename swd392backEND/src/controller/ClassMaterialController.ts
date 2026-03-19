@@ -28,6 +28,21 @@ class ClassMaterialController {
                 return res.status(400).json({ message: "class_id is required" });
             }
             const pageNum = parseInt(page as string) || 1;
+            const materials = await ClassMaterialService.getActiveClassMaterialsByClass(class_id as string, pageNum);
+            return res.status(200).json(materials);
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    // GET /api/class-materials/teacher?class_id=&page=
+    async getMaterialsByClassForTeacher(req: Request, res: Response, next: NextFunction) {
+        try {
+            const { class_id, page } = req.query;
+            if (!class_id) {
+                return res.status(400).json({ message: "class_id is required" });
+            }
+            const pageNum = parseInt(page as string) || 1;
             const materials = await ClassMaterialService.getClassMaterialsByClass(class_id as string, pageNum);
             return res.status(200).json(materials);
         } catch (error) {
@@ -218,6 +233,20 @@ class ClassMaterialController {
 
     // GET /api/class-materials/count?class_id=
     async getMaterialCount(req: Request, res: Response, next: NextFunction) {
+        try {
+            const { class_id } = req.query;
+            if (!class_id) {
+                return res.status(400).json({ message: "class_id is required" });
+            }
+            const count = await ClassMaterialService.getActiveClassMaterialCount(class_id as string);
+            return res.status(200).json({ count });
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    // GET /api/class-materials/teacher/count?class_id=
+    async getMaterialCountForTeacher(req: Request, res: Response, next: NextFunction) {
         try {
             const { class_id } = req.query;
             if (!class_id) {

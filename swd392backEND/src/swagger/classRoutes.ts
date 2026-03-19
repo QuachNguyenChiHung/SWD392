@@ -35,7 +35,7 @@
  *           example: "https://res.cloudinary.com/demo/image/upload/sample.jpg"
  *         status:
  *           type: string
- *           enum: [active, inactive, archived]
+*           enum: [active, inactive, archived, deleted]
  *           description: Class status
  *           example: "active"
  *         date_create:
@@ -73,7 +73,7 @@
  *           example: "newKey123"
  *         status:
  *           type: string
- *           enum: [active, inactive, archived]
+*           enum: [active, inactive, archived, deleted]
  *           example: "inactive"
  *         img_cover_link:
  *           type: string
@@ -126,6 +126,12 @@
  *           type: integer
  *           default: 1
  *         description: Page number
+*       - in: query
+*         name: view_hidden
+*         schema:
+*           type: boolean
+*           default: true
+*         description: Whether to include hidden/deleted classes in the response
  *     responses:
  *       200:
  *         description: Array of classes matching the search

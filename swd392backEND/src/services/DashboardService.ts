@@ -98,7 +98,10 @@ class DashboardService {
         const teacherRecord = await Teacher.findOne({ user_id: userId });
         if (!teacherRecord) throw new Error("Teacher not found");
 
-        const teacherClasses = await Class.find({ teacher_id: teacherRecord._id }).populate('course_id');
+        const teacherClasses = await Class.find({
+            teacher_id: teacherRecord._id,
+            status: { $ne: "deleted" }
+        }).populate('course_id');
         const classIds = teacherClasses.map(c => c._id);
 
         const classProgress = await Promise.all(

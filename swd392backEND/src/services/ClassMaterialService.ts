@@ -16,6 +16,10 @@ class ClassMaterialService {
         return await ClassMaterialRepo.getClassMaterialsByClass(classId, page);
     }
 
+    async getActiveClassMaterialsByClass(classId: string, page: number = 1) {
+        return await ClassMaterialRepo.getActiveClassMaterialsByClass(classId, page);
+    }
+
     async getClassMaterialsByTopic(topicId: string) {
         return await ClassMaterialRepo.getClassMaterialsByTopic(topicId);
     }
@@ -45,6 +49,10 @@ class ClassMaterialService {
 
     async getClassMaterialCount(classId: string) {
         return await ClassMaterialRepo.getClassMaterialCount(classId);
+    }
+
+    async getActiveClassMaterialCount(classId: string) {
+        return await ClassMaterialRepo.getActiveClassMaterialCount(classId);
     }
 
     async updateOrderNumbers(classId: string, materialIds: string[]) {
@@ -115,7 +123,7 @@ class ClassMaterialService {
     async toggleClassMaterialStatus(id: string, status: string) {
         const validStatuses = ['published', 'draft', 'reviewed', 'deleted'];
         if (!validStatuses.includes(status)) return { error: "Invalid status value" };
-        
+
         const previous = await ClassMaterialRepo.getClassMaterialById(id);
         // Using any since the repo function expects any
         const result = await ClassMaterialRepo.updateClassMaterial(id, { status } as any);
@@ -151,10 +159,10 @@ class ClassMaterialService {
         if (!material) return { error: "Class material not found" };
         if (!material.isFlagged) return { error: "Material is not currently flagged" };
 
-        return await ClassMaterialRepo.updateClassMaterial(id, { 
-            status: 'reviewed', 
-            isFlagged: false, 
-            isFlaggable: false 
+        return await ClassMaterialRepo.updateClassMaterial(id, {
+            status: 'reviewed',
+            isFlagged: false,
+            isFlaggable: false
         } as any);
     }
 }

@@ -37,10 +37,14 @@ class ClassRepo {
         const skip = (page - 1) * limit;
         return await Class.find({ teacher_id: teacherId, class_name: { $regex: name, $options: 'i' } }).skip(skip).limit(limit);
     }
-    async getClassesByTeacher(teacherId: string, page: number) {
+    async getClassesByTeacher(teacherId: string, page: number, viewHidden: boolean = true) {
         const limit = 12;
         const skip = (page - 1) * limit;
-        return await Class.find({ teacher_id: teacherId }).skip(skip).limit(limit);
+        const query: any = { teacher_id: teacherId };
+        if (!viewHidden) {
+            query.status = { $ne: "deleted" };
+        }
+        return await Class.find(query).skip(skip).limit(limit);
     }
     async getClassesByStudent(studentId: string, page: number) {
         const limit = 12;

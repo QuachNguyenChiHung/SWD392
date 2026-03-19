@@ -7,12 +7,18 @@ const router = Router();
 
 // Public / authenticated reads (student + teacher)
 router.get("/class-materials", ClassMaterialController.getMaterialsByClass);
+router.get("/class-materials/teacher", verifyRole.verifyTeacher, ClassMaterialController.getMaterialsByClassForTeacher);
 router.get(
   "/class-materials/all",
   verifyRole.verifyAdmin,
   ClassMaterialController.getAllMaterials,
 );
 router.get("/class-materials/count", ClassMaterialController.getMaterialCount);
+router.get(
+  "/class-materials/teacher/count",
+  verifyRole.verifyTeacher,
+  ClassMaterialController.getMaterialCountForTeacher,
+);
 router.get(
   "/class-materials/topic/:topicId",
   ClassMaterialController.getMaterialsByTopic,
