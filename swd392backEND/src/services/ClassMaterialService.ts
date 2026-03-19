@@ -84,6 +84,11 @@ class ClassMaterialService {
     }
 
     async updateClassMaterial(id: string, updateData: UpdateClassMaterialDTO) {
+        // Reset properties if a material is updated
+        updateData.status = 'published';
+        updateData.isFlagged = false;
+        updateData.isFlaggable = true;
+
         const previous = await ClassMaterialRepo.getClassMaterialById(id);
         const result = await ClassMaterialRepo.updateClassMaterial(id, updateData);
 
@@ -110,6 +115,50 @@ class ClassMaterialService {
         // Eager: delete all progress records for this material before deleting it
         await ProgressClassMaterialService.bulkDeleteForMaterial(id);
         return await ClassMaterialRepo.deleteClassMaterial(id);
+    }
+
+    async flagMaterial(id: string) {
+        const material = await ClassMaterialRepo.getClassMaterialById(id);
+        if (!material) return { error: "Class material not found" };
+
+        if (material.status !== 'published') {
+            return { error: "Only published materials can be flagged" };
+        }
+        if (!material.isFlaggable) {
+            return { error: "This material cannot be flagged again" };
+        }
+
+        return await ClassMaterialRepo.updateClassMaterial(id, {
+            isFlagged: true
+        });
+    }
+
+    async toggleClassMaterialStatus(id: string, status: string) {
+        const validStatuses = ['published', 'draft', 'reviewed', 'deleted'];
+        if (!validStatuses.includes(status)) {
+            return { error: "Invalid status" };
+        }
+
+        const material = await ClassMaterialRepo.getClassMaterialById(id);
+        if (!material) return { error: "Class material not found" };
+
+        const updateData: any = { status, isFlagged: false };
+        if (status === 'reviewed') {
+            updateData.isFlaggable = false;
+        }
+
+        return await ClassMaterialRepo.updateClassMaterial(id, updateData);
+    }
+
+    async verifyAfterFlag(id: string) {
+        const material = await ClassMaterialRepo.getClassMaterialById(id);
+        if (!material) return { error: "Class material not found" };
+
+        return await ClassMaterialRepo.updateClassMaterial(id, {
+            status: 'reviewed',
+            isFlagged: false,
+            isFlaggable: false
+        });
     }
 
 
