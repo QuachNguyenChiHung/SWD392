@@ -52,6 +52,29 @@ class AuthService {
         }
     }
 
+    async googleLogin(credential: string): Promise<AuthResponse> {
+        try {
+            const loginResponse = await apiService.post('/google-login', { credential });
+
+            if (!loginResponse?.token) {
+                throw new Error('Google login failed - no token received');
+            }
+
+            localStorage.setItem('token', loginResponse.token);
+
+            const userResponse = await this.getCurrentUser();
+
+            return {
+                success: true,
+                user: userResponse,
+                token: loginResponse.token
+            };
+        } catch (error) {
+            console.error('Google login API error:', error);
+            throw new Error(error instanceof Error ? error.message : 'Google login failed');
+        }
+    }
+
     async register(userData: RegisterRequest): Promise<AuthResponse> {
         try {
             const response = await apiService.post('/register', userData);
