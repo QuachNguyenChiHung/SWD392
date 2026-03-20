@@ -119,7 +119,8 @@ const ClassTableRow = ({
             <MenuItem value="deleted">Đã xóa</MenuItem>
           </Select>
           <Button
-            size="small"
+            size="medium"
+            variant="contained"
             component={RouterLink}
             to={`/teacher/class/${_id}`}
           >
@@ -127,7 +128,8 @@ const ClassTableRow = ({
           </Button>
           <Button
             size="small"
-            variant="outlined"
+            color="success"
+            variant="contained"
             onClick={() =>
               onChangeImage?.({
                 _id,
