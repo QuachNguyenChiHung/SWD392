@@ -128,7 +128,7 @@ const ModeratorDashboard: React.FC = () => {
                 {summary?.flaggedMaterials ?? 0}
               </Typography>
               <Typography variant="body2" color="text.secondary" fontWeight="medium" mb={2}>
-                Tài liệu bị flag
+                Đang chờ kiểm duyệt
               </Typography>
               <Button
                 component={Link}

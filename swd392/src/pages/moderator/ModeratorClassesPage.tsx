@@ -22,6 +22,7 @@ import {
 import { Visibility, NavigateNext, Search, Class as ClassIcon } from "@mui/icons-material";
 import { useNavigate, Link } from "react-router-dom";
 import { searchClasses } from "../../services/moderatorService";
+import { adminSystemApi, adminCoursesApi } from "../../services/adminApi";
 
 const ModeratorClassesPage: React.FC = () => {
   const navigate = useNavigate();
@@ -35,7 +36,37 @@ const ModeratorClassesPage: React.FC = () => {
       const res = await searchClasses(keyword);
       // searchClasses returns { classes: [...], total: ... } based on typical patterns,
       // but let's handle both array and object responses
-      setClasses(Array.isArray(res) ? res : res.classes || []);
+      const rawClasses = Array.isArray(res) ? res : res.classes || [];
+      
+      setClasses(rawClasses); // Show what we have first
+
+      // Enrich classes in background
+      const enriched = await Promise.all(
+        rawClasses.map(async (cls: any) => {
+          try {
+            // Fetch missing details in parallel
+            const [classDetail, courseDetail] = await Promise.all([
+              // Try to get keypass from getClassById (might return more fields than search)
+              adminSystemApi.getClassById(cls._id).catch(() => null),
+              // Get course name
+              cls.course_id && typeof cls.course_id === 'string' 
+                ? adminCoursesApi.getCourseById(cls.course_id).catch(() => null)
+                : null
+            ]);
+
+            return {
+              ...cls,
+              keypass: classDetail?.keypass || cls.keypass,
+              course_name: courseDetail?.course_name || cls.course_name
+            };
+          } catch (err) {
+            console.error(`Error enriching class ${cls._id}:`, err);
+            return cls;
+          }
+        })
+      );
+
+      setClasses(enriched);
     } catch (err) {
       console.error("Lỗi khi tải danh sách lớp học:", err);
     } finally {
@@ -95,14 +126,13 @@ const ModeratorClassesPage: React.FC = () => {
                 <TableCell sx={{ fontWeight: "bold" }}>Lớp học</TableCell>
                 <TableCell sx={{ fontWeight: "bold" }}>Mã tham gia (Keypass)</TableCell>
                 <TableCell sx={{ fontWeight: "bold" }}>Khóa học</TableCell>
-                <TableCell sx={{ fontWeight: "bold" }}>Giáo viên</TableCell>
                 <TableCell align="center" sx={{ fontWeight: "bold" }}>Hành động</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {classes.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} align="center" sx={{ py: 4 }}>
+                  <TableCell colSpan={4} align="center" sx={{ py: 4 }}>
                     <Typography color="text.secondary">Không tìm thấy lớp học nào.</Typography>
                   </TableCell>
                 </TableRow>
@@ -110,7 +140,6 @@ const ModeratorClassesPage: React.FC = () => {
                 classes.map((cls) => {
                   // Fallback data correctly
                   const courseName = cls.course_name || cls.course_id?.course_name || "-";
-                  const teacherName = cls.teacher_name || cls.teacher_id?.name || cls.teacher_id?.username || "-";
 
                   return (
                     <TableRow key={cls._id} hover sx={{ transition: "0.2s" }}>
@@ -139,11 +168,6 @@ const ModeratorClassesPage: React.FC = () => {
                       <TableCell>
                         <Typography variant="body2" color="text.secondary" fontWeight="medium">
                           {courseName}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2">
-                          {teacherName}
                         </Typography>
                       </TableCell>
                       <TableCell align="center">
