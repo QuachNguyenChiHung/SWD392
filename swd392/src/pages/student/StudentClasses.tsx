@@ -7,6 +7,7 @@ import {
 import { Add, PlayArrow, Schedule, ErrorOutline, CheckCircle, Lock } from '@mui/icons-material';
 import { apiService } from '../../services/api';
 import type { ClassItem, Enrollment } from '../../types/studentType';
+import StudentPageShell from '../../components/student/StudentPageShell';
 
 const COLORS = ['#6366f1', '#0ea5e9', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6'];
 
@@ -16,7 +17,6 @@ interface EnhancedClassItem extends ClassItem {
 
 const StudentClasses = () => {
   const [classes, setClasses] = useState<EnhancedClassItem[]>([]);
-  const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [keypass, setKeypass] = useState('');
@@ -29,8 +29,6 @@ const StudentClasses = () => {
     try {
       const classesData: ClassItem[] = await apiService.get('/student/class?page=1');
       const enrollmentsData: Enrollment[] = await apiService.get('/enroll/student');
-
-      setEnrollments(enrollmentsData);
 
       const enhancedClasses = classesData.map(cls => {
         // Lấy tất cả enrollments của class này
@@ -113,7 +111,6 @@ const StudentClasses = () => {
     if (!cls.enrollment) {
       return { label: 'Chưa tham gia', color: '#6b7280', bg: '#f3f4f6' };
     }
-    console.log('enrollment status:', cls.enrollment?.status);
     switch (cls.enrollment.status) {
       case 'completed':
         return { label: 'Hoàn thành', color: '#059669', bg: '#d1fae5' };
@@ -127,30 +124,32 @@ const StudentClasses = () => {
   };
 
   return (
-    <Box>
-      {/* Header */}
-      <Stack direction="row" justifyContent="space-between" alignItems="center" mb={4}>
-        <Box>
-          <Typography color="text.secondary">
-            Bạn đang tham gia {classes.length} lớp học
-          </Typography>
-        </Box>  
-        <Stack direction="row" spacing={1}>
-          <Button
-            variant="contained"
-            startIcon={<Add />}
-            onClick={() => {
-              setOpen(true);
-              setJoinError(null);
-              setJoinSuccess(false);
-              setKeypass('');
-            }}
-            sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 700 }}
-          >
-            Tham gia lớp
-          </Button>
-        </Stack>
-      </Stack>
+    <StudentPageShell
+      title="Lớp học của tôi"
+      subtitle={`Bạn đang tham gia ${classes.length} lớp học. Nhập keypass để vào lớp mới ngay lập tức.`}
+      chipLabel="Lớp học học sinh"
+      actions={(
+        <Button
+          variant="contained"
+          startIcon={<Add />}
+          onClick={() => {
+            setOpen(true);
+            setJoinError(null);
+            setJoinSuccess(false);
+            setKeypass('');
+          }}
+          sx={{
+            borderRadius: 2,
+            textTransform: 'none',
+            fontWeight: 700,
+            px: 2.2,
+            py: 1,
+          }}
+        >
+          Tham gia lớp
+        </Button>
+      )}
+    >
 
       {/* Classes Grid */}
       <Grid container spacing={3}>
@@ -168,9 +167,12 @@ const StudentClasses = () => {
               return (
                 <Grid key={cls._id} size={{ xs: 12, sm: 6, md: 3 }}>
                   <Paper
-                    variant="outlined"
+                    elevation={0}
                     sx={{
                       p: 2,
+                      borderRadius: 3,
+                      border: '1px solid #d6e7f4',
+                      bgcolor: '#ffffff',
                       transition: '0.3s',
                       height: '100%',
                       display: 'flex',
@@ -178,7 +180,7 @@ const StudentClasses = () => {
                       '&:hover': {
                         transform: 'translateY(-5px)',
                         borderColor: color,
-                        boxShadow: '0 10px 20px rgba(0,0,0,0.05)'
+                        boxShadow: '0 14px 26px rgba(20, 64, 106, 0.14)'
                       }
                     }}
                   >
@@ -282,7 +284,16 @@ const StudentClasses = () => {
             })
             : (
               <Grid size={{ xs: 12 }}>
-                <Paper sx={{ p: 4, textAlign: 'center' }}>
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: 4,
+                    textAlign: 'center',
+                    borderRadius: 3,
+                    border: '1px solid #dce8f4',
+                    background: 'linear-gradient(120deg, rgba(255,255,255,0.96) 0%, rgba(236,247,255,0.96) 45%, rgba(240,255,246,0.96) 100%)',
+                  }}
+                >
                   <Lock sx={{ fontSize: 48, color: 'text.disabled', mb: 2 }} />
                   <Typography variant="h6" gutterBottom>
                     Chưa tham gia lớp học nào
@@ -308,9 +319,9 @@ const StudentClasses = () => {
         onClose={() => !joining && setOpen(false)}
         maxWidth="xs"
         fullWidth 
-        PaperProps={{ sx: { borderRadius: 2 } }}
+        PaperProps={{ sx: { borderRadius: 3, border: '1px solid #d6e7f4' } }}
       >
-        <DialogTitle sx={{ fontWeight: 'bold', fontSize: '1.3rem' }}>
+        <DialogTitle sx={{ fontWeight: 'bold', fontSize: '1.3rem', color: '#12344d' }}>
           Tham gia lớp mới
         </DialogTitle>
 
@@ -375,7 +386,7 @@ const StudentClasses = () => {
           </Button>
         </DialogActions>
       </Dialog>
-    </Box>
+    </StudentPageShell>
   );
 };
 

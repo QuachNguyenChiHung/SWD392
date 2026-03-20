@@ -14,6 +14,7 @@ import ClassTopicsTab from '../../components/student/ClassTopicsTab';
 import StudentAIChat from '../../components/student/StudentAIChatBox';
 import FileViewer from '../../components/materialViewers/FileViewer';
 import SlideViewer from '../../components/materialViewers/SlideViewer';
+import StudentPageShell from '../../components/student/StudentPageShell';
 
 interface FileItem {
     _id: string;
@@ -337,21 +338,34 @@ export default function StudentClassDetail() {
     const isCompleted = enrollment?.status === 'completed';
 
     return (
-        <Box>
-            <Stack direction="row" alignItems="center" mb={3}>
+        <StudentPageShell
+            title={cls?.class_name || 'Chi tiết lớp học'}
+            subtitle="Theo dõi tiến độ, học theo chủ đề và đánh dấu tài liệu hoàn thành"
+            chipLabel="Chi tiết lớp học"
+            actions={(
                 <Button
                     startIcon={<ArrowBack />}
                     onClick={() => navigate('/student/classes')}
-                    sx={{ textTransform: 'none', fontWeight: 600, color: 'text.secondary' }}
+                    sx={{ textTransform: 'none', fontWeight: 700, color: '#12344d' }}
                 >
                     Quay lại
                 </Button>
-            </Stack>
+            )}
+        >
 
             <Grid container spacing={3}>
                 <Grid size={{ xs: 12, md: 8 }}>
                     {cls && (
-                        <Paper sx={{ p: 3, mb: 3 }}>
+                        <Paper
+                            elevation={0}
+                            sx={{
+                                p: 3,
+                                mb: 3,
+                                borderRadius: 3,
+                                border: '1px solid #d6e7f4',
+                                backgroundColor: '#fff',
+                            }}
+                        >
                             <Stack direction="row" spacing={3} alignItems="center">
                                 <Box sx={{
                                     width: 100, height: 100, borderRadius: 2,
@@ -439,7 +453,16 @@ export default function StudentClassDetail() {
                 </Grid>
 
                 <Grid size={{ xs: 12, md: 4 }}>
-                    <Paper sx={{ p: 3, mb: 2, bgcolor: '#f8fafc' }}>
+                    <Paper
+                        elevation={0}
+                        sx={{
+                            p: 3,
+                            mb: 2,
+                            borderRadius: 3,
+                            border: '1px solid #dce8f4',
+                            background: 'linear-gradient(120deg, rgba(255,255,255,0.96) 0%, rgba(236,247,255,0.96) 45%, rgba(240,255,246,0.96) 100%)',
+                        }}
+                    >
                         <Typography fontWeight="bold" gutterBottom sx={{ mb: 2 }}>
                             Thông tin lớp học
                         </Typography>
@@ -478,6 +501,7 @@ export default function StudentClassDetail() {
                         <Button
                             fullWidth variant="outlined" color="inherit"
                             onClick={() => navigate('/student/classes')}
+                            sx={{ borderRadius: 2, fontWeight: 700 }}
                         >
                             Quay về danh sách lớp
                         </Button>
@@ -564,6 +588,6 @@ export default function StudentClassDetail() {
                     {chatOpen ? <Close /> : <SmartToy />}
                 </Fab>
             </Box>
-        </Box>
+        </StudentPageShell>
     );
 }
