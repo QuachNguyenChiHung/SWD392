@@ -209,9 +209,6 @@ const StudentDashboard = () => {
                                 <Typography variant="subtitle1" fontWeight="bold" noWrap>
                                   {cls.class_name}
                                 </Typography>
-                                <Typography variant="body2" color="text.secondary" noWrap sx={{ height: 20 }}>
-                                  {cls.keywords || 'Chưa có mô tả'}
-                                </Typography>
                                 <Divider />
                                 <Typography variant="caption" color="text.secondary">
                                   Tạo ngày: <b>{formatDate(cls.date_create)}</b>
