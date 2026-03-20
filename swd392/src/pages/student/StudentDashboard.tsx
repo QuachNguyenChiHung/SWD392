@@ -42,13 +42,6 @@ interface QuizAttempt {
   };
 }
 
-interface DashboardStats {
-  total_classes: number;
-  total_quizzes: number;
-  average_score: number;
-  completed_materials: number;
-}
-
 const getEnrollClassId = (enrollment: Enrollment): string => {
   if (typeof enrollment.class_id === 'object' && enrollment.class_id !== null) {
     return (enrollment.class_id as any)._id;
@@ -269,12 +262,12 @@ const StudentDashboard = () => {
                         const hasScore = score != null;
                         const scoreColor = !hasScore ? '#94a3b8'
                           : score >= 70 ? '#059669'
-                          : score >= 50 ? '#b45309'
-                          : '#dc2626';
+                            : score >= 50 ? '#b45309'
+                              : '#dc2626';
                         const scoreBg = !hasScore ? '#f1f5f9'
                           : score >= 70 ? '#d1fae5'
-                          : score >= 50 ? '#fef3c7'
-                          : '#fee2e2';
+                            : score >= 50 ? '#fef3c7'
+                              : '#fee2e2';
 
                         return (
                           <Paper

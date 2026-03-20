@@ -50,12 +50,11 @@ const QuizTakingInterface = () => {
   const [answers, setAnswers] = useState<{ [key: number]: number }>({});
   const [timeLeft, setTimeLeft] = useState(1800);
   const [flagged, setFlagged] = useState<number[]>([]);
-  const [isFinished, setIsFinished] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [openConfirm, setOpenConfirm] = useState(false);
 
   const userStr = localStorage.getItem('user');
-  const userId = userStr ? JSON.parse(userStr).id : '';
+  void userStr;
 
   useEffect(() => {
     const fetchQuiz = async () => {

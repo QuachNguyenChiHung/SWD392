@@ -83,7 +83,7 @@ export interface PaginatedTopicsResponse {
   totalPages: number;
 }
 
-export type ClassMaterialType = "file" | "slide" | "quiz";
+export type ClassMaterialType = "file" | "slide" | "2d_render" | "quiz";
 
 export interface ClassMaterial {
   _id?: string;

@@ -17,6 +17,8 @@ export interface UpdateQuestionDTO {
     type?: 'multiple_choice' | 'true_false';
 }
 
+export type FrontendQuestionData = CreateQuestionDTO;
+
 class QuestionApiService {
     // Get all questions (admin only)
     async getAllQuestions(): Promise<Question[]> {

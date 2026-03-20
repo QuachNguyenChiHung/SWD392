@@ -57,6 +57,12 @@ const TYPE_META: Record<
         icon: <Slideshow fontSize="small" />,
         description: "Generate presentation slides",
     },
+    "2d_render": {
+        label: "2D Render",
+        color: "secondary",
+        icon: <ViewInAr fontSize="small" />,
+        description: "Generate 2D data preview",
+    },
 
     quiz: {
         label: "Quiz",
@@ -346,6 +352,31 @@ export default function AiContentGenerator() {
                             end_date: null,
                             status: parsed?.status ?? true,
                             questions: mappedQuestions,
+                        },
+                        is_ai_material: true,
+                        ai_content_id: null,
+                    });
+                    return;
+                }
+                case "2d_render": {
+                    setAiPreviewMaterial({
+                        _id: `preview-2d-${Date.now()}`,
+                        status: "draft",
+                        type: "2d_render",
+                        order_num: 0,
+                        class_assign_id: classId || "",
+                        title: `2D Preview - ${topicTitle}`,
+                        dateUpdate: new Date(),
+                        dateCreate: new Date(),
+                        content: {
+                            render_data: JSON.stringify(
+                                {
+                                    topic: topicTitle,
+                                    notes: promptForPreview || "No additional prompt",
+                                },
+                                null,
+                                2,
+                            ),
                         },
                         is_ai_material: true,
                         ai_content_id: null,

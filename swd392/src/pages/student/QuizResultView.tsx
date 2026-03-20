@@ -44,7 +44,6 @@ const QuizResultView = () => {
   const [score, setScore] = useState<Score | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [quizId, setQuizId] = useState<string | null>(null);
   const [maxAttempts, setMaxAttempts] = useState<number>(999);
   const [attemptCount, setAttemptCount] = useState<number>(0);
   const [searchParams] = useSearchParams();
@@ -63,13 +62,12 @@ const QuizResultView = () => {
           setError('Bài kiểm tra chưa có nội dung');
           return;
         }
-        setQuizId(qId);
 
         // Fetch quiz info for max_attempt_number
         try {
           const quizInfo: any = await apiService.get(`/quizzes/${qId}`);
           setMaxAttempts(quizInfo?.max_attempt_number ?? 999);
-        } catch {}
+        } catch { }
 
         // 2. Get my attempts, find latest for this quiz
         const myAttempts: any[] = await apiService.get('/my-quiz-attempts');

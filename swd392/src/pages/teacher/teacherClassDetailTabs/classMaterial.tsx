@@ -20,6 +20,9 @@ const getMaterialIcon = (type: ClassMaterialType) => {
     case "slide":
       return <Slideshow fontSize="small" />;
 
+    case "2d_render":
+      return <ViewInAr fontSize="small" />;
+
     case "quiz":
       return <Quiz fontSize="small" />;
     default:
