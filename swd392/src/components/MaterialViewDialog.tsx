@@ -12,6 +12,7 @@ import {
 import { Close } from "@mui/icons-material";
 import MaterialTypeViewer from "./MaterialTypeViewer";
 import { getMaterialById } from "../services/moderatorService";
+import { adminMaterialsApi } from "../services/adminApi";
 import type { ClassMaterial } from "../types/teacherType";
 
 interface MaterialViewDialogProps {
@@ -72,13 +73,43 @@ export default function MaterialViewDialog({
     setError("");
 
     getMaterialById(materialId)
-      .then((data) => {
+      .then(async (data) => {
         if (cancelled) return;
-        setResolvedMaterial(resolveApiMaterial(data));
+        const mat = resolveApiMaterial(data);
+        if (!mat) {
+          setError("Không tìm thấy tài liệu.");
+          return;
+        }
+
+        // If content is missing, enrich it using specific admin APIs
+        if (!mat.content && mat.type && mat.content_id) {
+          try {
+            let enrichedContent: any = null;
+            if (mat.type === "file") {
+              enrichedContent = await adminMaterialsApi.getFileById(mat.content_id);
+            } else if (mat.type === "slide") {
+              enrichedContent = await adminMaterialsApi.getSlideById(mat.content_id);
+            } else if (mat.type === "quiz") {
+              const quiz = await adminMaterialsApi.getQuizById(mat.content_id);
+              const questions = await adminMaterialsApi.getQuestionsByQuizId(mat.content_id);
+              enrichedContent = { ...quiz, questions };
+            }
+
+            if (enrichedContent) {
+              mat.content = enrichedContent;
+            }
+          } catch (enrichError) {
+            console.error("Lỗi khi làm giàu dữ liệu tài liệu:", enrichError);
+            // We can still try to show what we have, or show an error
+          }
+        }
+
+        setResolvedMaterial(mat);
       })
-      .catch(() => {
+      .catch((err) => {
         if (cancelled) return;
-        setError("Khong the tai chi tiet tai lieu.");
+        console.error("Lỗi khi tải chi tiết tài liệu:", err);
+        setError("Không thể tải chi tiết tài liệu.");
       })
       .finally(() => {
         if (cancelled) return;
@@ -94,8 +125,8 @@ export default function MaterialViewDialog({
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth>
-      <DialogTitle sx={{ pr: 6 }}>
-        <Typography variant="h6" fontWeight={700}>
+      <DialogTitle sx={{ pr: 6 }} component="div">
+        <Typography variant="h6" fontWeight={700} component="h2">
           {title}
         </Typography>
         <IconButton

@@ -66,7 +66,6 @@ const ModeratorCoursesPage: React.FC = () => {
             <TableHead sx={{ bgcolor: "grey.100" }}>
               <TableRow>
                 <TableCell sx={{ fontWeight: "bold" }}>Khóa học</TableCell>
-                <TableCell sx={{ fontWeight: "bold" }}>Mô tả</TableCell>
                 <TableCell sx={{ fontWeight: "bold" }}>Khối lớp</TableCell>
                 <TableCell sx={{ fontWeight: "bold" }}>Ngày tạo</TableCell>
                 <TableCell sx={{ fontWeight: "bold" }}>Trạng thái</TableCell>
@@ -76,7 +75,7 @@ const ModeratorCoursesPage: React.FC = () => {
             <TableBody>
               {courses.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
+                  <TableCell colSpan={5} align="center" sx={{ py: 4 }}>
                     <Typography color="text.secondary">Chưa có khóa học nào.</Typography>
                   </TableCell>
                 </TableRow>
@@ -97,11 +96,6 @@ const ModeratorCoursesPage: React.FC = () => {
                           </Typography>
                         </Box>
                       </Stack>
-                    </TableCell>
-                    <TableCell sx={{ maxWidth: 200, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                       <Tooltip title={course.description || "Không có mô tả"}>
-                          <span>{course.description || "-"}</span>
-                       </Tooltip>
                     </TableCell>
                     <TableCell>
                       <Chip label={`Lớp ${course.grade_level}`} size="small" variant="outlined" color="primary" />

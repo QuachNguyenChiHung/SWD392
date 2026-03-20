@@ -41,7 +41,10 @@ const ModeratorMaterialsPage: React.FC = () => {
     setLoading(true);
     try {
       const res = await getMaterialsByTopic(topicId);
-      setMaterials(Array.isArray(res) ? res : res.materials || []);
+      console.log("Dữ liệu tài liệu chủ đề nhận được:", res);
+      // Ensure we handle different response formats
+      const fetchedMaterials = Array.isArray(res) ? res : (res?.data || res?.materials || []);
+      setMaterials(fetchedMaterials);
     } catch (err) {
       console.error("Lỗi khi tải danh sách tài liệu:", err);
     } finally {
@@ -172,10 +175,19 @@ const ModeratorMaterialsPage: React.FC = () => {
                       </Typography>
                     </TableCell>
                     <TableCell>
-                      <Chip 
-                        label={mat.status === "published" ? "Đã duyệt" : mat.status === "rejected" ? "Bị đình chỉ" : mat.status === "draft" ? "Nháp" : mat.status} 
-                        size="small" 
-                        color={mat.status === "published" || mat.status === "reviewed" ? "success" : mat.status === "rejected" ? "error" : "default"} 
+                      <Chip
+                        label={
+                          mat.status === "published" ? (mat.isFlagged ? "Bị báo cáo" : "Chờ duyệt") : 
+                          mat.status === "reviewed" ? "Đã duyệt" : 
+                          mat.status === "rejected" ? "Bị đình chỉ" : 
+                          mat.status === "draft" ? "Nháp" : mat.status
+                        }
+                        size="small"
+                        color={
+                          mat.status === "reviewed" ? "success" : 
+                          mat.isFlagged ? "warning" : 
+                          mat.status === "published" ? "info" : "default"
+                        }
                         sx={{ fontWeight: "medium" }}
                       />
                     </TableCell>

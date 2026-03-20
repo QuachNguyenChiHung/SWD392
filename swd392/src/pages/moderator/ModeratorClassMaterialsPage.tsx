@@ -29,12 +29,14 @@ import {
   Block,
 } from "@mui/icons-material";
 import { useParams, Link } from "react-router-dom";
-import { getClassMaterials, changeMaterialStatus } from "../../services/moderatorService.ts";
-import MaterialViewDialog from "../../components/MaterialViewDialog.tsx";
+import { getClassMaterials, changeMaterialStatus, getTopicsByCourse, getMaterialsByTopic } from "../../services/moderatorService";
+import { adminSystemApi } from "../../services/adminApi";
+import MaterialViewDialog from "../../components/MaterialViewDialog";
 
 const ModeratorClassMaterialsPage: React.FC = () => {
   const { classId } = useParams<{ classId: string }>();
   const [materials, setMaterials] = useState<any[]>([]);
+  const [courseInfo, setCourseInfo] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [selectedMaterial, setSelectedMaterial] = useState<any>(null);
@@ -48,9 +50,46 @@ const ModeratorClassMaterialsPage: React.FC = () => {
     if (!classId) return;
     setLoading(true);
     try {
-      const res = await getClassMaterials(classId);
-      // The API might return { materials: [...], ... } or just [...]
-      setMaterials(Array.isArray(res) ? res : res.materials || []);
+      // 1. Get Class details to find course_id
+      const classRes = await adminSystemApi.getClassById(classId);
+      const courseId = classRes?.course_id;
+      
+      if (courseId) {
+        // 2. Get Course info and Topics
+        const topicsRes = await getTopicsByCourse(courseId);
+        setCourseInfo({
+          course_name: topicsRes?.course_name || "Khóa học",
+          class_name: classRes?.class_name
+        });
+
+        const topics = topicsRes?.topics || [];
+        
+        // 3. Fetch materials for each topic
+        const allMaterialsPromises = topics.map((topic: any) => getMaterialsByTopic(topic._id));
+        const materialsResponses = await Promise.all(allMaterialsPromises);
+        
+        // Flatten materials from all topics
+        const flattenedMaterials: any[] = [];
+        materialsResponses.forEach((res: any) => {
+          const mats = Array.isArray(res) ? res : (res?.data || res?.materials || []);
+          flattenedMaterials.push(...mats);
+        });
+
+        // Add materials belonging directly to the class (if any)
+        const directRes = await getClassMaterials(classId);
+        const directMats = Array.isArray(directRes) ? directRes : (directRes?.data || directRes?.materials || []);
+        
+        // Merge and remove duplicates by _id
+        const combined = [...flattenedMaterials, ...directMats];
+        const unique = Array.from(new Map(combined.map(m => [m._id, m])).values());
+        
+        console.log(`Đã tìm thấy tổng cộng ${unique.length} tài liệu liên quan.`);
+        setMaterials(unique);
+      } else {
+        // Fallback to direct class materials only if courseId not found
+        const res = await getClassMaterials(classId);
+        setMaterials(Array.isArray(res) ? res : (res?.data || res?.materials || []));
+      }
     } catch (err) {
       console.error("Lỗi khi tải danh sách tài liệu lớp:", err);
     } finally {
@@ -129,9 +168,16 @@ const ModeratorClassMaterialsPage: React.FC = () => {
         <Typography color="text.primary" fontWeight="medium">Tài liệu lớp</Typography>
       </Breadcrumbs>
 
-      <Typography variant="h5" fontWeight="bold" mb={3} sx={{ color: "primary.main" }}>
-        Tài liệu trong lớp học
-      </Typography>
+      <Box mb={3}>
+        <Typography variant="h5" fontWeight="bold" sx={{ color: "primary.main" }}>
+          Tài liệu trong lớp học
+        </Typography>
+        {courseInfo && (
+          <Typography variant="body1" color="text.secondary" mt={1}>
+            Lớp: <strong>{courseInfo.class_name}</strong> | Khóa học: <strong>{courseInfo.course_name}</strong>
+          </Typography>
+        )}
+      </Box>
 
       {loading ? (
         <Box display="flex" justifyContent="center" my={5}>
@@ -182,9 +228,18 @@ const ModeratorClassMaterialsPage: React.FC = () => {
                     </TableCell>
                     <TableCell>
                       <Chip 
-                        label={mat.status === "published" ? "Đã duyệt" : mat.status === "rejected" ? "Bị đình chỉ" : mat.status === "draft" ? "Nháp" : mat.status} 
-                        size="small" 
-                        color={mat.status === "published" || mat.status === "reviewed" ? "success" : mat.status === "rejected" ? "error" : "default"} 
+                        label={
+                          mat.status === "published" ? (mat.isFlagged ? "Bị báo cáo" : "Chờ duyệt") : 
+                          mat.status === "reviewed" ? "Đã duyệt" : 
+                          mat.status === "rejected" ? "Bị đình chỉ" : 
+                          mat.status === "draft" ? "Nháp" : mat.status
+                        }
+                        size="small"
+                        color={
+                          mat.status === "reviewed" ? "success" : 
+                          mat.isFlagged ? "warning" : 
+                          mat.status === "published" ? "info" : "default"
+                        }
                         sx={{ fontWeight: "medium" }}
                       />
                     </TableCell>

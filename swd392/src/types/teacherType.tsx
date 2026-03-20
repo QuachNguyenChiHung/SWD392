@@ -94,6 +94,7 @@ export interface ClassMaterial {
   title: string;
   dateUpdate: Date | null;
   dateCreate: Date;
+  content_id?: string;
   content: FileMaterial | SlideMaterial | Render2DMaterial | Quiz;
   is_ai_material: boolean;
   ai_content_id: string | null;
