@@ -12,6 +12,15 @@ import { fileApiService } from "../services/teacherApi/materialApi/fileApi";
 import { slideApiService } from "../services/teacherApi/materialApi/slideApi";
 import { quizApiService } from "../services/teacherApi/materialApi/quizApi";
 import { questionApiService } from "../services/teacherApi/materialApi/questionApi";
+import {
+  flatModal,
+  sectionLabel,
+  pageTitle,
+  flatButtonContained,
+  flatButtonOutlined,
+  COLORS,
+  RADIUS,
+} from "../pages/teacher/teacherStyles";
 
 interface MaterialEditModalProps {
   open: boolean;
@@ -19,20 +28,6 @@ interface MaterialEditModalProps {
   onClose: () => void;
   onSave: (updated: ClassMaterial) => void;
 }
-
-const modalStyle = {
-  position: "absolute" as const,
-  top: "50%",
-  left: "50%",
-  transform: "translate(-50%, -50%)",
-  width: { xs: "95%", sm: "80%", md: 800 },
-  bgcolor: "background.paper",
-  borderRadius: 2,
-  boxShadow: 24,
-  p: 4,
-  maxHeight: "85vh",
-  overflowY: "auto",
-};
 
 export default function MaterialEditModal({
   open,
@@ -173,13 +168,11 @@ export default function MaterialEditModal({
         aria-labelledby="edit-material-modal-title"
         aria-describedby="edit-material-modal-description"
       >
-        <Box sx={modalStyle}>
+        <Box sx={{ ...flatModal, width: { xs: "95%", sm: "80%", md: 800 } }}>
+          <Typography sx={sectionLabel}>Edit</Typography>
           <Typography
             id="edit-material-modal-title"
-            variant="h6"
-            component="h2"
-            fontWeight={700}
-            gutterBottom
+            sx={{ ...pageTitle, fontSize: "1.25rem", mb: 3 }}
           >
             Chỉnh sửa tài liệu
           </Typography>
@@ -196,14 +189,19 @@ export default function MaterialEditModal({
             justifyContent="flex-end"
             sx={{ mt: 4 }}
           >
-            <Button variant="outlined" onClick={handleModalClose} disabled={isUploading}>
+            <Button
+              variant="outlined"
+              onClick={handleModalClose}
+              disabled={isUploading}
+              sx={flatButtonOutlined}
+            >
               Hủy
             </Button>
             <Button
               variant="contained"
-              color="primary"
               onClick={handleSave}
               disabled={!formData || isUploading}
+              sx={flatButtonContained}
             >
               {isUploading ? <CircularProgress size={24} color="inherit" /> : "Lưu thay đổi"}
             </Button>
@@ -221,13 +219,13 @@ export default function MaterialEditModal({
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                borderRadius: 2,
+                borderRadius: RADIUS,
                 zIndex: 1,
               }}
             >
               <Box sx={{ textAlign: "center" }}>
                 <CircularProgress color="inherit" size={60} sx={{ color: "#fff" }} />
-                <Typography variant="h6" sx={{ mt: 2, color: "#fff" }}>
+                <Typography sx={{ mt: 2, color: "#fff", fontWeight: 600, fontSize: "0.95rem" }}>
                   Đang lưu thay đổi...
                 </Typography>
               </Box>

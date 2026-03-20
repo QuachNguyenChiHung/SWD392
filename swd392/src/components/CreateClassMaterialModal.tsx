@@ -27,6 +27,16 @@ import { quizApiService } from "../services/teacherApi/materialApi/quizApi";
 import { questionApiService } from "../services/teacherApi/materialApi/questionApi";
 import classMaterialApi from "../services/teacherApi/classMaterialApi";
 import { slideApiService } from "../services/teacherApi/materialApi";
+import {
+    flatModal,
+    sectionLabel,
+    sectionTitle,
+    pageTitle,
+    flatButtonContained,
+    flatButtonOutlined,
+    COLORS,
+    RADIUS,
+} from "../pages/teacher/teacherStyles";
 
 interface CreateClassMaterialModalProps {
     open: boolean;
@@ -66,7 +76,7 @@ export default function CreateClassMaterialModal({
     const [quizTitle, setQuizTitle] = useState("");
     const [quizStartDate, setQuizStartDate] = useState("");
     const [quizEndDate, setQuizEndDate] = useState("");
-    const [maxAttempts, setMaxAttempts] = useState<number | "">("");
+    const [maxAttempts, setMaxAttempts] = useState<number | "">(""  );
 
     const resetForm = () => {
         setSelectedMaterialType("");
@@ -227,21 +237,14 @@ export default function CreateClassMaterialModal({
                         alert("Vui lòng chọn tệp tin để tải lên.");
                         return;
                     }
-                    // Check file size
                     if (selectedFile.size > MAX_FILE_SIZE) {
                         alert("Tệp tin quá lớn. Vui lòng chọn tệp tin có kích thước tối đa 10MB.");
                         return;
                     }
-                    // Step 1: Upload file to get file_path via Cloudinary/storage
                     const fileFormData = new FormData();
                     fileFormData.append("file", selectedFile);
                     const uploadResult = await fileApiService.uploadFile(fileFormData);
                     console.log(uploadResult);
-                    //   // Step 2: Create File record with file_name + file_path
-                    //   const fileRecord = await fileApiService.createFile({
-                    //     file_name: selectedFile.name,
-                    //     file_path: uploadResult.file_path,
-                    //   });
                     content_id = uploadResult._id;
                     break;
                 }
@@ -250,22 +253,14 @@ export default function CreateClassMaterialModal({
                         alert("Vui lòng chọn tệp tin để tải lên.");
                         return;
                     }
-                    // Check file size
                     if (selectedFile.size > MAX_FILE_SIZE) {
                         alert("Tệp tin quá lớn. Vui lòng chọn tệp tin có kích thước tối đa 10MB.");
                         return;
                     }
-                    // Step 1: Upload slide file to get file_path
                     const slideFormData = new FormData();
                     slideFormData.append("slide", selectedFile);
                     const slideUploadResult =
                         await slideApiService.uploadSlide(slideFormData);
-
-                    // Step 2: Create Slide record with slide_name + file_path
-                    // const slideRecord = await slideApiService.createSlide({
-                    //     slide_name: selectedFile.name,
-                    //     file_path: slideUploadResult.file_path,
-                    // });
                     content_id = slideUploadResult._id;
                     break;
                 }
@@ -274,8 +269,6 @@ export default function CreateClassMaterialModal({
                         alert("Vui lòng thêm ít nhất một câu hỏi cho bài kiểm tra.");
                         return;
                     }
-
-                    // Step 1: Create Quiz record
                     const quizData = {
                         title:
                             quizTitle ||
@@ -290,7 +283,6 @@ export default function CreateClassMaterialModal({
                     const quizResult = await quizApiService.createQuiz(quizData);
                     content_id = quizResult._id;
 
-                    // Step 2: Create questions sequentially (order matters, use for...of)
                     for (const q of quizQuestions) {
                         await questionApiService.createQuestion(
                             {
@@ -309,7 +301,6 @@ export default function CreateClassMaterialModal({
                     return;
             }
 
-            // Step 3: Create ClassMaterial linking to the content
             const newMaterial: CreateClassMaterialDTO = {
                 type: selectedMaterialType as ClassMaterialType,
                 status: selectedStatus,
@@ -331,7 +322,6 @@ export default function CreateClassMaterialModal({
             console.log("Created material:", createdMaterial);
             if (!createdMaterial) {
                 alert("Đã có lỗi xảy ra khi tạo tài liệu. Vui lòng thử lại.");
-                // Cleanup: delete the content we just created
                 if (content_id) {
                     try {
                         switch (selectedMaterialType) {
@@ -362,6 +352,12 @@ export default function CreateClassMaterialModal({
         }
     };
 
+    const inputSx = {
+        "& .MuiOutlinedInput-root": {
+            borderRadius: RADIUS,
+        },
+    };
+
     return (
         <>
             <Modal
@@ -370,28 +366,16 @@ export default function CreateClassMaterialModal({
                 aria-labelledby="create-material-modal-title"
                 aria-describedby="create-material-modal-description"
             >
-                <Box
-                    sx={{
-                        position: "absolute",
-                        top: "50%",
-                        left: "50%",
-                        transform: "translate(-50%, -50%)",
-                        width: { xs: "95%", sm: "80%", md: 800 },
-                        bgcolor: "background.paper",
-                        borderRadius: 2,
-                        boxShadow: 24,
-                        p: 4,
-                        maxHeight: "85vh",
-                        overflowY: "auto",
-                    }}
-                >
+                <Box sx={{ ...flatModal, width: { xs: "95%", sm: "80%", md: 800 } }}>
+                    <Typography sx={sectionLabel}>New material</Typography>
                     <Typography
                         id="create-material-modal-title"
-                        variant="h6"
-                        component="h2"
-                        gutterBottom
+                        sx={{ ...pageTitle, fontSize: "1.25rem", mb: 1 }}
                     >
-                        Tạo tài liệu cho chủ đề: {topicTitle}
+                        Tạo tài liệu mới
+                    </Typography>
+                    <Typography sx={{ fontSize: "0.85rem", color: COLORS.textSecondary, mb: 3 }}>
+                        Chủ đề: {topicTitle}
                     </Typography>
 
                     <Stack spacing={3}>
@@ -402,6 +386,7 @@ export default function CreateClassMaterialModal({
                             value={materialName}
                             onChange={(e) => setMaterialName(e.target.value)}
                             placeholder="Nhập tên tài liệu..."
+                            sx={inputSx}
                         />
 
 
@@ -418,6 +403,7 @@ export default function CreateClassMaterialModal({
                                         setSelectedMaterialType(e.target.value as ClassMaterialType)
                                     }
                                     label="Loại tài liệu"
+                                    sx={inputSx}
                                 >
                                     <MenuItem value="file">Tệp tin (PDF, DOC, etc.)</MenuItem>
                                     <MenuItem value="slide">Slide thuyết trình</MenuItem>
@@ -438,6 +424,7 @@ export default function CreateClassMaterialModal({
                                     setSelectedStatus(e.target.value as "published" | "draft")
                                 }
                                 label="Trạng thái"
+                                sx={inputSx}
                             >
                                 <MenuItem value="draft">Bản nháp</MenuItem>
                                 <MenuItem value="published">Xuất bản</MenuItem>
@@ -483,14 +470,19 @@ export default function CreateClassMaterialModal({
                         justifyContent="flex-end"
                         sx={{ mt: 4 }}
                     >
-                        <Button variant="outlined" onClick={handleModalClose} disabled={isLoading}>
+                        <Button
+                            variant="outlined"
+                            onClick={handleModalClose}
+                            disabled={isLoading}
+                            sx={flatButtonOutlined}
+                        >
                             Hủy
                         </Button>
                         <Button
                             variant="contained"
-                            color="primary"
                             onClick={handleCreateMaterial}
                             disabled={isLoading}
+                            sx={flatButtonContained}
                         >
                             {isLoading ? <CircularProgress size={24} color="inherit" /> : "Tạo tài liệu"}
                         </Button>
@@ -509,13 +501,13 @@ export default function CreateClassMaterialModal({
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                borderRadius: 2,
+                                borderRadius: RADIUS,
                                 zIndex: 1,
                             }}
                         >
                             <Box sx={{ textAlign: 'center' }}>
                                 <CircularProgress color="inherit" size={60} sx={{ color: '#fff' }} />
-                                <Typography variant="h6" sx={{ mt: 2, color: '#fff' }}>
+                                <Typography sx={{ mt: 2, color: '#fff', fontWeight: 600, fontSize: "0.95rem" }}>
                                     Đang tải lên tài liệu...
                                 </Typography>
                             </Box>

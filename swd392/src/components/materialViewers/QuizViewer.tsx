@@ -18,6 +18,7 @@ import { useState, useEffect } from "react";
 import type { Quiz as QuizType, Question } from "../../types/teacherType";
 import { quizAttemptResultApiService, type QuizAttemptWithResults } from "../../services/teacherApi/materialApi/quizAttemptResultApi";
 import QuizAttemptResultsTable from "./QuizAttemptResultsTable";
+import { COLORS, RADIUS, tableContainer, tableBodyRow, flatChip } from "../../pages/teacher/teacherStyles";
 
 interface QuizViewerProps {
     content: QuizType;
@@ -51,7 +52,7 @@ export default function QuizViewer({ content, onQuestionsChange: _onQuestionsCha
     if (!content) {
         return (
             <Box sx={{ p: 2, textAlign: "center" }}>
-                <Typography color="error">Dữ liệu quiz không hợp lệ</Typography>
+                <Typography sx={{ color: COLORS.error, fontSize: "0.85rem" }}>Dữ liệu quiz không hợp lệ</Typography>
             </Box>
         );
     }
@@ -59,7 +60,7 @@ export default function QuizViewer({ content, onQuestionsChange: _onQuestionsCha
     if (!content.title) {
         return (
             <Box sx={{ p: 2, textAlign: "center" }}>
-                <Typography color="error">Quiz thiếu tiêu đề</Typography>
+                <Typography sx={{ color: COLORS.error, fontSize: "0.85rem" }}>Quiz thiếu tiêu đề</Typography>
             </Box>
         );
     }
@@ -76,42 +77,48 @@ export default function QuizViewer({ content, onQuestionsChange: _onQuestionsCha
     return (
         <Box>
             {/* Header */}
-            <Stack direction="row" spacing={1} alignItems="center" mb={2}>
-                <Quiz color="primary" />
-                <Typography variant="subtitle1" fontWeight={600}>
+            <Stack direction="row" spacing={1.5} alignItems="center" mb={2}>
+                <Quiz sx={{ color: COLORS.info }} />
+                <Typography sx={{ fontWeight: 700, fontSize: "1.1rem", color: COLORS.textDark }}>
                     {content.title}
                 </Typography>
                 <Chip
                     label={content.type === "interactive" ? "Tương tác" : "Thông thường"}
-                    color={content.type === "interactive" ? "secondary" : "default"}
-                    size="small"
+                    sx={
+                        content.type === "interactive"
+                            ? flatChip(COLORS.infoBg, COLORS.info)
+                            : flatChip(COLORS.bg, COLORS.textSecondary)
+                    }
                 />
                 <Chip
                     label={content.status ? "Đang hoạt động" : "Không hoạt động"}
-                    color={content.status ? "success" : "default"}
-                    size="small"
+                    sx={
+                        content.status
+                            ? flatChip(COLORS.successBg, COLORS.success)
+                            : flatChip(COLORS.bg, COLORS.textSecondary)
+                    }
                 />
             </Stack>
 
             {/* Summary table */}
-            <Paper variant="outlined" sx={{ mb: 3 }}>
+            <Paper elevation={0} sx={{ ...tableContainer, mb: 4, border: `1px solid ${COLORS.info}` }}>
                 <Table size="small">
                     <TableBody>
-                        <TableRow>
-                            <TableCell sx={{ fontWeight: 600 }}>Ngày mở</TableCell>
+                        <TableRow sx={tableBodyRow}>
+                            <TableCell sx={{ fontWeight: 600, width: "30%" }}>Ngày mở</TableCell>
                             <TableCell>{formatDate(content.available_date)}</TableCell>
                         </TableRow>
-                        <TableRow>
+                        <TableRow sx={tableBodyRow}>
                             <TableCell sx={{ fontWeight: 600 }}>Hạn nộp</TableCell>
                             <TableCell>{formatDate(content.end_date)}</TableCell>
                         </TableRow>
-                        <TableRow>
+                        <TableRow sx={tableBodyRow}>
                             <TableCell sx={{ fontWeight: 600 }}>Số lần thử tối đa</TableCell>
                             <TableCell>{content.max_attempt_number ?? "Không giới hạn"}</TableCell>
                         </TableRow>
-                        <TableRow>
-                            <TableCell sx={{ fontWeight: 600 }}>Câu hỏi</TableCell>
-                            <TableCell>{questions.length}</TableCell>
+                        <TableRow sx={tableBodyRow}>
+                            <TableCell sx={{ fontWeight: 600, borderBottom: "none" }}>Câu hỏi</TableCell>
+                            <TableCell sx={{ borderBottom: "none" }}>{questions.length}</TableCell>
                         </TableRow>
                     </TableBody>
                 </Table>
@@ -119,21 +126,30 @@ export default function QuizViewer({ content, onQuestionsChange: _onQuestionsCha
 
             {/* Questions list */}
             <Stack direction="row" justifyContent="space-between" alignItems="center" mb={1}>
-                <Typography variant="subtitle1" fontWeight={600}>Câu hỏi</Typography>
+                <Typography sx={{ fontWeight: 700, fontSize: "0.9rem", textTransform: "uppercase", letterSpacing: "0.05em", color: COLORS.textDark }}>
+                    Danh sách Câu hỏi
+                </Typography>
             </Stack>
-            <Divider sx={{ mb: 1 }} />
+            <Divider sx={{ mb: 2, borderColor: COLORS.borderLight }} />
 
             {questions.length === 0 ? (
-                <Typography variant="body2" color="text.secondary" textAlign="center" py={3}>
+                <Typography sx={{ fontSize: "0.85rem", color: COLORS.textSecondary, textAlign: "center", py: 4 }}>
                     Chưa có câu hỏi nào.
                 </Typography>
             ) : (
                 <Stack
                     spacing={0}
                     sx={{
-                        maxHeight: 320,
+                        maxHeight: 400,
                         overflowY: "auto",
-                        pr: 0.5,
+                        pr: 1,
+                        "&::-webkit-scrollbar": {
+                            width: "6px",
+                        },
+                        "&::-webkit-scrollbar-thumb": {
+                            backgroundColor: COLORS.border,
+                            borderRadius: RADIUS,
+                        },
                     }}
                 >
                     {questions.map((q, index) => (
@@ -142,43 +158,49 @@ export default function QuizViewer({ content, onQuestionsChange: _onQuestionsCha
                             sx={{
                                 display: "flex",
                                 justifyContent: "space-between",
-                                alignItems: "center",
+                                alignItems: "flex-start",
                                 gap: 2,
-                                py: 1.5,
-                                borderBottom: "1px solid",
-                                borderColor: "divider",
+                                py: 2,
+                                borderBottom: `1px solid ${COLORS.borderLight}`,
+                                "&:last-child": {
+                                    borderBottom: "none",
+                                },
                             }}
                         >
-                            <Stack direction="row" spacing={1.5} alignItems="center" sx={{ flex: 1, minWidth: 0 }}>
-                                <CheckCircle fontSize="small" color="primary" />
+                            <Stack direction="row" spacing={1.5} alignItems="flex-start" sx={{ flex: 1, minWidth: 0 }}>
+                                <CheckCircle sx={{ color: COLORS.info, fontSize: 20, mt: 0.25 }} />
                                 <Box sx={{ minWidth: 0 }}>
-                                    <Typography variant="subtitle2" noWrap>
+                                    <Typography sx={{ fontWeight: 600, fontSize: "0.9rem", color: COLORS.textDark, mb: 0.5 }}>
                                         Câu {index + 1}: {q.title}
                                     </Typography>
-                                    <Typography variant="caption" color="text.secondary">
+                                    <Typography sx={{ fontSize: "0.75rem", color: COLORS.textSecondary, mb: 1 }}>
                                         {TYPE_LABEL[q.type]}
                                         {q.options ? ` · ${q.options.length} lựa chọn` : ""}
                                         {q.has2DVisualization ? " · 2D" : ""}
                                     </Typography>
+
                                     {Array.isArray(q.options) && q.options.length > 0 && (
-                                        <Stack spacing={0.25} sx={{ mt: 0.75 }}>
+                                        <Stack spacing={0.5} sx={{ mt: 1, pl: 1, borderLeft: `2px solid ${COLORS.borderLight}` }}>
                                             {q.options.map((option, optionIndex) => {
                                                 const isCorrect = optionIndex === q.correct_index;
                                                 return (
                                                     <Typography
                                                         key={`${q._id ?? index}-option-${optionIndex}`}
-                                                        variant="caption"
-                                                        color={isCorrect ? "success.main" : "text.secondary"}
-                                                        sx={{ fontWeight: isCorrect ? 600 : 400 }}
+                                                        sx={{
+                                                            fontSize: "0.85rem",
+                                                            color: isCorrect ? COLORS.info : COLORS.textSecondary,
+                                                            fontWeight: isCorrect ? 600 : 400,
+                                                            bgcolor: isCorrect ? COLORS.infoBg : "transparent",
+                                                            px: 1,
+                                                            py: 0.5,
+                                                            borderRadius: RADIUS,
+                                                        }}
                                                     >
-                                                        {optionIndex + 1}. {option}
-                                                        {isCorrect ? " (Đáp án đúng)" : ""}
+                                                        {String.fromCharCode(65 + optionIndex)}. {option}
+                                                        {isCorrect && " (Đáp án đúng)"}
                                                     </Typography>
                                                 );
                                             })}
-                                            <Typography variant="caption" color="success.main" sx={{ fontWeight: 600 }}>
-                                                Đáp án đúng: {q.options[q.correct_index] ?? "Không xác định"}
-                                            </Typography>
                                         </Stack>
                                     )}
                                 </Box>

@@ -29,6 +29,20 @@ import type { ClassMaterial, ClassMaterialType, CreateClassMaterialDTO } from ".
 import MaterialTypeViewer from "../../components/MaterialTypeViewer";
 import chadApi from "../../services/teacherApi/chadApi";
 import CreateClassMaterialModal from "../../components/CreateClassMaterialModal";
+import {
+    pageTitle,
+    sectionLabel,
+    sectionTitle,
+    flatCard,
+    flatButtonContained,
+    flatButtonOutlined,
+    flatChip,
+    chatBubbleUser,
+    chatBubbleAssistant,
+    loadingContainer,
+    COLORS,
+    RADIUS,
+} from "./teacherStyles";
 
 type ChatMessage = {
     id: string;
@@ -40,33 +54,37 @@ const TYPE_META: Record<
     ClassMaterialType,
     {
         label: string;
-        color: "default" | "primary" | "secondary" | "error" | "info" | "success" | "warning";
+        bg: string;
+        text: string;
         icon: ReactElement;
         description: string;
     }
 > = {
     file: {
         label: "File",
-        color: "info",
+        bg: COLORS.infoBg,
+        text: COLORS.info,
         icon: <Description fontSize="small" />,
         description: "Generate documents or PDFs",
     },
     slide: {
         label: "Slide",
-        color: "primary",
+        bg: COLORS.accentLight,
+        text: COLORS.accent,
         icon: <Slideshow fontSize="small" />,
         description: "Generate presentation slides",
     },
     "2d_render": {
         label: "2D Render",
-        color: "secondary",
+        bg: "#F5F3FF",
+        text: "#7C3AED",
         icon: <ViewInAr fontSize="small" />,
         description: "Generate 2D data preview",
     },
-
     quiz: {
         label: "Quiz",
-        color: "warning",
+        bg: COLORS.warningBg,
+        text: COLORS.warning,
         icon: <Quiz fontSize="small" />,
         description: "Generate editable quiz content",
     },
@@ -386,31 +404,6 @@ export default function AiContentGenerator() {
                 default:
                     break;
             }
-
-            // if (selectedContentType === "2d_render") {
-            //     setAiPreviewMaterial({
-            //         _id: `preview-2d-${Date.now()}`,
-            //         status: "draft",
-            //         type: "2d_render",
-            //         order_num: 0,
-            //         class_assign_id: classId || "",
-            //         title: `2D Preview - ${topicTitle}`,
-            //         dateUpdate: new Date(),
-            //         dateCreate: new Date(),
-            //         content: {
-            //             render_data: JSON.stringify(
-            //                 {
-            //                     topic: topicTitle,
-            //                     notes: latestUserPrompt || "No additional prompt",
-            //                 },
-            //                 null,
-            //                 2,
-            //             ),
-            //         },
-            //         is_ai_material: true,
-            //         ai_content_id: null,
-            //     });
-            // }
         } catch (error) {
             setPreviewError(error instanceof Error ? error.message : "Failed to generate preview.");
         } finally {
@@ -421,6 +414,12 @@ export default function AiContentGenerator() {
     const handleMaterialCreated = (_topicId: string, _material: CreateClassMaterialDTO) => {
         setCreatedCount((prev) => prev + 1);
         setCreateModalOpen(false);
+    };
+
+    const inputSx = {
+        "& .MuiOutlinedInput-root": {
+            borderRadius: RADIUS,
+        },
     };
 
     return (
@@ -436,32 +435,54 @@ export default function AiContentGenerator() {
                 aiPreviewMaterial={aiPreviewMaterial}
             />
 
+            {/* ── Header ── */}
             <Stack direction="row" justifyContent="space-between" alignItems="center" mb={3}>
                 <Stack direction="row" alignItems="center" spacing={2}>
                     <Button
                         startIcon={<ArrowBack />}
                         onClick={() => navigate(`/teacher/class/${classId}`)}
-                        variant="text"
+                        sx={{
+                            ...flatButtonOutlined,
+                            borderColor: "transparent",
+                            "&:hover": {
+                                borderColor: COLORS.border,
+                                bgcolor: COLORS.accentLight,
+                                boxShadow: "none",
+                            },
+                        }}
                     >
                         Quay lại lớp học
                     </Button>
-                    <Divider orientation="vertical" flexItem />
+                    <Divider orientation="vertical" flexItem sx={{ borderColor: COLORS.borderLight }} />
                     <Stack direction="row" alignItems="center" spacing={1}>
-                        <SmartToy color="primary" />
-                        <Typography variant="h5" fontWeight={700}>
-                            AI Content Workspace
-                        </Typography>
+                        <SmartToy sx={{ color: COLORS.accent }} />
+                        <Box>
+                            <Typography sx={sectionLabel}>AI Workspace</Typography>
+                            <Typography sx={{ ...pageTitle, fontSize: "1.25rem" }}>
+                                AI Content Generator
+                            </Typography>
+                        </Box>
                     </Stack>
                 </Stack>
             </Stack>
 
             <Grid container spacing={2} sx={{ height: "calc(100vh - 230px)" }}>
+                {/* ── Preview Panel ── */}
                 <Grid size={{ xs: 12, md: 7 }}>
-                    <Paper sx={{ p: 3, height: "78vh", display: "flex", flexDirection: "column" }}>
+                    <Paper
+                        elevation={0}
+                        sx={{
+                            ...flatCard,
+                            height: "78vh",
+                            display: "flex",
+                            flexDirection: "column",
+                            borderTop: `3px solid ${COLORS.accent}`,
+                        }}
+                    >
                         <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
                             <Stack direction="row" alignItems="center" spacing={1}>
-                                <SmartToy color="primary" />
-                                <Typography variant="h6">AI Preview</Typography>
+                                <SmartToy sx={{ color: COLORS.accent, fontSize: 20 }} />
+                                <Typography sx={sectionTitle}>AI Preview</Typography>
                             </Stack>
                             <Stack direction="row" spacing={1}>
                                 <Button
@@ -469,6 +490,7 @@ export default function AiContentGenerator() {
                                     size="small"
                                     disabled={!selectedContentType || isPreviewLoading}
                                     onClick={() => handleGeneratePreview()}
+                                    sx={flatButtonOutlined}
                                 >
                                     {isPreviewLoading ? "Generating..." : "Generate Preview"}
                                 </Button>
@@ -477,29 +499,37 @@ export default function AiContentGenerator() {
                                     size="small"
                                     onClick={() => setCreateModalOpen(true)}
                                     disabled={!topicId || !classId || !aiPreviewMaterial}
+                                    sx={flatButtonContained}
                                 >
                                     Create Class Material
                                 </Button>
                             </Stack>
                         </Stack>
 
-                        <Divider sx={{ mb: 2 }} />
+                        <Divider sx={{ mb: 2, borderColor: COLORS.borderLight }} />
 
-                        <Typography variant="h6" sx={{ mb: 1 }}>
+                        <Typography sx={{ fontWeight: 700, fontSize: "1rem", color: COLORS.textDark, mb: 1 }}>
                             {topicTitle}
                         </Typography>
 
-
                         {previewError && (
-                            <Alert severity="error" sx={{ mb: 2 }}>
+                            <Alert
+                                severity="error"
+                                sx={{
+                                    mb: 2,
+                                    borderRadius: RADIUS,
+                                    border: `1px solid ${COLORS.error}`,
+                                    boxShadow: "none",
+                                }}
+                            >
                                 {previewError}
                             </Alert>
                         )}
 
                         <Box sx={{ flex: 1, minHeight: 0, overflow: "auto" }}>
                             {isPreviewLoading ? (
-                                <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
-                                    <CircularProgress />
+                                <Box sx={loadingContainer}>
+                                    <CircularProgress sx={{ color: COLORS.accent }} />
                                 </Box>
                             ) : aiPreviewMaterial ? (
                                 <MaterialTypeViewer material={aiPreviewMaterial} />
@@ -510,10 +540,9 @@ export default function AiContentGenerator() {
                                     alignItems="center"
                                     height="100%"
                                     flexDirection="column"
-                                    color="text.secondary"
                                     textAlign="center"
                                 >
-                                    <Typography variant="body1">
+                                    <Typography sx={{ color: COLORS.textSecondary, fontSize: "0.9rem" }}>
                                         Pick a content type, chat with AI, then click Generate Preview.
                                     </Typography>
                                 </Box>
@@ -522,34 +551,52 @@ export default function AiContentGenerator() {
                     </Paper>
                 </Grid>
 
+                {/* ── Chat Panel ── */}
                 <Grid size={{ xs: 12, md: 5 }}>
-                    <Paper sx={{ p: 3, height: "78vh", display: "flex", flexDirection: "column" }}>
+                    <Paper
+                        elevation={0}
+                        sx={{
+                            ...flatCard,
+                            height: "78vh",
+                            display: "flex",
+                            flexDirection: "column",
+                        }}
+                    >
                         <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: 1 }}>
-                            <Avatar sx={{ bgcolor: "primary.main", width: 36, height: 36 }}>
+                            <Avatar sx={{ bgcolor: COLORS.accent, width: 36, height: 36 }}>
                                 <SmartToy fontSize="small" />
                             </Avatar>
                             <Box>
-                                <Typography variant="h6">AI Assistant</Typography>
-                                <Typography variant="caption" color="text.secondary">
+                                <Typography sx={sectionTitle}>AI Assistant</Typography>
+                                <Typography sx={{ fontSize: "0.7rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: COLORS.textSecondary }}>
                                     Ready to help you generate content
                                 </Typography>
                             </Box>
                         </Stack>
-                        <Divider sx={{ mb: 2 }} />
+                        <Divider sx={{ mb: 2, borderColor: COLORS.borderLight }} />
 
+                        {/* Content type chips */}
                         <Stack direction="row" spacing={1} sx={{ mb: 2, flexWrap: "wrap" }}>
-                            {(Object.keys(TYPE_META) as ClassMaterialType[]).map((type) => (
-                                <Chip
-                                    key={type}
-                                    label={TYPE_META[type].label}
-                                    icon={TYPE_META[type].icon}
-                                    color={selectedContentType === type ? "primary" : "default"}
-                                    onClick={() => setSelectedContentType(type)}
-                                    clickable
-                                />
-                            ))}
+                            {(Object.keys(TYPE_META) as ClassMaterialType[]).map((type) => {
+                                const meta = TYPE_META[type];
+                                const isSelected = selectedContentType === type;
+                                return (
+                                    <Chip
+                                        key={type}
+                                        label={meta.label}
+                                        icon={meta.icon}
+                                        onClick={() => setSelectedContentType(type)}
+                                        clickable
+                                        sx={isSelected
+                                            ? flatChip(COLORS.accent, "#fff")
+                                            : flatChip(COLORS.bg, COLORS.textSecondary)
+                                        }
+                                    />
+                                );
+                            })}
                         </Stack>
 
+                        {/* Quiz config */}
                         {selectedContentType === "quiz" && (
                             <Stack direction="row" gap={2} sx={{ mb: 2, flexWrap: "wrap" }}>
                                 <TextField
@@ -559,7 +606,7 @@ export default function AiContentGenerator() {
                                     value={quizCount}
                                     onChange={(e) => syncQuizSplitFromTotal(Number(e.target.value))}
                                     inputProps={{ min: 1 }}
-                                    sx={{ width: 150 }}
+                                    sx={{ width: 150, ...inputSx }}
                                 />
                                 <TextField
                                     label="Multiple choice"
@@ -568,7 +615,7 @@ export default function AiContentGenerator() {
                                     value={quizMcCount}
                                     onChange={(e) => syncQuizTotalFromSplit(Number(e.target.value), quizTfCount)}
                                     inputProps={{ min: 0 }}
-                                    sx={{ width: 150 }}
+                                    sx={{ width: 150, ...inputSx }}
                                 />
                                 <TextField
                                     label="True / false"
@@ -577,20 +624,20 @@ export default function AiContentGenerator() {
                                     value={quizTfCount}
                                     onChange={(e) => syncQuizTotalFromSplit(quizMcCount, Number(e.target.value))}
                                     inputProps={{ min: 0 }}
-                                    sx={{ width: 150 }}
+                                    sx={{ width: 150, ...inputSx }}
                                 />
                             </Stack>
                         )}
 
+                        {/* Chat messages */}
                         <Box
                             sx={{
                                 flex: 1,
                                 overflow: "auto",
                                 pr: 1,
-                                bgcolor: "grey.50",
-                                borderRadius: 2,
-                                border: "1px solid",
-                                borderColor: "grey.200",
+                                bgcolor: COLORS.bg,
+                                borderRadius: RADIUS,
+                                border: `1px solid ${COLORS.border}`,
                                 p: 2,
                             }}
                         >
@@ -605,25 +652,20 @@ export default function AiContentGenerator() {
                                             sx={{ maxWidth: "92%" }}
                                         >
                                             {m.sender === "assistant" && (
-                                                <Avatar sx={{ bgcolor: "primary.main", width: 28, height: 28 }}>
-                                                    <SmartToy fontSize="small" />
+                                                <Avatar sx={{ bgcolor: COLORS.accent, width: 28, height: 28 }}>
+                                                    <SmartToy sx={{ fontSize: 16 }} />
                                                 </Avatar>
                                             )}
-                                            <Box
-                                                sx={{
-                                                    px: 1.5,
-                                                    py: 1,
-                                                    borderRadius: 2,
-                                                    bgcolor: m.sender === "user" ? "primary.main" : "common.white",
-                                                    color: m.sender === "user" ? "primary.contrastText" : "text.primary",
-                                                    border: m.sender === "user" ? "none" : "1px solid",
-                                                    borderColor: m.sender === "user" ? "transparent" : "grey.200",
-                                                    boxShadow: m.sender === "user" ? 0 : "0 1px 2px rgba(0,0,0,0.06)",
-                                                }}
-                                            >
+                                            <Box sx={m.sender === "user" ? chatBubbleUser : chatBubbleAssistant}>
                                                 <Typography
-                                                    variant="caption"
-                                                    color={m.sender === "user" ? "primary.contrastText" : "text.secondary"}
+                                                    sx={{
+                                                        fontSize: "0.65rem",
+                                                        fontWeight: 700,
+                                                        textTransform: "uppercase",
+                                                        letterSpacing: "0.08em",
+                                                        color: m.sender === "user" ? "rgba(255,255,255,0.7)" : COLORS.textSecondary,
+                                                        mb: 0.25,
+                                                    }}
                                                 >
                                                     {m.sender === "user" ? "You" : "AI Assistant"}
                                                 </Typography>
@@ -632,8 +674,8 @@ export default function AiContentGenerator() {
                                                 </Typography>
                                             </Box>
                                             {m.sender === "user" && (
-                                                <Avatar sx={{ bgcolor: "grey.700", width: 28, height: 28 }}>
-                                                    <Typography variant="caption" sx={{ color: "common.white" }}>
+                                                <Avatar sx={{ bgcolor: COLORS.textDark, width: 28, height: 28 }}>
+                                                    <Typography sx={{ fontSize: "0.65rem", fontWeight: 700, color: "#fff" }}>
                                                         You
                                                     </Typography>
                                                 </Avatar>
@@ -643,8 +685,8 @@ export default function AiContentGenerator() {
 
                                     {isChatLoading && (
                                         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                                            <CircularProgress size={16} />
-                                            <Typography variant="caption" color="text.secondary">
+                                            <CircularProgress size={16} sx={{ color: COLORS.accent }} />
+                                            <Typography sx={{ fontSize: "0.75rem", color: COLORS.textSecondary }}>
                                                 AI is typing...
                                             </Typography>
                                         </Box>
@@ -658,21 +700,21 @@ export default function AiContentGenerator() {
                                     alignItems="center"
                                     justifyContent="center"
                                     height="100%"
-                                    color="text.secondary"
                                     textAlign="center"
                                 >
-                                    <Typography variant="body2">
+                                    <Typography sx={{ fontSize: "0.85rem", color: COLORS.textSecondary }}>
                                         Choose a material type to start chatting.
                                     </Typography>
                                 </Box>
                             )}
                         </Box>
 
+                        {/* Input */}
                         <Stack direction="row" spacing={1} sx={{ mt: 2, alignItems: "center" }}>
                             <TextField
                                 fullWidth
                                 size="small"
-                                placeholder={"Ask AI..."}
+                                placeholder="Ask AI..."
                                 value={input}
                                 onChange={(e) => setInput(e.target.value)}
                                 onKeyDown={(e) => {
@@ -682,12 +724,23 @@ export default function AiContentGenerator() {
                                     }
                                 }}
                                 disabled={isChatLoading || !selectedContentType}
-                                sx={{ flex: 1, minWidth: 0 }}
+                                sx={{ flex: 1, minWidth: 0, ...inputSx }}
                             />
                             <IconButton
-                                color="primary"
                                 onClick={handleSend}
                                 disabled={!selectedContentType || !input.trim() || isChatLoading}
+                                sx={{
+                                    bgcolor: COLORS.accent,
+                                    color: "#fff",
+                                    borderRadius: RADIUS,
+                                    "&:hover": {
+                                        bgcolor: "#5a6fd6",
+                                    },
+                                    "&.Mui-disabled": {
+                                        bgcolor: COLORS.borderLight,
+                                        color: COLORS.textSecondary,
+                                    },
+                                }}
                             >
                                 <Send />
                             </IconButton>

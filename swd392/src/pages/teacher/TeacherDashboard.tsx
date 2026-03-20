@@ -23,6 +23,19 @@ import UploadedFileItem from "../../components/dashboard/UploadedFileItem";
 import type { FileMaterial } from "../../components/dashboard/UploadedFileItem";
 import { apiService } from "../../services/api";
 import classMaterialApi from "../../services/teacherApi/classMaterialApi";
+import {
+  pageTitle,
+  pageSubtitle,
+  sectionLabel,
+  sectionTitle,
+  flatCard,
+  flatButtonContained,
+  flatButtonOutlined,
+  tableContainer,
+  tableHeadRow,
+  loadingContainer,
+  COLORS,
+} from "./teacherStyles";
 
 type ClassProgress = {
   name: string;
@@ -62,32 +75,37 @@ const TeacherDashboard = () => {
 
   if (loading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight={300}>
-        <CircularProgress />
+      <Box sx={loadingContainer}>
+        <CircularProgress sx={{ color: COLORS.accent }} />
       </Box>
     );
   }
 
   return (
     <Box>
-      <Typography variant="h4" gutterBottom fontWeight="bold">
-        Dashboard Giáo viên
-      </Typography>
-      <Typography variant="body1" color="text.secondary" paragraph>
-        Quản lý lớp học và tạo nội dung học tập
-      </Typography>
+      {/* ── Page Header ── */}
+      <Box sx={{ mb: 4 }}>
+        <Typography sx={sectionLabel}>Dashboard</Typography>
+        <Typography sx={pageTitle}>
+          Dashboard Giáo viên
+        </Typography>
+        <Typography sx={pageSubtitle}>
+          Quản lý lớp học và tạo nội dung học tập
+        </Typography>
+      </Box>
+
       <Stack spacing={3}>
         <Grid container spacing={3}>
           <Grid size={{ xs: 12, md: 8 }}>
             <Grid container direction="column" spacing={3}>
               {/* Class Stats */}
               <Grid size={{ xs: 12 }}>
-                <Paper sx={{ p: 3 }}>
-                  <Typography variant="h6" gutterBottom>
+                <Paper elevation={0} sx={flatCard}>
+                  <Typography sx={sectionTitle}>
                     Thống kê lớp học
                   </Typography>
                   {classProgress.length === 0 ? (
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography variant="body2" sx={{ color: COLORS.textSecondary }}>
                       Chưa có lớp học nào.
                     </Typography>
                   ) : (
@@ -108,19 +126,19 @@ const TeacherDashboard = () => {
 
               {/* Quizzes */}
               <Grid size={{ xs: 12 }}>
-                <Paper sx={{ p: 3 }}>
-                  <Typography variant="h6" gutterBottom>
+                <Paper elevation={0} sx={flatCard}>
+                  <Typography sx={sectionTitle}>
                     Bài kiểm tra
                   </Typography>
                   {quizzes.length === 0 ? (
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography variant="body2" sx={{ color: COLORS.textSecondary }}>
                       Chưa có bài kiểm tra nào.
                     </Typography>
                   ) : (
-                    <TableContainer>
+                    <TableContainer sx={tableContainer}>
                       <Table size="small">
                         <TableHead>
-                          <TableRow>
+                          <TableRow sx={tableHeadRow}>
                             <TableCell>Tiêu đề</TableCell>
                             <TableCell>Ngày tạo</TableCell>
                             <TableCell>Trạng thái</TableCell>
@@ -144,12 +162,12 @@ const TeacherDashboard = () => {
 
               {/* Uploaded Files */}
               <Grid size={{ xs: 12 }}>
-                <Paper sx={{ p: 3 }}>
-                  <Typography variant="h6" gutterBottom>
+                <Paper elevation={0} sx={flatCard}>
+                  <Typography sx={sectionTitle}>
                     Tệp đã tải lên gần đây
                   </Typography>
                   {files.length === 0 ? (
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography variant="body2" sx={{ color: COLORS.textSecondary }}>
                       Chưa có tệp nào được tải lên.
                     </Typography>
                   ) : (
@@ -171,35 +189,80 @@ const TeacherDashboard = () => {
 
           {/* Quick Actions Sidebar */}
           <Grid size={{ xs: 12, md: 4 }}>
-            <Paper sx={{ p: 3 }}>
-              <Typography variant="h6" gutterBottom>
+            <Paper elevation={0} sx={flatCard}>
+              <Typography sx={sectionTitle}>
                 Thao tác nhanh
               </Typography>
               <Stack spacing={2}>
-                <Paper
-                  variant="outlined"
-                  sx={{ p: 2, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 2, flexWrap: "wrap" }}
+                <Box
+                  sx={{
+                    p: 2,
+                    border: `1px solid ${COLORS.border}`,
+                    borderLeft: `3px solid ${COLORS.accent}`,
+                    borderRadius: "2px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: 2,
+                    flexWrap: "wrap",
+                  }}
                 >
                   <Box>
-                    <Typography variant="subtitle2" fontWeight={600}>Tạo lớp học mới</Typography>
-                    <Typography variant="body2" color="text.secondary">Tạo lớp học mới với tài liệu.</Typography>
+                    <Typography
+                      sx={{ fontWeight: 700, fontSize: "0.85rem", color: COLORS.textDark }}
+                    >
+                      Tạo lớp học mới
+                    </Typography>
+                    <Typography
+                      sx={{ fontSize: "0.8rem", color: COLORS.textSecondary, mt: 0.25 }}
+                    >
+                      Tạo lớp học mới với tài liệu.
+                    </Typography>
                   </Box>
-                  <Button variant="contained" size="small" onClick={() => navigate("/teacher/classes")}>
+                  <Button
+                    variant="contained"
+                    size="small"
+                    onClick={() => navigate("/teacher/classes")}
+                    sx={flatButtonContained}
+                  >
                     Tạo lớp
                   </Button>
-                </Paper>
-                <Paper
-                  variant="outlined"
-                  sx={{ p: 2, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 2, flexWrap: "wrap" }}
+                </Box>
+
+                <Box
+                  sx={{
+                    p: 2,
+                    border: `1px solid ${COLORS.border}`,
+                    borderLeft: `3px solid ${COLORS.accent}`,
+                    borderRadius: "2px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: 2,
+                    flexWrap: "wrap",
+                  }}
                 >
                   <Box>
-                    <Typography variant="subtitle2" fontWeight={600}>Xem tất cả khóa học</Typography>
-                    <Typography variant="body2" color="text.secondary">Duyệt danh sách khóa học bạn quản lý.</Typography>
+                    <Typography
+                      sx={{ fontWeight: 700, fontSize: "0.85rem", color: COLORS.textDark }}
+                    >
+                      Xem tất cả khóa học
+                    </Typography>
+                    <Typography
+                      sx={{ fontSize: "0.8rem", color: COLORS.textSecondary, mt: 0.25 }}
+                    >
+                      Duyệt danh sách khóa học bạn quản lý.
+                    </Typography>
                   </Box>
-                  <Button variant="contained" size="small" onClick={() => navigate("/teacher/courses")}>
+                  <Button
+                    variant="contained"
+                    size="small"
+                    onClick={() => navigate("/teacher/courses")}
+                    sx={flatButtonContained}
+                  >
                     Khóa học
                   </Button>
-                </Paper>
+                </Box>
               </Stack>
             </Paper>
           </Grid>
