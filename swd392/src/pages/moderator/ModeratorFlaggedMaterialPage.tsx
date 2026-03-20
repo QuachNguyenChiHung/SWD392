@@ -136,11 +136,11 @@ const ModeratorFlaggedMaterialPage: React.FC = () => {
         <Link to="/moderator/dashboard" style={{ textDecoration: "none", color: "inherit" }}>
           <Typography color="text.secondary" sx={{ "&:hover": { textDecoration: "underline" } }}>Kiểm duyệt</Typography>
         </Link>
-        <Typography color="text.primary" fontWeight="medium">Tài liệu bị Flag</Typography>
+        <Typography color="text.primary" fontWeight="medium">Hàng chờ kiểm duyệt</Typography>
       </Breadcrumbs>
 
       <Typography variant="h5" fontWeight="bold" mb={3} sx={{ color: "primary.main" }}>
-        Danh sách tài liệu bị Flag
+        Hàng chờ kiểm duyệt tài liệu
       </Typography>
 
       <Paper component="form" onSubmit={handleFilter} sx={{ p: 2, mb: 3 }}>
@@ -226,12 +226,14 @@ const ModeratorFlaggedMaterialPage: React.FC = () => {
                       </Typography>
                     </TableCell>
                     <TableCell>
-                      <Chip
-                        label={m.status === "flagged" ? "Bị báo cáo" : m.status}
-                        size="small"
-                        color="warning"
-                        sx={{ fontWeight: "medium" }}
-                      />
+                      <Stack direction="row" spacing={1}>
+                        <Chip
+                          label={m.status === "published" ? (m.isFlagged ? "Bị báo cáo" : "Mới tải lên") : m.status}
+                          size="small"
+                          color={m.isFlagged ? "warning" : "info"}
+                          sx={{ fontWeight: "medium" }}
+                        />
+                      </Stack>
                     </TableCell>
                     <TableCell align="right">
                       <Stack direction="row" spacing={1} justifyContent="flex-end">
@@ -247,17 +249,41 @@ const ModeratorFlaggedMaterialPage: React.FC = () => {
                             Xem
                           </Button>
                         </Tooltip>
-                        <Tooltip title="Xác nhận tài liệu này hợp lệ">
+                        <Tooltip title="Duyệt tài liệu này (chuyển sang trạng thái reviewed)">
                           <Button
                             size="small"
                             color="success"
-                            variant="outlined"
+                            variant="contained"
                             startIcon={<CheckCircle fontSize="small" />}
-                            onClick={() => handleVerify(m._id)}
+                            onClick={() => {
+                              if (window.confirm("Duyệt tài liệu này?")) {
+                                changeMaterialStatus(m._id, "reviewed")
+                                  .then(() => {
+                                    setSnack({ open: true, message: "Đã duyệt tài liệu!", severity: "success" });
+                                    setMaterials(prev => prev.filter(item => item._id !== m._id));
+                                  })
+                                  .catch(() => setSnack({ open: true, message: "Lỗi khi duyệt!", severity: "error" }));
+                              }
+                            }}
                             sx={{ textTransform: "none", borderRadius: 2 }}
                           >
-                            Xác nhận lại
+                            Duyệt
                           </Button>
+                        </Tooltip>
+                        <Tooltip title={m.isFlagged ? "Xác nhận tài liệu này hợp lệ sau khi bị báo cáo" : "Chỉ dùng cho tài liệu bị báo cáo"}>
+                          <span>
+                            <Button
+                              size="small"
+                              color="success"
+                              variant="outlined"
+                              disabled={!m.isFlagged}
+                              startIcon={<CheckCircle fontSize="small" />}
+                              onClick={() => handleVerify(m._id)}
+                              sx={{ textTransform: "none", borderRadius: 2 }}
+                            >
+                              Xác nhận hợp lệ
+                            </Button>
+                          </span>
                         </Tooltip>
                         <Tooltip title="Đình chỉ hiển thị tài liệu này vĩnh viễn">
                           <Button
