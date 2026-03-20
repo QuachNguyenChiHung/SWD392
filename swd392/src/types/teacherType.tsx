@@ -83,7 +83,7 @@ export interface PaginatedTopicsResponse {
   totalPages: number;
 }
 
-export type ClassMaterialType = "file" | "slide" | "2d_render" | "quiz";
+export type ClassMaterialType = "file" | "slide" | "quiz";
 
 export interface ClassMaterial {
   _id?: string;
@@ -230,7 +230,6 @@ export interface CreateClassMaterialDTO {
   ai_content_id?: string;
   isFlagged?: boolean;
   isFlaggable?: boolean;
-  description: any;
 }
 
 export interface UpdateClassMaterialDTO {
