@@ -69,6 +69,15 @@ class UserRepo {
     const user = new User(normalized);
     return await user.save();
   }
+  async createGoogleUser(email: string, username: string) {
+    const user = new User({
+      email: email.trim().toLowerCase(),
+      username,
+      role: "student",
+      status: "active",
+    });
+    return await user.save();
+  }
   async updateUser(id: string, updateData: UserUpdateDTO) {
     return await User.findByIdAndUpdate(id, updateData, { new: true });
   }

@@ -20,6 +20,7 @@ route.patch('/users/:id/status', verifyRole.verifyAdminOrModerator, UserControll
 // Authentication routes
 route.post('/register', UserController.registerUser);
 route.post('/login', UserController.loginUser);
+route.post('/google-login', UserController.googleLogin);
 route.get('/me', UserController.getUserInfo);
 route.get('/user/profile', verifyRole.verifyStudent, UserController.getUserProfile);
 route.get('/admin/profile', verifyRole.verifyAdmin, UserController.getUserAdminProfile);

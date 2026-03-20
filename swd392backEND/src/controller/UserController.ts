@@ -3,7 +3,7 @@ import UserService from "../services/UserService.ts";
 import TeacherService from "../services/TeacherService.ts";
 import zod from "zod";
 import { tr } from "zod/locales";
-import { loginSchema, registerSchema } from "../dto/AuthDTO.ts";
+import { loginSchema, registerSchema, googleLoginSchema } from "../dto/AuthDTO.ts";
 import { uploadFile } from "../ultis/cloudinary.ts";
 import {
   UserGetFromTokenSchema,
@@ -269,6 +269,24 @@ class UserController {
       });
 
       return res.status(200).json({ token: token });
+    } catch (error: any) {
+      next(error);
+    }
+  }
+  async googleLogin(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { credential } = googleLoginSchema.parse(req.body);
+      const user = await UserService.googleLogin(credential);
+
+      const token = await UserService.generateToken({ id_: user._id });
+      res.cookie("Authorization", `Bearer ${token}`, {
+        expires: new Date(Date.now() + 3600000),
+        httpOnly: true,
+        sameSite: "lax",
+        signed: true,
+      });
+
+      return res.status(200).json({ token });
     } catch (error: any) {
       next(error);
     }
