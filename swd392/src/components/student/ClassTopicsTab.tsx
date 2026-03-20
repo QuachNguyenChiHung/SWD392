@@ -77,7 +77,7 @@ export default function ClassTopicsTab({
       </Paper>
 
       {/* Topics List */}
-      <Box sx={{ pl: 2, borderLeft: '2px dashed #e2e8f0' }}>
+      <Box sx={{ pl: 2, borderLeft: '2px dashed #e2e8f0', overflow: 'hidden' }}>
         <Stack spacing={1.5}>
           {topics.map((topic, index) => {
             const color = TOPIC_COLORS[index % 6];
@@ -94,15 +94,15 @@ export default function ClassTopicsTab({
                   sx={{ borderRadius: '8px !important', borderColor: expandedTopic === topic._id ? color : '#e2e8f0', borderWidth: expandedTopic === topic._id ? 1.5 : 1, '&:before': { display: 'none' }, transition: '0.2s' }}>
                   <AccordionSummary expandIcon={<ExpandMore />}>
                     <Stack direction="row" spacing={1.5} alignItems="center" sx={{ flex: 1, pr: 1 }}>
-                      <Typography sx={{ fontWeight: 'bold', color, fontSize: 12, bgcolor: `${color}15`, px: 1, py: 0.25, borderRadius: 1 }}>
+                      <Typography sx={{ fontWeight: 'bold', color, fontSize: 12, bgcolor: `${color}15`, px: 1, py: 0.25, borderRadius: 1, flexShrink: 0 }}>
                         {isLast ? '└' : '├'} {String(index + 1).padStart(2, '0')}
                       </Typography>
-                      <Stack sx={{ flex: 1 }}>
+                      <Stack sx={{ flex: 1, minWidth: 0 }}>
                         <Typography fontWeight="bold">{topic.title}</Typography>
-                        <Typography variant="caption" color="text.secondary" noWrap>{topic.description || 'Chưa có mô tả'}</Typography>
+                        <Typography variant="caption" color="text.secondary" sx={{ wordBreak: 'break-word' }}>{topic.description || 'Chưa có mô tả'}</Typography>
                       </Stack>
                       {topicMaterials.length > 0 && (
-                        <Chip label={`${topicMaterials.length} tài liệu`} size="small" sx={{ bgcolor: `${color}10`, color, fontSize: '0.65rem' }} />
+                        <Chip label={`${topicMaterials.length} tài liệu`} size="small" sx={{ bgcolor: `${color}10`, color, fontSize: '0.65rem', flexShrink: 0 }} />
                       )}
                     </Stack>
                   </AccordionSummary>
