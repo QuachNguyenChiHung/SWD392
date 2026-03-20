@@ -57,12 +57,7 @@ const TYPE_META: Record<
         icon: <Slideshow fontSize="small" />,
         description: "Generate presentation slides",
     },
-    "2d_render": {
-        label: "2D Render",
-        color: "secondary",
-        icon: <ViewInAr fontSize="small" />,
-        description: "Generate 2D data preview",
-    },
+
     quiz: {
         label: "Quiz",
         color: "warning",
@@ -95,13 +90,16 @@ export default function AiContentGenerator() {
         {
             id: crypto.randomUUID(),
             sender: "assistant",
-            content: `Hi! Tell me what you want for \"${topicTitle}\" and I can help you generate a preview.`,
+            content: `Hello, what do you want today bro?`,
         },
     ]);
     const [input, setInput] = useState("");
     const [isChatLoading, setIsChatLoading] = useState(false);
 
     const [selectedContentType, setSelectedContentType] = useState<ClassMaterialType | "">("");
+    const [quizCount, setQuizCount] = useState(5);
+    const [quizMcCount, setQuizMcCount] = useState(4);
+    const [quizTfCount, setQuizTfCount] = useState(1);
     const [aiPreviewMaterial, setAiPreviewMaterial] = useState<ClassMaterial | null>(null);
     const [isPreviewLoading, setIsPreviewLoading] = useState(false);
     const [previewError, setPreviewError] = useState("");
@@ -142,6 +140,48 @@ export default function AiContentGenerator() {
                 return null;
             }
         }
+    };
+
+    const normalizeQuizCount = (value: number, fallback: number) =>
+        Number.isFinite(value) && value > 0 ? Math.floor(value) : fallback;
+
+    const syncQuizSplitFromTotal = (nextTotal: number) => {
+        const normalizedTotal = Math.max(1, Math.floor(nextTotal));
+        const currentSplitTotal = quizMcCount + quizTfCount;
+
+        if (currentSplitTotal <= 0) {
+            setQuizCount(normalizedTotal);
+            setQuizMcCount(normalizedTotal);
+            setQuizTfCount(0);
+            return;
+        }
+
+        const nextMcCount = Math.min(
+            normalizedTotal,
+            Math.max(0, Math.round((normalizedTotal * quizMcCount) / currentSplitTotal)),
+        );
+        const nextTfCount = normalizedTotal - nextMcCount;
+
+        setQuizCount(normalizedTotal);
+        setQuizMcCount(nextMcCount);
+        setQuizTfCount(nextTfCount);
+    };
+
+    const syncQuizTotalFromSplit = (nextMcCount: number, nextTfCount: number) => {
+        const normalizedMcCount = Math.max(0, Math.floor(nextMcCount));
+        const normalizedTfCount = Math.max(0, Math.floor(nextTfCount));
+        const nextTotal = normalizedMcCount + normalizedTfCount;
+
+        if (nextTotal <= 0) {
+            setQuizCount(1);
+            setQuizMcCount(1);
+            setQuizTfCount(0);
+            return;
+        }
+
+        setQuizCount(nextTotal);
+        setQuizMcCount(normalizedMcCount);
+        setQuizTfCount(normalizedTfCount);
     };
 
     const setNewPreviewUrl = (url: string) => {
@@ -247,10 +287,19 @@ export default function AiContentGenerator() {
                     return;
                 }
                 case "quiz": {
-                    const result = await chadApi.createQuiz(topicTitle, topicDescription, 5, 4, 1);
+                    const totalQuestions = normalizeQuizCount(quizCount, 5);
+                    const multipleChoiceQuestions = normalizeQuizCount(quizMcCount, 4);
+                    const trueFalseQuestions = normalizeQuizCount(quizTfCount, 1);
+                    const result = await chadApi.createQuiz(
+                        topicTitle,
+                        topicDescription,
+                        totalQuestions,
+                        multipleChoiceQuestions,
+                        trueFalseQuestions,
+                    );
                     const parsed = extractJsonObject(result?.message || "");
                     const questionsRaw = Array.isArray(parsed?.questions) ? parsed.questions : [];
-                    const mappedQuestions = questionsRaw.slice(0, 5).map((q: any, idx: number) => {
+                    const mappedQuestions = questionsRaw.slice(0, totalQuestions).map((q: any, idx: number) => {
                         const rawOptions = Array.isArray(q.options) ? q.options.map((o: any) => String(o)) : [];
                         const normalizedOptions: string[] = Array.from(new Set(rawOptions));
                         const normalizedType =
@@ -408,9 +457,7 @@ export default function AiContentGenerator() {
                         <Typography variant="h6" sx={{ mb: 1 }}>
                             {topicTitle}
                         </Typography>
-                        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                            {topicDescription}
-                        </Typography>
+
 
                         {previewError && (
                             <Alert severity="error" sx={{ mb: 2 }}>
@@ -471,6 +518,38 @@ export default function AiContentGenerator() {
                                 />
                             ))}
                         </Stack>
+
+                        {selectedContentType === "quiz" && (
+                            <Stack direction="row" gap={2} sx={{ mb: 2, flexWrap: "wrap" }}>
+                                <TextField
+                                    label="Total questions"
+                                    type="number"
+                                    size="small"
+                                    value={quizCount}
+                                    onChange={(e) => syncQuizSplitFromTotal(Number(e.target.value))}
+                                    inputProps={{ min: 1 }}
+                                    sx={{ width: 150 }}
+                                />
+                                <TextField
+                                    label="Multiple choice"
+                                    type="number"
+                                    size="small"
+                                    value={quizMcCount}
+                                    onChange={(e) => syncQuizTotalFromSplit(Number(e.target.value), quizTfCount)}
+                                    inputProps={{ min: 0 }}
+                                    sx={{ width: 150 }}
+                                />
+                                <TextField
+                                    label="True / false"
+                                    type="number"
+                                    size="small"
+                                    value={quizTfCount}
+                                    onChange={(e) => syncQuizTotalFromSplit(quizMcCount, Number(e.target.value))}
+                                    inputProps={{ min: 0 }}
+                                    sx={{ width: 150 }}
+                                />
+                            </Stack>
+                        )}
 
                         <Box
                             sx={{
@@ -562,7 +641,7 @@ export default function AiContentGenerator() {
                             <TextField
                                 fullWidth
                                 size="small"
-                                placeholder={selectedContentType ? "Ask AI what content to generate..." : "Select a material type first..."}
+                                placeholder={"Ask AI..."}
                                 value={input}
                                 onChange={(e) => setInput(e.target.value)}
                                 onKeyDown={(e) => {

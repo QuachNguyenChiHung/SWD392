@@ -98,6 +98,17 @@ export default function CreateClassMaterialModal({
             setQuizTitle(quizContent?.title || aiPreviewMaterial.title || "");
             setSelectedQuizType(quizContent?.type || "standard");
             setQuizQuestions(quizContent?.questions || []);
+            setQuizStartDate(
+                quizContent?.available_date
+                    ? new Date(quizContent.available_date).toISOString().slice(0, 10)
+                    : "",
+            );
+            setQuizEndDate(
+                quizContent?.end_date
+                    ? new Date(quizContent.end_date).toISOString().slice(0, 10)
+                    : "",
+            );
+            setMaxAttempts(quizContent?.max_attempt_number ?? "");
         }
     }, [aiPreviewMaterial, open]);
 
@@ -158,16 +169,16 @@ export default function CreateClassMaterialModal({
                         const quizContent = aiPreviewMaterial.content as Quiz;
                         const quizData = {
                             title: materialName || quizTitle || `Bài kiểm tra ${currentMaterialCount + 1}`,
-                            type: quizContent?.type || "interactive",
+                            type: selectedQuizType,
                             status: quizContent?.status ?? true,
-                            ...(quizContent?.available_date && { available_date: quizContent.available_date }),
-                            ...(quizContent?.end_date && { end_date: quizContent.end_date }),
-                            ...(quizContent?.max_attempt_number && { max_attempt_number: quizContent.max_attempt_number }),
+                            ...(quizStartDate && { available_date: new Date(quizStartDate) }),
+                            ...(quizEndDate && { end_date: new Date(quizEndDate) }),
+                            ...(maxAttempts !== "" && { max_attempt_number: maxAttempts }),
                         };
                         const quizResult = await quizApiService.createQuiz(quizData);
                         content_id = quizResult._id;
 
-                        const aiQuestions = quizContent?.questions || [];
+                        const aiQuestions = quizQuestions.length > 0 ? quizQuestions : quizContent?.questions || [];
                         for (const q of aiQuestions) {
                             await questionApiService.createQuestion({
                                 quiz_id: quizResult._id as string,
@@ -448,7 +459,7 @@ export default function CreateClassMaterialModal({
                         {!aiPreviewMaterial && selectedMaterialType === "2d_render" && <Render2DForm />}
 
                         {/* Quiz Creation */}
-                        {!aiPreviewMaterial && selectedMaterialType === "quiz" && (
+                        {selectedMaterialType === "quiz" && (
                             <QuizForm
                                 quizType={selectedQuizType}
                                 onQuizTypeChange={setSelectedQuizType}

@@ -19,8 +19,7 @@ const getMaterialIcon = (type: ClassMaterialType) => {
       return <Description fontSize="small" />;
     case "slide":
       return <Slideshow fontSize="small" />;
-    case "2d_render":
-      return <ViewInAr fontSize="small" />;
+
     case "quiz":
       return <Quiz fontSize="small" />;
     default:
@@ -145,9 +144,6 @@ export default function ClassMaterial({ topics, classId }: ClassMaterialProps) {
 
             </Stack>
             <Box>
-              <Typography variant="body2" color="text.secondary" marginBottom={1}>
-                {topic.description}
-              </Typography>
               <Typography variant="caption" color="text.secondary">
                 Chủ đề {topic.order_num} · {materialsByTopic[getTopicId(topic)]?.length || 0} tài liệu
               </Typography>
