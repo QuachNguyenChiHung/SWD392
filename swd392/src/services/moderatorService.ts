@@ -5,19 +5,68 @@ import { apiService } from "./api";
 // ============================================================
 
 export async function getDashboardSummary() {
-  const d = (await apiService.get("/dashboard")) || {};
-  return {
-    pendingMaterials: d.pendingCount || 0,
-    flaggedMaterials: d.violationCount || 0,
-    bannedUsers: d.suspendedCount || 0,
-    reviewedToday: 0,
-    totalMaterials: d.totalMaterials || 0,
-    totalTeachers: d.totalTeachers || 0,
-    totalStudents: d.totalStudents || 0,
-    totalTopics: d.totalTopics || 0,
-    totalClasses: d.totalClasses || 0,
-    violationReports: d.violationReports || [],
-  };
+  try {
+    const [d, pendingData] = await Promise.all([
+      apiService.get("/dashboard").catch(() => ({})),
+      apiService
+        .get("/class-materials/moderator/pending", {
+          params: { status: "flagged" },
+        })
+        .catch(() => []),
+    ]);
+
+    // Calculate real pending count
+    const actualPendingCount = Array.isArray(pendingData)
+      ? pendingData.length
+      : ((pendingData as any)?.materials?.length ?? 0);
+
+    // Synthesize violation reports from pending materials if the dashboard list is empty
+    let reports = d.violationReports || [];
+    const pendingList = Array.isArray(pendingData)
+      ? pendingData
+      : ((pendingData as any)?.materials ?? []);
+
+    if (reports.length === 0 && pendingList.length > 0) {
+      // Since we specifically fetched with status: "flagged", everything in pendingList is a reportable item
+      reports = pendingList.map((m: any) => ({
+        comment: m.isFlagged
+          ? "Tài liệu bị báo cáo vi phạm nội dung"
+          : "Tài liệu đang chờ kiểm duyệt",
+        user_id: { username: "Hệ thống / User" },
+        date: m.dateUpdate || m.dateCreate,
+        material_id: m,
+      }));
+    }
+
+    return {
+      pendingMaterials:
+        actualPendingCount || d.pendingCount || d.totalPending || 0,
+      flaggedMaterials:
+        d.violationCount || d.flaggedCount || actualPendingCount || 0,
+      bannedUsers: d.suspendedCount || d.bannedCount || 0,
+      totalMaterials: d.totalMaterials || 0,
+      totalTeachers: d.totalTeachers || 0,
+      totalStudents: d.totalStudents || 0,
+      totalTopics: d.totalTopics || 0,
+      totalClasses: d.totalClasses || 0,
+      violationReports: reports,
+    };
+  } catch (error) {
+    //...
+    console.error("Error fetching dashboard summary:", error);
+    return {
+      pendingMaterials: 0,
+      flaggedMaterials: 0,
+      bannedUsers: 0,
+      reviewedToday: 0,
+      totalMaterials: 0,
+      totalTeachers: 0,
+      totalStudents: 0,
+      totalTopics: 0,
+      totalClasses: 0,
+      violationReports: [],
+    };
+  }
 }
 
 // ============================================================
@@ -39,7 +88,9 @@ export const getTopicsByCourse = (courseId: string, page: number = 1) =>
 // ============================================================
 
 export const searchClasses = (name: string = "", page: number = 1) =>
-  apiService.get(`/classes/search?name=${encodeURIComponent(name)}&page=${page}`);
+  apiService.get(
+    `/classes/search?name=${encodeURIComponent(name)}&page=${page}`,
+  );
 
 // ============================================================
 // Class Materials — view + change status (suspend)
@@ -84,7 +135,7 @@ export const searchUsers = (params: any) => {
     });
   }
   const queryString = query.toString();
-  return apiService.get(`/users/search${queryString ? '?' + queryString : ''}`);
+  return apiService.get(`/users/search${queryString ? "?" + queryString : ""}`);
 };
 
 /** [Moderator] Suspend user — sets status to "banned" */
@@ -97,4 +148,3 @@ export const suspendUser = (id: string, reason?: string) => {
 /** [Moderator] Unsuspend user — sets status to "active" */
 export const unsuspendUser = (id: string) =>
   apiService.patch(`/users/${id}/status`, { status: "active" });
-

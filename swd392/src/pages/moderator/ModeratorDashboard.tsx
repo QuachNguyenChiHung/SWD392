@@ -12,7 +12,7 @@ import {
   Button,
   Avatar,
 } from "@mui/material";
-import { Flag, Gavel, PersonOff, Visibility } from "@mui/icons-material";
+import { Flag, PersonOff, Visibility } from "@mui/icons-material";
 import { getDashboardSummary } from "../../services/moderatorService.ts";
 import MaterialViewDialog from "../../components/MaterialViewDialog.tsx";
 
@@ -22,27 +22,54 @@ const ModeratorDashboard: React.FC = () => {
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [selectedMaterial, setSelectedMaterial] = useState<any>(null);
 
+  const fetchStats = async () => {
+    setLoading(true);
+    try {
+      const sum = await getDashboardSummary();
+      setSummary(sum);
+    } catch (err) {
+      console.error("Error fetching dashboard stats:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    let mounted = true;
-    Promise.all([getDashboardSummary()])
-      .then(([sum]) => {
-        if (!mounted) return;
-        setSummary(sum);
-      })
-      .finally(() => setLoading(false));
-    return () => {
-      mounted = false;
-    };
+    fetchStats();
   }, []);
 
   return (
     <Box>
-      <Typography variant="h4" gutterBottom fontWeight="bold">
-        Bảng điều khiển Moderator
-      </Typography>
-      <Typography variant="body1" color="text.secondary" paragraph>
-        Quản lý kiểm duyệt nội dung và người dùng
-      </Typography>
+      <Stack
+        direction="row"
+        justifyContent="space-between"
+        alignItems="center"
+        mb={2}
+      >
+        <Box>
+          <Typography variant="h4" fontWeight="bold" gutterBottom>
+            Bảng điều khiển Moderator
+          </Typography>
+          <Typography variant="body1" color="text.secondary">
+            Quản lý kiểm duyệt nội dung và người dùng
+          </Typography>
+        </Box>
+        <Button
+          variant="contained"
+          onClick={fetchStats}
+          disabled={loading}
+          sx={{
+            borderRadius: "8px",
+            bgcolor: "#667eea",
+            "&:hover": { bgcolor: "#5a6fd6" },
+            fontFamily: "'Nunito', sans-serif",
+            fontWeight: 700,
+            boxShadow: "none",
+          }}
+        >
+          LÀM MỚI
+        </Button>
+      </Stack>
 
       {/* System Overview Stats */}
       {summary && (
@@ -121,13 +148,26 @@ const ModeratorDashboard: React.FC = () => {
                 borderColor: "warning.main",
               }}
             >
-              <Avatar sx={{ bgcolor: "warning.light", color: "warning.dark", mb: 2, width: 56, height: 56 }}>
+              <Avatar
+                sx={{
+                  bgcolor: "warning.light",
+                  color: "warning.dark",
+                  mb: 2,
+                  width: 56,
+                  height: 56,
+                }}
+              >
                 <Flag sx={{ fontSize: 32 }} />
               </Avatar>
               <Typography variant="h4" fontWeight="bold" color="text.primary">
-                {summary?.flaggedMaterials ?? 0}
+                {summary?.pendingMaterials ?? 0}
               </Typography>
-              <Typography variant="body2" color="text.secondary" fontWeight="medium" mb={2}>
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                fontWeight="medium"
+                mb={2}
+              >
                 Đang chờ kiểm duyệt
               </Typography>
               <Button
@@ -158,13 +198,26 @@ const ModeratorDashboard: React.FC = () => {
                 borderColor: "error.main",
               }}
             >
-              <Avatar sx={{ bgcolor: "error.light", color: "error.dark", mb: 2, width: 56, height: 56 }}>
+              <Avatar
+                sx={{
+                  bgcolor: "error.light",
+                  color: "error.dark",
+                  mb: 2,
+                  width: 56,
+                  height: 56,
+                }}
+              >
                 <PersonOff sx={{ fontSize: 32 }} />
               </Avatar>
               <Typography variant="h4" fontWeight="bold" color="text.primary">
                 {summary?.bannedUsers ?? 0}
               </Typography>
-              <Typography variant="body2" color="text.secondary" fontWeight="medium" mb={2}>
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                fontWeight="medium"
+                mb={2}
+              >
                 User bị đình chỉ
               </Typography>
               <Button
@@ -176,41 +229,6 @@ const ModeratorDashboard: React.FC = () => {
                 sx={{ borderRadius: 2, textTransform: "none", mt: "auto" }}
               >
                 Quản lý user
-              </Button>
-            </Paper>
-          </Box>
-          <Box sx={{ flex: "1 1 200px", minWidth: 200 }}>
-            <Paper
-              elevation={2}
-              sx={{
-                p: 3,
-                height: "100%",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                bgcolor: "background.paper",
-                borderRadius: 2,
-                borderTop: "4px solid",
-                borderColor: "success.main",
-              }}
-            >
-              <Avatar sx={{ bgcolor: "success.light", color: "success.dark", mb: 2, width: 56, height: 56 }}>
-                <Gavel sx={{ fontSize: 32 }} />
-              </Avatar>
-              <Typography variant="h4" fontWeight="bold" color="text.primary">
-                {summary?.reviewedToday ?? 0}
-              </Typography>
-              <Typography variant="body2" color="text.secondary" fontWeight="medium" mb={2}>
-                Duyệt hôm nay
-              </Typography>
-              <Button
-                disabled
-                size="small"
-                variant="text"
-                sx={{ borderRadius: 2, textTransform: "none", mt: "auto", opacity: 0 }}
-              >
-                Spacer
               </Button>
             </Paper>
           </Box>
@@ -232,7 +250,11 @@ const ModeratorDashboard: React.FC = () => {
             {summary.violationReports.map((report: any, idx: number) => (
               <ListItem key={idx} sx={{ borderBottom: "1px solid #eee" }}>
                 <ListItemText
-                  primary={<Typography fontWeight="medium">{report.comment || "Báo cáo nội dung vi phạm"}</Typography>}
+                  primary={
+                    <Typography fontWeight="medium">
+                      {report.comment || "Báo cáo nội dung vi phạm"}
+                    </Typography>
+                  }
                   secondary={`Gửi bởi: ${report.user_id?.username || "Ẩn danh"} - ${
                     report.date ? new Date(report.date).toLocaleString() : ""
                   }`}
