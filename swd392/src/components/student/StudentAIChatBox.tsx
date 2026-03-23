@@ -33,11 +33,40 @@ export default function StudentAIChat() {
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [requestCount, setRequestCount] = useState<number | null>(null);
+  const [tokenUsage, setTokenUsage] = useState<{ input: number; output: number; total: number } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, loading]);
+
+  useEffect(() => {
+    const fetchRequestCount = async () => {
+      try {
+        const res: any = await apiService.get('/ai/requests/count');
+        setRequestCount(res?.request ?? 0);
+      } catch (err) {
+        console.error('Failed to fetch request count:', err);
+      }
+    };
+
+    const fetchTokenUsage = async () => {
+      try {
+        const res: any = await apiService.get('/ai/tokens/usage');
+        setTokenUsage({
+          input: res?.inputTokens ?? 0,
+          output: res?.outputTokens ?? 0,
+          total: res?.totalTokens ?? 0
+        });
+      } catch (err) {
+        console.error('Failed to fetch token usage:', err);
+      }
+    };
+
+    fetchRequestCount();
+    fetchTokenUsage();
+  }, []);
 
   const sendMessage = async (text: string) => {
     if (!text.trim() || loading) return;
@@ -54,7 +83,19 @@ export default function StudentAIChat() {
     setLoading(true);
 
     try {
-      const res: any = await apiService.post('/claude', { prompt: text.trim() });
+      // Build conversation history (exclude the initial greeting message)
+      const history = messages
+        .slice(1) // Skip the initial assistant greeting
+        .map(msg => ({
+          content: msg.content,
+          sender: msg.role === 'user' ? 'user' : 'ai'
+        }));
+
+      const res: any = await apiService.post('/claude', {
+        prompt: text.trim(),
+        history: history.length > 0 ? history : undefined
+      });
+
       const assistantMsg: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
@@ -62,6 +103,17 @@ export default function StudentAIChat() {
         timestamp: new Date()
       };
       setMessages(prev => [...prev, assistantMsg]);
+      // Increment request count after successful response
+      setRequestCount(prev => (prev !== null ? prev + 1 : 1));
+
+      // Update token usage if available
+      if (res?.tokens) {
+        setTokenUsage(prev => ({
+          input: (prev?.input ?? 0) + res.tokens.input,
+          output: (prev?.output ?? 0) + res.tokens.output,
+          total: (prev?.total ?? 0) + res.tokens.total
+        }));
+      }
     } catch (err) {
       const errMsg: Message = {
         id: (Date.now() + 1).toString(),
@@ -90,7 +142,9 @@ export default function StudentAIChat() {
             <Typography variant="subtitle2" fontWeight="bold">Trợ lý AI</Typography>
             <Chip label="Beta" size="small" sx={{ bgcolor: '#f0f7ff', color: '#6366f1', fontWeight: 'bold', height: 16, fontSize: '0.6rem' }} />
           </Stack>
-          <Typography variant="caption" color="text.secondary">Hỏi bất cứ điều gì về bài học</Typography>
+          <Typography variant="caption" color="text.secondary">
+            <strong>{requestCount ?? 0}</strong> yêu cầu • <strong>{(tokenUsage?.total ?? 0).toLocaleString()}</strong> tokens ({(tokenUsage?.input ?? 0).toLocaleString()} in / {(tokenUsage?.output ?? 0).toLocaleString()} out)
+          </Typography>
         </Box>
         <AutoAwesome sx={{ color: '#6366f1', fontSize: 18 }} />
       </Stack>

@@ -15,22 +15,27 @@ class ChadApi {
         const cleaned = messages.map(m => {
             return {
                 content: m.content,
-                sender: m.sender
+                sender: m.sender === "user" ? "user" : "ai"
             }
         })
         return await apiService.post('/teacher/ai-chad', { prompt: cleaned });
     }
 
-    async createQuiz(topicTitle: string, topicDescription: string | undefined, count: number, mcCount: number, tfCount: number) {
-        return await apiService.post('/teacher/ai-create-quiz', { topicTitle, topicDescription, count, mcCount, tfCount });
+    async createQuiz(topicTitle: string, topicDescription: string | undefined, count: number, mcCount: number, tfCount: number): Promise<{ rawContent?: string, message?: string, tokens?: any }> {
+        const response = await apiService.post('/teacher/ai-create-quiz', { topicTitle, topicDescription, count, mcCount, tfCount });
+        console.log('Quiz API response:', response);
+        console.log('Tokens from response:', response.tokens);
+        return response;
     }
 
-    async createSlide(topicTitle: string, topicDescription?: string, notes?: string): Promise<{ blob: Blob, message: string }> {
+    async createSlide(topicTitle: string, topicDescription?: string, notes?: string): Promise<{ blob: Blob, message: string, tokens?: any }> {
         const response = await apiService.getAxiosInstance().post(
             '/teacher/ai-create-slide',
             { topicTitle, topicDescription, notes }
         );
         const data = response.data;
+        console.log('Slide API response data:', data);
+        console.log('Tokens from response:', data.tokens);
         const binaryString = window.atob(data.fileBase64);
         const len = binaryString.length;
         const bytes = new Uint8Array(len);
@@ -38,15 +43,17 @@ class ChadApi {
             bytes[i] = binaryString.charCodeAt(i);
         }
         const blob = new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation' });
-        return { blob, message: data.message };
+        return { blob, message: data.message, tokens: data.tokens };
     }
 
-    async createPdf(topicTitle: string, topicDescription?: string, notes?: string): Promise<{ blob: Blob, message: string }> {
+    async createPdf(topicTitle: string, topicDescription?: string, notes?: string): Promise<{ blob: Blob, message: string, tokens?: any }> {
         const response = await apiService.getAxiosInstance().post(
             '/teacher/ai-create-pdf',
             { topicTitle, topicDescription, notes }
         );
         const data = response.data;
+        console.log('PDF API response data:', data);
+        console.log('Tokens from response:', data.tokens);
         const binaryString = window.atob(data.fileBase64);
         const len = binaryString.length;
         const bytes = new Uint8Array(len);
@@ -54,7 +61,7 @@ class ChadApi {
             bytes[i] = binaryString.charCodeAt(i);
         }
         const blob = new Blob([bytes], { type: 'application/pdf' });
-        return { blob, message: data.message };
+        return { blob, message: data.message, tokens: data.tokens };
     }
 
     downloadBlob(blob: Blob, filename: string) {

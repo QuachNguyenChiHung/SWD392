@@ -34,6 +34,7 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import type { ClassMaterial, ClassMaterialType, Quiz as QuizType, Question, CreateClassMaterialDTO } from "../../types/teacherType";
 import MaterialTypeViewer from "../../components/MaterialTypeViewer";
 import chadApi from "../../services/teacherApi/chadApi";
+import { apiService } from "../../services/api";
 import CreateClassMaterialModal from "../../components/CreateClassMaterialModal";
 import { useAuth } from "../../contexts/AuthContext";
 import {
@@ -122,7 +123,7 @@ export default function AiContentGenerator() {
         {
             id: crypto.randomUUID(),
             sender: "assistant",
-            content: `Hello, what do you want today bro?`,
+            content: `Hello, what do you want today?`,
         },
     ]);
     const [input, setInput] = useState("");
@@ -154,12 +155,60 @@ export default function AiContentGenerator() {
     const [previewUrl, setPreviewUrl] = useState("");
     const [createModalOpen, setCreateModalOpen] = useState(false);
     const [createdCount, setCreatedCount] = useState(0);
+    const [requestCount, setRequestCount] = useState<number | null>(null);
+    const [tokenUsage, setTokenUsage] = useState<{ input: number; output: number; total: number } | null>(null);
 
     const messagesEndRef = useRef<HTMLDivElement | null>(null);
+
+    // Helper function to refetch token usage from database
+    const refetchTokenUsage = async () => {
+        try {
+            const res: any = await apiService.get('/ai/tokens/usage');
+            console.log('Refetched token usage from DB:', res);
+            setTokenUsage({
+                input: res?.inputTokens ?? 0,
+                output: res?.outputTokens ?? 0,
+                total: res?.totalTokens ?? 0
+            });
+            const countRes: any = await apiService.get('/ai/requests/count');
+            setRequestCount(countRes?.request ?? 0);
+        } catch (err) {
+            console.error('Failed to refetch token usage:', err);
+        }
+    };
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages, isChatLoading]);
+
+    useEffect(() => {
+        const fetchRequestCount = async () => {
+            try {
+                const res: any = await apiService.get('/ai/requests/count');
+                console.log('Fetched request count:', res?.request);
+                setRequestCount(res?.request ?? 0);
+            } catch (err) {
+                console.error('Failed to fetch request count:', err);
+            }
+        };
+
+        const fetchTokenUsage = async () => {
+            try {
+                const res: any = await apiService.get('/ai/tokens/usage');
+                console.log('Fetched token usage:', res);
+                setTokenUsage({
+                    input: res?.inputTokens ?? 0,
+                    output: res?.outputTokens ?? 0,
+                    total: res?.totalTokens ?? 0
+                });
+            } catch (err) {
+                console.error('Failed to fetch token usage:', err);
+            }
+        };
+
+        fetchRequestCount();
+        fetchTokenUsage();
+    }, []);
 
     useEffect(() => {
         return () => {
@@ -324,7 +373,8 @@ export default function AiContentGenerator() {
         try {
             switch (selectedContentType) {
                 case "slide": {
-                    const { blob, message } = await chadApi.createSlide(topicTitle, topicDescription, promptForPreview);
+                    const { blob, message, tokens } = await chadApi.createSlide(topicTitle, topicDescription, promptForPreview);
+                    console.log('Slide generation response tokens:', tokens);
                     const fileUrl = URL.createObjectURL(blob);
                     setNewPreviewUrl(fileUrl);
                     setAiPreviewMaterial({
@@ -343,10 +393,29 @@ export default function AiContentGenerator() {
                         is_ai_material: true,
                         ai_content_id: null,
                     });
+                    
+                    // Update token usage
+                    if (tokens) {
+                        console.log('Updating token usage with:', tokens);
+                        setTokenUsage(prev => {
+                            const newUsage = {
+                                input: (prev?.input ?? 0) + (tokens.input ?? 0),
+                                output: (prev?.output ?? 0) + (tokens.output ?? 0),
+                                total: (prev?.total ?? 0) + (tokens.total ?? 0)
+                            };
+                            console.log('New token usage:', newUsage);
+                            return newUsage;
+                        });
+                        setRequestCount(prev => (prev !== null ? prev + 1 : 1));
+                    } else {
+                        console.warn('No tokens received from API');
+                    }
+                    
                     return message;
                 }
                 case "file": {
-                    const { blob, message } = await chadApi.createPdf(topicTitle, topicDescription, promptForPreview);
+                    const { blob, message, tokens } = await chadApi.createPdf(topicTitle, topicDescription, promptForPreview);
+                    console.log('PDF generation response tokens:', tokens);
                     const fileUrl = URL.createObjectURL(blob);
                     setNewPreviewUrl(fileUrl);
                     setAiPreviewMaterial({
@@ -365,6 +434,27 @@ export default function AiContentGenerator() {
                         is_ai_material: true,
                         ai_content_id: null,
                     });
+                    
+                    // Update token usage
+                    if (tokens) {
+                        console.log('Updating token usage with:', tokens);
+                        setTokenUsage(prev => {
+                            const newUsage = {
+                                input: (prev?.input ?? 0) + (tokens.input ?? 0),
+                                output: (prev?.output ?? 0) + (tokens.output ?? 0),
+                                total: (prev?.total ?? 0) + (tokens.total ?? 0)
+                            };
+                            console.log('New token usage:', newUsage);
+                            return newUsage;
+                        });
+                        setRequestCount(prev => (prev !== null ? prev + 1 : 1));
+                    } else {
+                        console.warn('No tokens received from API');
+                    }
+                    
+                    // Refetch from database as fallback
+                    setTimeout(() => refetchTokenUsage(), 1000);
+                    
                     return message;
                 }
                 case "quiz": {
@@ -378,6 +468,8 @@ export default function AiContentGenerator() {
                         multipleChoiceQuestions,
                         trueFalseQuestions,
                     );
+                    console.log('Quiz generation result:', result);
+                    console.log('Quiz tokens:', result?.tokens);
                     const parsed = result?.rawContent ? JSON.parse(result.rawContent) : {};
                     const questionsRaw = Array.isArray(parsed?.questions) ? parsed.questions : [];
                     const mappedQuestions = questionsRaw.slice(0, totalQuestions).map((q: any, idx: number) => {
@@ -431,6 +523,27 @@ export default function AiContentGenerator() {
                         is_ai_material: true,
                         ai_content_id: null,
                     });
+                    
+                    // Update token usage
+                    if (result?.tokens) {
+                        console.log('Updating token usage with:', result.tokens);
+                        setTokenUsage(prev => {
+                            const newUsage = {
+                                input: (prev?.input ?? 0) + (result.tokens.input ?? 0),
+                                output: (prev?.output ?? 0) + (result.tokens.output ?? 0),
+                                total: (prev?.total ?? 0) + (result.tokens.total ?? 0)
+                            };
+                            console.log('New token usage:', newUsage);
+                            return newUsage;
+                        });
+                        setRequestCount(prev => (prev !== null ? prev + 1 : 1));
+                    } else {
+                        console.warn('No tokens received from quiz API');
+                    }
+                    
+                    // Refetch from database as fallback
+                    setTimeout(() => refetchTokenUsage(), 1000);
+                    
                     return result?.message || "Quiz generated successfully.";
                 }
                 case "2d_render": {
@@ -646,10 +759,10 @@ export default function AiContentGenerator() {
                             <Avatar sx={{ bgcolor: COLORS.accent, width: 36, height: 36 }}>
                                 <SmartToy fontSize="small" />
                             </Avatar>
-                            <Box>
+                            <Box sx={{ flex: 1 }}>
                                 <Typography sx={sectionTitle}>AI Assistant</Typography>
                                 <Typography sx={{ fontSize: "0.7rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: COLORS.textSecondary }}>
-                                    Ready to help you generate content
+                                    <strong>{requestCount ?? 0}</strong> requests • <strong>{(tokenUsage?.total ?? 0).toLocaleString()}</strong> tokens ({(tokenUsage?.input ?? 0).toLocaleString()} in / {(tokenUsage?.output ?? 0).toLocaleString()} out)
                                 </Typography>
                             </Box>
                         </Stack>
