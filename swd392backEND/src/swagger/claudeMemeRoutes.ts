@@ -97,61 +97,137 @@
 
 /**
  * @openapi
- * components:
- *   schemas:
- *     ClaudeCreateQuizRequest:
- *       type: object
- *       required:
- *         - topicTitle
- *       properties:
- *         topicTitle:
+ * /api/teacher/ai-history:
+ *   get:
+ *     tags:
+ *       - Claude AI History
+ *     summary: Get AI requests history for the logged-in teacher
+ *     description: "[Teacher Only] Returns an array of AI requests made by the currently authenticated teacher."
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Array of AI requests
+ *       400:
+ *         description: User ID not found in token
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - teacher role required
+ *       500:
+ *         description: Internal server error
+ * /api/admin/ai-history/{userId}:
+ *   get:
+ *     tags:
+ *       - Claude AI History
+ *     summary: Get all AI requests for a specific user (Admin/Moderator)
+ *     description: "[Admin/Moderator] Returns paginated AI requests for a specific userId."
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
  *           type: string
- *           description: Title/topic for the quiz
- *           example: "Photosynthesis basics"
- *         topicDescription:
- *           type: string
- *           description: Optional longer description or context
- *           example: "Fundamentals of photosynthesis for middle school"
- *         count:
+ *         description: The ID of the user
+ *       - in: query
+ *         name: page
+ *         schema:
  *           type: integer
- *           description: Total number of questions to generate
- *           example: 5
- *         mcCount:
- *           type: integer
- *           description: Number of multiple-choice questions
- *           example: 5
- *         tfCount:
- *           type: integer
- *           description: Number of true/false questions
- *           example: 0
- *       example:
- *         topicTitle: "Photosynthesis basics"
- *         topicDescription: "Intro to photosynthesis for middle school"
- *         count: 5
- *         mcCount: 5
- *         tfCount: 0
- *     ClaudeCreateSlideRequest:
- *       type: object
- *       required:
- *         - topicTitle
- *       properties:
- *         topicTitle:
+ *           default: 1
+ *         description: Page number for pagination
+ *     responses:
+ *       200:
+ *         description: Paginated AI requests for the user
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - admin or moderator role required
+ *       500:
+ *         description: Internal server error
+ *
+ * /api/admin/ai-history/{requestId}/content:
+ *   get:
+ *     tags:
+ *       - Claude AI History
+ *     summary: Get AI content by request ID (Admin/Moderator)
+ *     description: "[Admin/Moderator] Returns the detailed content records linked to a specific AI request."
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: requestId
+ *         required: true
+ *         schema:
  *           type: string
- *           description: Title/topic for the slide deck
- *           example: "Introduction to Cells"
- *         topicDescription:
- *           type: string
- *           description: Optional description or notes for slide context
- *           example: "Basic cell structure and functions"
- *         notes:
- *           type: string
- *           description: Optional additional notes or instructions for the slide content
- *           example: "Emphasize real-world examples and diagrams"
- *       example:
- *         topicTitle: "Introduction to Cells"
- *         topicDescription: "Basic cell structure and functions"
- *         notes: "Include diagrams of plant and animal cells"
- */
+ *         description: The ID of the AI request
+ *     responses:
+ *       200:
+ *         description: Content records for the request
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - admin or moderator role required
+ *       500:
+ *         description: Internal server error
+ *//**
+* @openapi
+* components:
+*   schemas:
+*     ClaudeCreateQuizRequest:
+*       type: object
+*       required:
+*         - topicTitle
+*       properties:
+*         topicTitle:
+*           type: string
+*           description: Title/topic for the quiz
+*           example: "Photosynthesis basics"
+*         topicDescription:
+*           type: string
+*           description: Optional longer description or context
+*           example: "Fundamentals of photosynthesis for middle school"
+*         count:
+*           type: integer
+*           description: Total number of questions to generate
+*           example: 5
+*         mcCount:
+*           type: integer
+*           description: Number of multiple-choice questions
+*           example: 5
+*         tfCount:
+*           type: integer
+*           description: Number of true/false questions
+*           example: 0
+*       example:
+*         topicTitle: "Photosynthesis basics"
+*         topicDescription: "Intro to photosynthesis for middle school"
+*         count: 5
+*         mcCount: 5
+*         tfCount: 0
+*     ClaudeCreateSlideRequest:
+*       type: object
+*       required:
+*         - topicTitle
+*       properties:
+*         topicTitle:
+*           type: string
+*           description: Title/topic for the slide deck
+*           example: "Introduction to Cells"
+*         topicDescription:
+*           type: string
+*           description: Optional description or notes for slide context
+*           example: "Basic cell structure and functions"
+*         notes:
+*           type: string
+*           description: Optional additional notes or instructions for the slide content
+*           example: "Emphasize real-world examples and diagrams"
+*       example:
+*         topicTitle: "Introduction to Cells"
+*         topicDescription: "Basic cell structure and functions"
+*         notes: "Include diagrams of plant and animal cells"
+*/
 
 /**
  * @openapi

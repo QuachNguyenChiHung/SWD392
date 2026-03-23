@@ -417,6 +417,7 @@ route.post("/teacher/ai-create-quiz", verifyRole.verifyTeacher, async (req, res,
     try {
         const { topicTitle, topicDescription, count = 5, mcCount = 5, tfCount = 0 } = req.body;
         if (!topicTitle) return res.status(400).json({ message: "topicTitle is required" });
+        const userId = (req as any).user?.id ?? null;
 
         const total = Math.max(1, Number(count) || 5);
         const multipleChoice = Math.max(0, Number(mcCount) || 0);
@@ -460,6 +461,15 @@ Constraints:
         const parsed = extractJsonWrapper(aiResponse);
         if (!parsed || !parsed.content) {
             return res.status(502).json({ message: "Failed to generate usable quiz format." });
+        }
+
+        // Save request to DB (fire-and-forget, don't block the response)
+        const savedRequest = await AiRepo.saveRequest(userId, prompt, "quiz").catch(() => null);
+        if (savedRequest) {
+            AiRepo.saveContent(savedRequest._id as any, "quiz", {
+                title: parsed.content.title || topicTitle,
+                questionCount: parsed.content.questions?.length || 0
+            }, aiResponse).catch(() => null);
         }
 
         // Return dual response: the chat message + the raw JSON content as string (for frontend to parse)
@@ -541,7 +551,7 @@ Rules:
                 title: topicTitle,
                 slideCount: slides.length,
                 templates: slides.map((s: any) => s.templateType),
-            }).catch(() => null);
+            }, aiResponse).catch(() => null);
         }
 
         // Build PPTX
@@ -659,7 +669,7 @@ Design rules you MUST follow:
             AiRepo.saveContent(savedRequest._id as any, "pdf", {
                 title: topicTitle,
                 htmlLength: html.length,
-            }).catch(() => null);
+            }, aiResponse).catch(() => null);
         }
 
         if (!html.toLowerCase().includes("<html")) {
@@ -700,6 +710,7 @@ Design rules you MUST follow:
 route.get("/teacher/ai-history", verifyRole.verifyTeacher, async (req, res, next) => {
     try {
         const userId = (req as any).user?.id;
+        console.log(userId)
         if (!userId) return res.status(400).json({ message: "User ID not found in token" });
 
         const requests = await AiRepo.getRequestsByUser(userId);
@@ -709,15 +720,17 @@ route.get("/teacher/ai-history", verifyRole.verifyTeacher, async (req, res, next
     }
 });
 
-// ─── History — Admin / Moderator ─────────────────────────────────────────────
+
+
 /**
- * GET /admin/ai-history?page=1
- * Returns all AI requests, paginated. Admin and moderator access.
+ * GET /admin/ai-history/:userId?page=1
+ * Returns all AI requests for a specific user, paginated. Admin and moderator access.
  */
-route.get("/admin/ai-history", verifyRole.verifyAdminOrModerator, async (req, res, next) => {
+route.get("/admin/ai-history/:userId", verifyRole.verifyAdminOrModerator, async (req, res, next) => {
     try {
+        const { userId } = req.params;
         const page = Math.max(1, Number(req.query.page as string) || 1);
-        const result = await AiRepo.getAllRequests(page);
+        const result = await AiRepo.getAllRequests(page, userId as string);
         return res.json(result);
     } catch (error) {
         next(error);
