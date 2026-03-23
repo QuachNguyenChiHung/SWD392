@@ -30,7 +30,6 @@ import { slideApiService } from "../services/teacherApi/materialApi";
 import {
     flatModal,
     sectionLabel,
-    sectionTitle,
     pageTitle,
     flatButtonContained,
     flatButtonOutlined,
@@ -355,6 +354,16 @@ export default function CreateClassMaterialModal({
     const inputSx = {
         "& .MuiOutlinedInput-root": {
             borderRadius: RADIUS,
+            bgcolor: "#FBFDFF",
+            "& fieldset": {
+                borderColor: COLORS.border,
+            },
+            "&:hover fieldset": {
+                borderColor: COLORS.accent,
+            },
+            "&.Mui-focused fieldset": {
+                borderColor: COLORS.accent,
+            },
         },
     };
 
@@ -367,101 +376,135 @@ export default function CreateClassMaterialModal({
                 aria-describedby="create-material-modal-description"
             >
                 <Box sx={{ ...flatModal, width: { xs: "95%", sm: "80%", md: 800 } }}>
-                    <Typography sx={sectionLabel}>New material</Typography>
-                    <Typography
-                        id="create-material-modal-title"
-                        sx={{ ...pageTitle, fontSize: "1.25rem", mb: 1 }}
+                    <Box
+                        sx={{
+                            mb: 3,
+                            p: 2,
+                            border: `1px solid ${COLORS.border}`,
+                            borderRadius: RADIUS,
+                            bgcolor: COLORS.bg,
+                        }}
                     >
-                        Tạo tài liệu mới
-                    </Typography>
-                    <Typography sx={{ fontSize: "0.85rem", color: COLORS.textSecondary, mb: 3 }}>
-                        Chủ đề: {topicTitle}
-                    </Typography>
+                        <Typography sx={sectionLabel}>New material</Typography>
+                        <Typography
+                            id="create-material-modal-title"
+                            sx={{ ...pageTitle, fontSize: "1.25rem", mb: 0.75 }}
+                        >
+                            Tạo tài liệu mới
+                        </Typography>
+                        <Typography sx={{ fontSize: "0.85rem", color: COLORS.textSecondary }}>
+                            Chủ đề: {topicTitle}
+                        </Typography>
+                    </Box>
 
                     <Stack spacing={3}>
-                        <TextField
-                            label="Tên tài liệu"
-                            variant="outlined"
-                            fullWidth
-                            value={materialName}
-                            onChange={(e) => setMaterialName(e.target.value)}
-                            placeholder="Nhập tên tài liệu..."
-                            sx={inputSx}
-                        />
+                        <Box
+                            sx={{
+                                p: 2,
+                                border: `1px solid ${COLORS.border}`,
+                                borderRadius: RADIUS,
+                                bgcolor: "#fff",
+                            }}
+                        >
+                            <Typography sx={{ ...sectionLabel, mb: 1 }}>Thông tin chung</Typography>
 
-
-                        {!aiPreviewMaterial && (
-                            <FormControl fullWidth>
-                                <InputLabel id="material-type-select-label">
-                                    Loại tài liệu
-                                </InputLabel>
-                                <Select
-                                    labelId="material-type-select-label"
-                                    id="material-type-select"
-                                    value={selectedMaterialType}
-                                    onChange={(e) =>
-                                        setSelectedMaterialType(e.target.value as ClassMaterialType)
-                                    }
-                                    label="Loại tài liệu"
+                            <Stack spacing={2}>
+                                <TextField
+                                    label="Tên tài liệu"
+                                    variant="outlined"
+                                    fullWidth
+                                    value={materialName}
+                                    onChange={(e) => setMaterialName(e.target.value)}
+                                    placeholder="Nhập tên tài liệu..."
                                     sx={inputSx}
-                                >
-                                    <MenuItem value="file">Tệp tin (PDF, DOC, etc.)</MenuItem>
-                                    <MenuItem value="slide">Slide thuyết trình</MenuItem>
-                                    <MenuItem value="quiz">Bài kiểm tra</MenuItem>
-                                </Select>
-                            </FormControl>
-                        )}
+                                />
 
-                        <FormControl fullWidth>
-                            <InputLabel id="material-status-select-label">
-                                Trạng thái
-                            </InputLabel>
-                            <Select
-                                labelId="material-status-select-label"
-                                id="material-status-select"
-                                value={selectedStatus}
-                                onChange={(e) =>
-                                    setSelectedStatus(e.target.value as "published" | "draft")
-                                }
-                                label="Trạng thái"
-                                sx={inputSx}
-                            >
-                                <MenuItem value="draft">Bản nháp</MenuItem>
-                                <MenuItem value="published">Xuất bản</MenuItem>
-                            </Select>
-                        </FormControl>
 
-                        {/* File Upload for File and Slide types */}
-                        {!aiPreviewMaterial &&
-                            (selectedMaterialType === "file" ||
-                                selectedMaterialType === "slide") && (
-                                <FileUploadForm
-                                    materialType={selectedMaterialType}
-                                    selectedFile={selectedFile}
-                                    onFileChange={handleFileChange}
+                                {!aiPreviewMaterial && (
+                                    <FormControl fullWidth>
+                                        <InputLabel id="material-type-select-label">
+                                            Loại tài liệu
+                                        </InputLabel>
+                                        <Select
+                                            labelId="material-type-select-label"
+                                            id="material-type-select"
+                                            value={selectedMaterialType}
+                                            onChange={(e) =>
+                                                setSelectedMaterialType(e.target.value as ClassMaterialType)
+                                            }
+                                            label="Loại tài liệu"
+                                            sx={inputSx}
+                                        >
+                                            <MenuItem value="file">Tệp tin (PDF, DOC, etc.)</MenuItem>
+                                            <MenuItem value="slide">Slide thuyết trình</MenuItem>
+                                            <MenuItem value="quiz">Bài kiểm tra</MenuItem>
+                                        </Select>
+                                    </FormControl>
+                                )}
+
+                                <FormControl fullWidth>
+                                    <InputLabel id="material-status-select-label">
+                                        Trạng thái
+                                    </InputLabel>
+                                    <Select
+                                        labelId="material-status-select-label"
+                                        id="material-status-select"
+                                        value={selectedStatus}
+                                        onChange={(e) =>
+                                            setSelectedStatus(e.target.value as "published" | "draft")
+                                        }
+                                        label="Trạng thái"
+                                        sx={inputSx}
+                                    >
+                                        <MenuItem value="draft">Bản nháp</MenuItem>
+                                        <MenuItem value="published">Xuất bản</MenuItem>
+                                    </Select>
+                                </FormControl>
+                            </Stack>
+                        </Box>
+
+                        <Box
+                            sx={{
+                                p: 2,
+                                border: `1px solid ${COLORS.border}`,
+                                borderRadius: RADIUS,
+                                bgcolor: "#fff",
+                            }}
+                        >
+                            <Typography sx={{ ...sectionLabel, mb: 1 }}>Nội dung tài liệu</Typography>
+
+                            {/* File Upload for File and Slide types */}
+                            {!aiPreviewMaterial &&
+                                (selectedMaterialType === "file" ||
+                                    selectedMaterialType === "slide") && (
+                                    <FileUploadForm
+                                        materialType={selectedMaterialType}
+                                        selectedFile={selectedFile}
+                                        onFileChange={handleFileChange}
+                                    />
+                                )}
+
+                            {/* 2D Render placeholder */}
+                            {!aiPreviewMaterial && selectedMaterialType === "2d_render" && <Render2DForm />}
+
+                            {/* Quiz Creation */}
+                            {selectedMaterialType === "quiz" && (
+                                <QuizForm
+                                    quizType={selectedQuizType}
+                                    onQuizTypeChange={setSelectedQuizType}
+                                    quizTitle={quizTitle}
+                                    onQuizTitleChange={setQuizTitle}
+                                    quizStartDate={quizStartDate}
+                                    onQuizStartDateChange={setQuizStartDate}
+                                    quizEndDate={quizEndDate}
+                                    onQuizEndDateChange={setQuizEndDate}
+                                    maxAttempts={maxAttempts}
+                                    onMaxAttemptsChange={setMaxAttempts}
+                                    questions={quizQuestions}
+                                    onQuestionsChange={setQuizQuestions}
                                 />
                             )}
-
-                        {/* 2D Render placeholder */}
-                        {!aiPreviewMaterial && selectedMaterialType === "2d_render" && <Render2DForm />}
-
-                        {/* Quiz Creation */}
-                        {selectedMaterialType === "quiz" && (
-                            <QuizForm
-                                quizType={selectedQuizType}
-                                onQuizTypeChange={setSelectedQuizType}
-                                quizTitle={quizTitle}
-                                onQuizTitleChange={setQuizTitle}
-                                quizStartDate={quizStartDate}
-                                onQuizStartDateChange={setQuizStartDate}
-                                quizEndDate={quizEndDate}
-                                onQuizEndDateChange={setQuizEndDate}
-                                maxAttempts={maxAttempts}
-                                onMaxAttemptsChange={setMaxAttempts}
-                                questions={quizQuestions}
-                                onQuestionsChange={setQuizQuestions}
-                            />
-                        )}
+                        </Box>
                     </Stack>
 
                     <Stack

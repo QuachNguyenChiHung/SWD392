@@ -23,7 +23,6 @@ import FileUploadForm from "./createMaterial/FileUploadForm";
 import Render2DForm from "./createMaterial/Render2DForm";
 import QuizForm from "./createMaterial/QuizForm";
 import {
-  sectionTitle,
   COLORS,
   RADIUS,
 } from "../pages/teacher/teacherStyles";
@@ -147,100 +146,132 @@ export default function MaterialForm({
   const inputSx = {
     "& .MuiOutlinedInput-root": {
       borderRadius: RADIUS,
+      bgcolor: "#FBFDFF",
+      "& fieldset": {
+        borderColor: COLORS.border,
+      },
+      "&:hover fieldset": {
+        borderColor: COLORS.accent,
+      },
+      "&.Mui-focused fieldset": {
+        borderColor: COLORS.accent,
+      },
     },
+  };
+
+  const sectionBoxSx = {
+    p: 2,
+    border: `1px solid ${COLORS.border}`,
+    borderRadius: RADIUS,
+    bgcolor: "#fff",
+  };
+
+  const sectionHeadingSx = {
+    fontSize: "0.72rem",
+    fontWeight: 700,
+    textTransform: "uppercase",
+    letterSpacing: "0.1em",
+    color: COLORS.textSecondary,
+    mb: 1,
   };
 
   return (
     <Box>
       <Stack spacing={3}>
-        <TextField
-          label="Tên tài liệu"
-          value={formData.title}
-          onChange={(e) => updateFormData({ title: e.target.value })}
-          fullWidth
-          required
-          sx={inputSx}
-        />
-
-        {mode === "create" && (
-          <>
-            <FormControl fullWidth>
-              <InputLabel>Loại tài liệu</InputLabel>
-              <Select
-                value={formData.materialType}
-                onChange={(e) =>
-                  updateFormData({
-                    materialType: e.target.value as ClassMaterialType,
-                  })
-                }
-                label="Loại tài liệu"
-                sx={inputSx}
-              >
-                <MenuItem value="file">Tệp tin (PDF, DOC, etc.)</MenuItem>
-                <MenuItem value="slide">Slide thuyết trình</MenuItem>
-                <MenuItem value="2d_render">Mô hình hóa 2D</MenuItem>
-                <MenuItem value="quiz">Bài kiểm tra</MenuItem>
-              </Select>
-            </FormControl>
-          </>
-        )}
-
-        {mode === "edit" && (
-          <>
+        <Box sx={sectionBoxSx}>
+          <Typography sx={sectionHeadingSx}>Thông tin chung</Typography>
+          <Stack spacing={2}>
             <TextField
-              label="Số thứ tự"
-              type="number"
-              value={formData.orderNum}
-              onChange={(e) =>
-                updateFormData({ orderNum: Number(e.target.value) })
-              }
+              label="Tên tài liệu"
+              value={formData.title}
+              onChange={(e) => updateFormData({ title: e.target.value })}
               fullWidth
+              required
               sx={inputSx}
             />
 
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={formData.isAi}
-                  onChange={(e) => updateFormData({ isAi: e.target.checked })}
-                  sx={{
-                    "& .MuiSwitch-switchBase.Mui-checked": {
-                      color: COLORS.accent,
-                    },
-                    "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
-                      bgcolor: COLORS.accent,
-                    },
-                  }}
-                />
-              }
-              label={
-                <Typography sx={{ fontSize: "0.85rem", fontWeight: 600, color: COLORS.textDark }}>
-                  Tài liệu do AI tạo
-                </Typography>
-              }
-            />
+            {mode === "create" && (
+              <FormControl fullWidth>
+                <InputLabel>Loại tài liệu</InputLabel>
+                <Select
+                  value={formData.materialType}
+                  onChange={(e) =>
+                    updateFormData({
+                      materialType: e.target.value as ClassMaterialType,
+                    })
+                  }
+                  label="Loại tài liệu"
+                  sx={inputSx}
+                >
+                  <MenuItem value="file">Tệp tin (PDF, DOC, etc.)</MenuItem>
+                  <MenuItem value="slide">Slide thuyết trình</MenuItem>
+                  <MenuItem value="2d_render">Mô hình hóa 2D</MenuItem>
+                  <MenuItem value="quiz">Bài kiểm tra</MenuItem>
+                </Select>
+              </FormControl>
+            )}
 
-            <FormControl fullWidth>
-              <InputLabel>Trạng thái tài liệu</InputLabel>
-              <Select
-                value={formData.classMaterialStatus}
-                onChange={(e) =>
-                  updateFormData({
-                    classMaterialStatus: e.target.value as
-                      | "published"
-                      | "draft"
-                      | "deleted",
-                  })
-                }
-                label="Trạng thái tài liệu"
-                sx={inputSx}
-              >
-                <MenuItem value="draft">Bản nháp</MenuItem>
-                <MenuItem value="published">Xuất bản</MenuItem>
-              </Select>
-            </FormControl>
-          </>
-        )}
+            {mode === "edit" && (
+              <>
+                <TextField
+                  label="Số thứ tự"
+                  type="number"
+                  value={formData.orderNum}
+                  onChange={(e) =>
+                    updateFormData({ orderNum: Number(e.target.value) })
+                  }
+                  fullWidth
+                  sx={inputSx}
+                />
+
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={formData.isAi}
+                      onChange={(e) => updateFormData({ isAi: e.target.checked })}
+                      sx={{
+                        "& .MuiSwitch-switchBase.Mui-checked": {
+                          color: COLORS.accent,
+                        },
+                        "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
+                          bgcolor: COLORS.accent,
+                        },
+                      }}
+                    />
+                  }
+                  label={
+                    <Typography sx={{ fontSize: "0.85rem", fontWeight: 600, color: COLORS.textDark }}>
+                      Tài liệu do AI tạo
+                    </Typography>
+                  }
+                />
+
+                <FormControl fullWidth>
+                  <InputLabel>Trạng thái tài liệu</InputLabel>
+                  <Select
+                    value={formData.classMaterialStatus}
+                    onChange={(e) =>
+                      updateFormData({
+                        classMaterialStatus: e.target.value as
+                          | "published"
+                          | "draft"
+                          | "deleted",
+                      })
+                    }
+                    label="Trạng thái tài liệu"
+                    sx={inputSx}
+                  >
+                    <MenuItem value="draft">Bản nháp</MenuItem>
+                    <MenuItem value="published">Xuất bản</MenuItem>
+                  </Select>
+                </FormControl>
+              </>
+            )}
+          </Stack>
+        </Box>
+
+        <Box sx={sectionBoxSx}>
+          <Typography sx={sectionHeadingSx}>Nội dung tài liệu</Typography>
 
         {/* File Upload for File and Slide types */}
         {(formData.materialType === "file" ||
@@ -351,6 +382,7 @@ export default function MaterialForm({
             />
           </Stack>
         )}
+        </Box>
       </Stack>
     </Box>
   );

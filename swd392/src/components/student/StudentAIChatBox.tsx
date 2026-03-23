@@ -5,8 +5,6 @@ import {
 } from '@mui/material';
 import { Send, SmartToy, Person, AutoAwesome } from '@mui/icons-material';
 import { apiService } from '../../services/api';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 
 interface Message {
   id: string;
@@ -120,8 +118,16 @@ export default function StudentAIChat() {
                       borderBottomLeftRadius: msg.role === 'assistant' ? 4 : 12,
                     }}
                   >
-                    <Typography variant="body2" sx={{ lineHeight: 1.5, fontSize: '0.8rem' }} component="div">
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        lineHeight: 1.5,
+                        fontSize: '0.8rem',
+                        whiteSpace: 'pre-wrap',
+                        wordBreak: 'break-word',
+                      }}
+                    >
+                      {msg.content}
                     </Typography>
                   </Paper>
                   <Typography variant="caption" color="text.disabled" sx={{ display: 'block', mt: 0.25, fontSize: '0.65rem', textAlign: msg.role === 'user' ? 'right' : 'left' }}>

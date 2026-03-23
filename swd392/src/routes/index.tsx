@@ -19,6 +19,7 @@ const StudentClasses = lazy(() => import("../pages/student/StudentClasses"));
 const StudentQuizzes = lazy(() => import("../pages/student/StudentQuizzes"));
 const StudentClassDetail = lazy(() => import("../pages/student/StudentClassDetail"));
 const QuizResultView = lazy(() => import("../pages/student/QuizResultView"));
+const StudentAIHistory = lazy(() => import("../pages/student/StudentAIHistory"));
 const QuizTakingInterface = lazy(() => import("../components/student/quizTakingInterface"));
 
 const TeacherDashboard = lazy(() => import("../pages/teacher/TeacherDashboard"));
@@ -27,6 +28,7 @@ const TeacherProfilePage = lazy(() => import("../pages/teacher/teacherProfile"))
 const TeacherClassDetail = lazy(() => import("../pages/teacher/teacherClassDetail"));
 const MaterialDetailPage = lazy(() => import("../pages/teacher/MaterialDetailPage"));
 const AiContentGenerator = lazy(() => import("../pages/teacher/aiContentGenerator"));
+const TeacherAIHistory = lazy(() => import("../pages/teacher/TeacherAIHistory"));
 
 const ModeratorDashboard = lazy(() => import("../pages/moderator/ModeratorDashboard"));
 const ModeratorFlaggedMaterialPage = lazy(() => import("../pages/moderator/ModeratorFlaggedMaterialPage"));
@@ -43,6 +45,7 @@ const AdminCourses = lazy(() => import("../pages/admin/AdminCourses"));
 const AdminClasses = lazy(() => import("../pages/admin/AdminClasses"));
 const AdminMaterials = lazy(() => import("../pages/admin/AdminMaterials"));
 const AdminSystemManagement = lazy(() => import("../pages/admin/AdminSystemManagement"));
+const AdminAIHistory = lazy(() => import("../pages/admin/AdminAIHistory"));
 
 const HomePage = lazy(() => import("../pages/HomePage"));
 
@@ -110,6 +113,14 @@ export const routes: RouteObject[] = [
             ),
           },
           {
+            path: "ai-history",
+            element: (
+              <ProtectedRoute allowedRoles={[UserRole.STUDENT]}>
+                <StudentAIHistory />
+              </ProtectedRoute>
+            ),
+          },
+          {
             path: "class/:classId",
             element: (
               <ProtectedRoute allowedRoles={[UserRole.STUDENT]}>
@@ -161,6 +172,14 @@ export const routes: RouteObject[] = [
             element: (
               <ProtectedRoute allowedRoles={[UserRole.TEACHER]}>
                 <TeacherProfilePage />
+              </ProtectedRoute>
+            ),
+          },
+          {
+            path: "ai-history",
+            element: (
+              <ProtectedRoute allowedRoles={[UserRole.TEACHER]}>
+                <TeacherAIHistory />
               </ProtectedRoute>
             ),
           },
@@ -319,6 +338,14 @@ export const routes: RouteObject[] = [
             element: (
               <ProtectedRoute allowedRoles={[UserRole.ADMIN]}>
                 <AdminSystemManagement />
+              </ProtectedRoute>
+            ),
+          },
+          {
+            path: "ai-history",
+            element: (
+              <ProtectedRoute allowedRoles={[UserRole.ADMIN]}>
+                <AdminAIHistory />
               </ProtectedRoute>
             ),
           },
