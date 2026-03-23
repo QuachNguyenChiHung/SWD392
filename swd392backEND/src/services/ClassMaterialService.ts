@@ -159,7 +159,7 @@ class ClassMaterialService {
     async flagMaterial(id: string) {
         const material = await ClassMaterialRepo.getClassMaterialById(id);
         if (!material) return { error: "Class material not found" };
-        if (material.status !== 'reviewed') return { error: "Only reviewed materials can be flagged" };
+        if (material.status !== 'published') return { error: "Only published materials can be flagged" };
         if (!material.isFlaggable) return { error: "Material cannot be flagged" };
         if (material.isFlagged) return { error: "Material is already flagged" };
 
