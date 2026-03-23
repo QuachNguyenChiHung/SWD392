@@ -261,7 +261,7 @@ class UserController {
       res.cookie("Authorization", `Bearer ${token}`, {
         expires: new Date(Date.now() + 3600000),
         httpOnly: true,
-        sameSite: "lax",
+        sameSite: "none",
         secure:true,
         signed: true,
       });
@@ -280,7 +280,8 @@ class UserController {
       res.cookie("Authorization", `Bearer ${token}`, {
         expires: new Date(Date.now() + 3600000),
         httpOnly: true,
-        sameSite: "lax",
+                secure:true,
+        sameSite: "none",
         signed: true,
       });
 
