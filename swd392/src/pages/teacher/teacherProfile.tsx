@@ -15,6 +15,18 @@ import { Visibility, VisibilityOff } from "@mui/icons-material";
 import teacherProfileApi, {
     type TeacherProfileResponse,
 } from "../../services/teacherApi/teacherProfileApi";
+import {
+    pageTitle,
+    pageSubtitle,
+    sectionLabel,
+    sectionTitle,
+    flatCard,
+    flatButtonContained,
+    flatButtonOutlined,
+    loadingContainer,
+    COLORS,
+    RADIUS,
+} from "./teacherStyles";
 
 const PASSWORD_REGEX = /^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{10,}$/;
 
@@ -78,79 +90,134 @@ const TeacherProfilePage = () => {
 
     if (loading) {
         return (
-            <Box display="flex" justifyContent="center" alignItems="center" minHeight={300}>
-                <CircularProgress />
+            <Box sx={loadingContainer}>
+                <CircularProgress sx={{ color: COLORS.accent }} />
             </Box>
         );
     }
 
+    const fieldRow = (label: string, value: string) => (
+        <Box
+            sx={{
+                display: "flex",
+                py: 1.25,
+                borderBottom: `1px solid ${COLORS.borderLight}`,
+                "&:last-child": { borderBottom: "none" },
+            }}
+        >
+            <Typography
+                sx={{
+                    width: 140,
+                    flexShrink: 0,
+                    fontWeight: 700,
+                    fontSize: "0.7rem",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.08em",
+                    color: COLORS.textSecondary,
+                    pt: 0.25,
+                }}
+            >
+                {label}
+            </Typography>
+            <Typography sx={{ fontSize: "0.9rem", color: COLORS.textDark }}>
+                {value || "—"}
+            </Typography>
+        </Box>
+    );
+
     return (
         <Box>
-            <Typography variant="h4" gutterBottom fontWeight="bold">
-                Hồ sơ giáo viên
-            </Typography>
-            <Typography variant="body1" color="text.secondary" paragraph>
-                Thông tin người dùng và thực thể giáo viên
-            </Typography>
-            {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-            {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
+            {/* ── Page Header ── */}
+            <Box sx={{ mb: 4 }}>
+                <Typography sx={sectionLabel}>Profile</Typography>
+                <Typography sx={pageTitle}>Hồ sơ giáo viên</Typography>
+                <Typography sx={pageSubtitle}>
+                    Thông tin người dùng và thực thể giáo viên
+                </Typography>
+            </Box>
+
+            {error && (
+                <Alert
+                    severity="error"
+                    sx={{
+                        mb: 2,
+                        borderRadius: RADIUS,
+                        border: `1px solid ${COLORS.error}`,
+                        boxShadow: "none",
+                    }}
+                >
+                    {error}
+                </Alert>
+            )}
+            {success && (
+                <Alert
+                    severity="success"
+                    sx={{
+                        mb: 2,
+                        borderRadius: RADIUS,
+                        border: `1px solid ${COLORS.success}`,
+                        boxShadow: "none",
+                    }}
+                >
+                    {success}
+                </Alert>
+            )}
 
             {!profile ? (
-                <Paper sx={{ p: 3 }}>
-                    <Typography variant="body2" color="text.secondary">
+                <Paper elevation={0} sx={flatCard}>
+                    <Typography variant="body2" sx={{ color: COLORS.textSecondary }}>
                         Không có dữ liệu hồ sơ.
                     </Typography>
                 </Paper>
             ) : (
                 <Stack spacing={3}>
-                    <Paper sx={{ p: 3 }}>
-                        <Typography variant="h6" gutterBottom>
-                            User
-                        </Typography>
-                        <Stack spacing={1}>
-                            <Typography><strong>ID:</strong> {profile.user._id || profile.user.id || "-"}</Typography>
-                            <Typography><strong>Username:</strong> {profile.user.username}</Typography>
-                            <Typography><strong>Email:</strong> {profile.user.email}</Typography>
-                            <Typography><strong>Role:</strong> {profile.user.role}</Typography>
-                            <Typography><strong>Status:</strong> {profile.user.status}</Typography>
-                            <Typography>
-                                <strong>Created:</strong>{" "}
-                                {profile.user.date_create
+                    {/* User Info */}
+                    <Paper elevation={0} sx={flatCard}>
+                        <Typography sx={sectionTitle}>User</Typography>
+                        <Box>
+                            {fieldRow("ID", profile.user._id || profile.user.id || "—")}
+                            {fieldRow("Username", profile.user.username)}
+                            {fieldRow("Email", profile.user.email)}
+                            {fieldRow("Role", profile.user.role)}
+                            {fieldRow("Status", profile.user.status)}
+                            {fieldRow(
+                                "Created",
+                                profile.user.date_create
                                     ? new Date(profile.user.date_create).toLocaleString("vi-VN")
-                                    : "-"}
-                            </Typography>
-                        </Stack>
-                    </Paper>
-
-                    <Paper sx={{ p: 3 }}>
-                        <Typography variant="h6" gutterBottom>
-                            Teacher
-                        </Typography>
-                        <Stack spacing={1}>
-                            <Typography><strong>Credential file:</strong> {profile.teacher.fileName || "-"}</Typography>
-                            {profile.teacher.credential ? (
-                                <Button
-                                    variant="outlined"
-                                    size="small"
-                                    href={profile.teacher.credential}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    sx={{ alignSelf: "flex-start" }}
-                                >
-                                    Xem credential
-                                </Button>
-                            ) : (
-                                <Typography><strong>Credential link:</strong> -</Typography>
+                                    : "—",
                             )}
-                        </Stack>
+                        </Box>
                     </Paper>
 
-                    <Paper sx={{ p: 3 }}>
-                        <Typography variant="h6" gutterBottom>
-                            Password
-                        </Typography>
+                    {/* Teacher Info */}
+                    <Paper elevation={0} sx={flatCard}>
+                        <Typography sx={sectionTitle}>Teacher</Typography>
+                        <Box>
+                            {fieldRow("Credential file", profile.teacher.fileName || "—")}
+                            {profile.teacher.credential ? (
+                                <Box sx={{ mt: 1 }}>
+                                    <Button
+                                        variant="outlined"
+                                        size="small"
+                                        href={profile.teacher.credential}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        sx={flatButtonOutlined}
+                                    >
+                                        Xem credential
+                                    </Button>
+                                </Box>
+                            ) : (
+                                fieldRow("Credential link", "—")
+                            )}
+                        </Box>
+                    </Paper>
+
+                    {/* Password */}
+                    <Paper elevation={0} sx={flatCard}>
+                        <Typography sx={sectionTitle}>Password</Typography>
                         <Stack spacing={2}>
-                            <Typography variant="body2" color="text.secondary">
+                            <Typography variant="body2" sx={{ color: COLORS.textSecondary }}>
                                 Mật khẩu hiện tại không thể hiển thị vì lý do bảo mật.
                             </Typography>
                             <TextField
@@ -169,12 +236,18 @@ const TeacherProfilePage = () => {
                                         ? (passwordValidationError || "")
                                         : "Ít nhất 10 ký tự, gồm chữ in hoa, số và ký tự đặc biệt"
                                 }
+                                sx={{
+                                    "& .MuiOutlinedInput-root": {
+                                        borderRadius: RADIUS,
+                                    },
+                                }}
                                 InputProps={{
                                     endAdornment: (
                                         <InputAdornment position="end">
                                             <IconButton
                                                 onClick={() => setShowPassword((prev) => !prev)}
                                                 edge="end"
+                                                sx={{ color: COLORS.textSecondary }}
                                             >
                                                 {showPassword ? <VisibilityOff /> : <Visibility />}
                                             </IconButton>
@@ -186,7 +259,7 @@ const TeacherProfilePage = () => {
                                 variant="contained"
                                 onClick={handleUpdatePassword}
                                 disabled={isUpdatingPassword}
-                                sx={{ alignSelf: "flex-start" }}
+                                sx={{ ...flatButtonContained, alignSelf: "flex-start" }}
                             >
                                 {isUpdatingPassword ? "Đang cập nhật..." : "Cập nhật mật khẩu"}
                             </Button>

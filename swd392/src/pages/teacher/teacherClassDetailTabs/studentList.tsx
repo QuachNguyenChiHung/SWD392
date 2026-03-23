@@ -19,6 +19,17 @@ import { type Student, type Class } from "../../../types/teacherType";
 import { useState, useEffect } from "react";
 import { enrollStudentApi } from "../../../services/teacherApi/enrollStudentApi";
 import StudentProgress from "./studentProgress";
+import {
+  sectionTitle,
+  flatCard,
+  flatButtonContained,
+  flatButtonOutlined,
+  tableContainer,
+  tableHeadRow,
+  tableBodyRow,
+  COLORS,
+  RADIUS,
+} from "../teacherStyles";
 
 interface StudentListProp {
   students: Student[];
@@ -110,14 +121,13 @@ export default function StudentList({ students, classData }: StudentListProp) {
 
   return (
     <Stack spacing={3}>
-      <Paper sx={{ p: 3 }}>
-        <Typography variant="h6" gutterBottom>Key pass: {classData.keypass}</Typography>
-        <Divider sx={{ mb: 2 }} />
-        <Stack
-          direction="row"
-          alignItems="center"
-          spacing={2}
-        >
+      {/* ── Add Students ── */}
+      <Paper elevation={0} sx={flatCard}>
+        <Typography sx={sectionTitle}>
+          Key pass: {classData.keypass}
+        </Typography>
+        <Divider sx={{ mb: 2, borderColor: COLORS.borderLight }} />
+        <Stack direction="row" alignItems="center" spacing={2}>
           <Autocomplete
             multiple
             freeSolo
@@ -126,14 +136,23 @@ export default function StudentList({ students, classData }: StudentListProp) {
             value={addStudentList}
             onChange={(_, value) => setAddStudentList(value as string[])}
             renderInput={(params) => (
-              <TextField {...params} label="Enter Student ID" size="small" />
+              <TextField
+                {...params}
+                label="Enter Student ID"
+                size="small"
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    borderRadius: RADIUS,
+                  },
+                }}
+              />
             )}
           />
           <Button
             variant="contained"
             startIcon={<Add />}
             size="small"
-            sx={{ height: "40px", minHeight: "40px", whiteSpace: "nowrap" }}
+            sx={{ ...flatButtonContained, height: "40px", minHeight: "40px", whiteSpace: "nowrap" }}
             onClick={handleInviteStudents}
             disabled={inviteLoading || addStudentList.length === 0}
           >
@@ -142,9 +161,10 @@ export default function StudentList({ students, classData }: StudentListProp) {
         </Stack>
       </Paper>
 
-      <Paper sx={{ p: 3 }}>
-        <Typography variant="h6" gutterBottom>Student List</Typography>
-        <Divider sx={{ mb: 2 }} />
+      {/* ── Student Table ── */}
+      <Paper elevation={0} sx={flatCard}>
+        <Typography sx={sectionTitle}>Student List</Typography>
+        <Divider sx={{ mb: 2, borderColor: COLORS.borderLight }} />
         <Autocomplete
           options={students}
           getOptionLabel={(option) => option.username}
@@ -152,14 +172,23 @@ export default function StudentList({ students, classData }: StudentListProp) {
           value={studentSearch}
           onChange={(_, value) => setStudentSearch(value)}
           renderInput={(params) => (
-            <TextField {...params} label="Find Student" size="small" />
+            <TextField
+              {...params}
+              label="Find Student"
+              size="small"
+              sx={{
+                "& .MuiOutlinedInput-root": {
+                  borderRadius: RADIUS,
+                },
+              }}
+            />
           )}
         />
 
-        <TableContainer>
+        <TableContainer sx={tableContainer}>
           <Table>
             <TableHead>
-              <TableRow>
+              <TableRow sx={tableHeadRow}>
                 <TableCell>Index</TableCell>
                 <TableCell>Student ID</TableCell>
                 <TableCell>Name</TableCell>
@@ -173,8 +202,10 @@ export default function StudentList({ students, classData }: StudentListProp) {
             <TableBody>
               {filteredEnrollments.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} align="center">
-                    No students exist
+                  <TableCell colSpan={7} align="center" sx={{ py: 4, border: "none" }}>
+                    <Typography sx={{ color: COLORS.textSecondary }}>
+                      No students exist
+                    </Typography>
                   </TableCell>
                 </TableRow>
               ) : (
@@ -188,12 +219,21 @@ export default function StudentList({ students, classData }: StudentListProp) {
                   return (
                     <TableRow
                       key={enrollment._id}
-                      hover
                       onClick={() => setSelectedEnrollment(selectedEnrollment?._id === enrollment._id ? null : enrollment)}
-                      sx={{ cursor: "pointer", bgcolor: selectedEnrollment?._id === enrollment._id ? "action.selected" : undefined }}
+                      sx={{
+                        ...tableBodyRow,
+                        cursor: "pointer",
+                        bgcolor: selectedEnrollment?._id === enrollment._id
+                          ? COLORS.accentLight
+                          : undefined,
+                      }}
                     >
                       <TableCell>{index + 1}</TableCell>
-                      <TableCell>{studentId}</TableCell>
+                      <TableCell>
+                        <Typography sx={{ fontFamily: "monospace", fontSize: "0.8rem" }}>
+                          {studentId}
+                        </Typography>
+                      </TableCell>
                       <TableCell>{student?.username || "N/A"}</TableCell>
                       <TableCell>{student?.email || "N/A"}</TableCell>
                       <TableCell>
@@ -202,18 +242,49 @@ export default function StudentList({ students, classData }: StudentListProp) {
                           : "N/A"}
                       </TableCell>
                       <TableCell>
-                        {enrollmentStatus || "N/A"}
+                        <Typography
+                          sx={{
+                            fontSize: "0.75rem",
+                            fontWeight: 600,
+                            textTransform: "uppercase",
+                            letterSpacing: "0.05em",
+                            color:
+                              enrollmentStatus === "completed" || enrollmentStatus === "complete"
+                                ? COLORS.success
+                                : enrollmentStatus === "active"
+                                  ? COLORS.accent
+                                  : COLORS.textSecondary,
+                          }}
+                        >
+                          {enrollmentStatus || "N/A"}
+                        </Typography>
                       </TableCell>
                       <TableCell align="center">
                         <Box display="flex" justifyContent="center" alignItems="center" gap={1}>
-                          <Button color="error" size="small" sx={{ minWidth: 80, fontWeight: 500 }}>
+                          <Button
+                            color="error"
+                            size="small"
+                            sx={{
+                              ...flatButtonOutlined,
+                              minWidth: 80,
+                              borderColor: COLORS.error,
+                              color: COLORS.error,
+                              "&:hover": {
+                                bgcolor: COLORS.errorBg,
+                                borderColor: COLORS.error,
+                                boxShadow: "none",
+                              },
+                            }}
+                          >
                             REMOVE
                           </Button>
                           {enrollment?._id && (
                             <Button
-                              color="primary"
                               size="small"
-                              sx={{ minWidth: 90, fontWeight: 500 }}
+                              sx={{
+                                ...flatButtonContained,
+                                minWidth: 90,
+                              }}
                               disabled={completeLoading === enrollment._id || (enrollmentStatus === 'completed' || enrollmentStatus === 'complete')}
                               onClick={e => {
                                 e.stopPropagation();
@@ -233,12 +304,13 @@ export default function StudentList({ students, classData }: StudentListProp) {
           </Table>
         </TableContainer>
 
-
-        <Stack direction="row" spacing={2} justifyContent="flex-end" alignItems="center" sx={{ mt: 2 }} paddingBottom={1} paddingRight={1}>
+        {/* Pagination */}
+        <Stack direction="row" spacing={2} justifyContent="flex-end" alignItems="center" sx={{ mt: 2, pb: 1, pr: 1 }}>
           <Button
             variant="outlined"
             disabled={page === 1}
             onClick={() => setPage(page - 1)}
+            sx={flatButtonOutlined}
           >
             Trang trước
           </Button>
@@ -249,6 +321,7 @@ export default function StudentList({ students, classData }: StudentListProp) {
               setEnrollmentsPage(nextEnrollmentsPage);
               setPage(page + 1);
             }}
+            sx={flatButtonOutlined}
           >
             Trang sau
           </Button>
@@ -262,8 +335,8 @@ export default function StudentList({ students, classData }: StudentListProp) {
         />
       )}
       {selectedEnrollment && !enrollLoading && (!selectedEnrollment.student_id || typeof selectedEnrollment.student_id !== "object") && (
-        <Paper sx={{ p: 3 }}>
-          <Typography align="center" color="text.secondary">
+        <Paper elevation={0} sx={flatCard}>
+          <Typography align="center" sx={{ color: COLORS.textSecondary }}>
             No enrollment found for this student
           </Typography>
         </Paper>

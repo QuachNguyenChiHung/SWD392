@@ -1,4 +1,11 @@
 import { Box, Paper, Typography } from "@mui/material";
+import {
+  flatCard,
+  statValue,
+  statLabel,
+  COLORS,
+  RADIUS,
+} from "../../pages/teacher/teacherStyles";
 
 type CourseProgressCardProps = {
   name: string;
@@ -18,34 +25,58 @@ const CourseProgressCard = ({
 
   return (
     <Paper
-      variant="outlined"
+      elevation={0}
       onClick={onClick}
       sx={{
-        p: 2,
-        height: "100%",
-        scrollSnapAlign: "start",
+        ...flatCard,
         cursor: onClick ? "pointer" : "default",
         "&:hover": onClick
-          ? {
-            backgroundColor: "action.hover",
-          }
+          ? { borderColor: COLORS.accent }
           : {},
+        transition: "border-color 0.15s ease",
       }}
     >
-      <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+      <Typography sx={statLabel} gutterBottom>
         {name}
       </Typography>
-      <Typography variant="h4" fontWeight={700}>
+      <Typography sx={statValue}>
         {completed}
       </Typography>
-      <Typography variant="body2" color="text.secondary">
+      <Typography
+        variant="body2"
+        sx={{ color: COLORS.textSecondary, mt: 0.5 }}
+      >
         of {total} students finished
       </Typography>
-      <Box mt={1}>
-        <Typography variant="caption" color="text.secondary">
-          {completionRate}% completion
-        </Typography>
+      <Box
+        sx={{
+          mt: 1.5,
+          height: 3,
+          bgcolor: COLORS.borderLight,
+          borderRadius: RADIUS,
+          overflow: "hidden",
+        }}
+      >
+        <Box
+          sx={{
+            height: "100%",
+            width: `${completionRate}%`,
+            bgcolor: COLORS.accent,
+            transition: "width 0.3s ease",
+          }}
+        />
       </Box>
+      <Typography
+        sx={{
+          fontSize: "0.7rem",
+          fontWeight: 600,
+          color: COLORS.textSecondary,
+          mt: 0.5,
+          letterSpacing: "0.05em",
+        }}
+      >
+        {completionRate}%
+      </Typography>
     </Paper>
   );
 };

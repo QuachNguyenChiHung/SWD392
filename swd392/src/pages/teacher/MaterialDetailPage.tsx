@@ -35,43 +35,49 @@ import { quizApiService } from "../../services/teacherApi/materialApi/quizApi";
 import { questionApiService } from "../../services/teacherApi/materialApi/questionApi";
 import classMaterialApi from "../../services/teacherApi/classMaterialApi";
 import { slideApiService } from "../../services/teacherApi/materialApi";
+import {
+    pageTitle,
+    sectionLabel,
+    flatCard,
+    flatButtonContained,
+    flatButtonOutlined,
+    flatChip,
+    statusColors,
+    loadingContainer,
+    COLORS,
+    RADIUS,
+} from "./teacherStyles";
 
 // ─── Type helpers ──────────────────────────────────────────────────────────────
 
 const TYPE_META: Record<
     ClassMaterialType,
-    { label: string; color: "default" | "primary" | "secondary" | "error" | "info" | "success" | "warning"; icon: ReactElement }
+    { label: string; bg: string; text: string; icon: ReactElement }
 > = {
     file: {
         label: "File",
-        color: "info",
+        bg: COLORS.infoBg,
+        text: COLORS.info,
         icon: <Description fontSize="small" />,
     },
     slide: {
         label: "Slide",
-        color: "primary",
+        bg: COLORS.accentLight,
+        text: COLORS.accent,
         icon: <Slideshow fontSize="small" />,
     },
     "2d_render": {
         label: "2D Render",
-        color: "secondary",
+        bg: "#F5F3FF",
+        text: "#7C3AED",
         icon: <ViewInAr fontSize="small" />,
     },
     quiz: {
         label: "Quiz",
-        color: "warning",
+        bg: COLORS.warningBg,
+        text: COLORS.warning,
         icon: <Quiz fontSize="small" />,
     },
-};
-
-const STATUS_META: Record<
-    "published" | "draft" | "reviewed" | "deleted",
-    { label: string; color: "default" | "primary" | "secondary" | "error" | "info" | "success" | "warning" }
-> = {
-    deleted: { label: "Đã xoá", color: "error" },
-    draft: { label: "Bản nháp", color: "secondary" },
-    reviewed: { label: "Đã duyệt", color: "info" },
-    published: { label: "Đã xuất bản", color: "success" },
 };
 
 const formatDate = (d: Date | null | undefined) => {
@@ -149,22 +155,30 @@ export default function MaterialDetailPage() {
 
     if (loading) {
         return (
-            <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
-                <CircularProgress />
+            <Box sx={loadingContainer}>
+                <CircularProgress sx={{ color: COLORS.accent }} />
             </Box>
         );
     }
 
     if (error) {
         return (
-            <Box p={4}>
-                <Alert severity="error" sx={{ mb: 2 }}>
+            <Box>
+                <Alert
+                    severity="error"
+                    sx={{
+                        mb: 2,
+                        borderRadius: RADIUS,
+                        border: `1px solid ${COLORS.error}`,
+                        boxShadow: "none",
+                    }}
+                >
                     {error}
                 </Alert>
                 <Button
                     startIcon={<ArrowBack />}
                     onClick={() => navigate(`/teacher/class/${classId}`)}
-                    variant="outlined"
+                    sx={flatButtonOutlined}
                 >
                     Quay lại lớp học
                 </Button>
@@ -175,14 +189,22 @@ export default function MaterialDetailPage() {
     // Material not found
     if (!material) {
         return (
-            <Box p={4}>
-                <Alert severity="warning" sx={{ mb: 2 }}>
+            <Box>
+                <Alert
+                    severity="warning"
+                    sx={{
+                        mb: 2,
+                        borderRadius: RADIUS,
+                        border: `1px solid ${COLORS.warning}`,
+                        boxShadow: "none",
+                    }}
+                >
                     Không tìm thấy tài liệu
                 </Alert>
                 <Button
                     startIcon={<ArrowBack />}
                     onClick={() => navigate(`/teacher/class/${classId}`)}
-                    variant="outlined"
+                    sx={flatButtonOutlined}
                 >
                     Quay lại lớp học
                 </Button>
@@ -191,7 +213,8 @@ export default function MaterialDetailPage() {
     }
 
     const meta = TYPE_META[material.type];
-    const statusMeta = STATUS_META[material.status as keyof typeof STATUS_META];
+    const statusKey = material.status as keyof typeof statusColors;
+    const sColors = statusColors[statusKey] || { bg: COLORS.bg, text: COLORS.textSecondary };
 
     // ─── Handlers ────────────────────────────────────────────────────────────────
 
@@ -199,7 +222,6 @@ export default function MaterialDetailPage() {
         try {
             if (!materialId) return;
 
-            // Extract content_id from the updated content
             let contentId: string | undefined;
             if (updated.content && typeof updated.content === 'object' && '_id' in updated.content) {
                 contentId = (updated.content as any)._id;
@@ -211,7 +233,7 @@ export default function MaterialDetailPage() {
                 status: updated.status,
                 order_num: updated.order_num,
                 is_ai_material: updated.is_ai_material,
-                content_id: contentId, // Pass the updated content_id
+                content_id: contentId,
             });
 
             setMaterial(updated);
@@ -226,7 +248,6 @@ export default function MaterialDetailPage() {
         if (!material || !materialId) return;
 
         try {
-            // Update local state optimistically
             const updatedMaterial = {
                 ...material,
                 dateUpdate: new Date(),
@@ -237,10 +258,8 @@ export default function MaterialDetailPage() {
             };
 
             setMaterial(updatedMaterial);
-            // TODO: Persist question changes via a dedicated quiz/question API endpoint
         } catch (error) {
             console.error('Error updating quiz questions:', error);
-            // Revert the local state change on error
             setMaterial(material);
             alert('Có lỗi xảy ra khi cập nhật câu hỏi');
         }
@@ -268,7 +287,15 @@ export default function MaterialDetailPage() {
                 <Button
                     startIcon={<ArrowBack />}
                     onClick={() => navigate(`/teacher/class/${classId}`)}
-                    variant="text"
+                    sx={{
+                        ...flatButtonOutlined,
+                        borderColor: "transparent",
+                        "&:hover": {
+                            borderColor: COLORS.border,
+                            bgcolor: COLORS.accentLight,
+                            boxShadow: "none",
+                        },
+                    }}
                 >
                     Quay lại lớp học
                 </Button>
@@ -277,14 +304,24 @@ export default function MaterialDetailPage() {
                         variant="outlined"
                         startIcon={<Edit />}
                         onClick={() => setEditOpen(true)}
+                        sx={flatButtonOutlined}
                     >
                         Cập nhật
                     </Button>
                     <Button
                         variant="outlined"
-                        color="error"
                         startIcon={<Delete />}
                         onClick={() => setDeleteConfirmOpen(true)}
+                        sx={{
+                            ...flatButtonOutlined,
+                            borderColor: COLORS.error,
+                            color: COLORS.error,
+                            "&:hover": {
+                                bgcolor: COLORS.errorBg,
+                                borderColor: COLORS.error,
+                                boxShadow: "none",
+                            },
+                        }}
                     >
                         Xoá
                     </Button>
@@ -292,44 +329,47 @@ export default function MaterialDetailPage() {
             </Stack>
 
             {/* ── Main card ── */}
-            <Paper sx={{ p: 4 }}>
+            <Paper elevation={0} sx={flatCard}>
+                {/* Section label */}
+                <Typography sx={sectionLabel}>Material Detail</Typography>
+
                 {/* Title row */}
                 <Stack direction="row" spacing={2} alignItems="center" mb={1}>
-                    {meta.icon}
-                    <Typography variant="h5" fontWeight={700}>
+                    <Box sx={{ color: meta.text }}>{meta.icon}</Box>
+                    <Typography sx={{ ...pageTitle, fontSize: "1.5rem" }}>
                         {material.title}
                     </Typography>
                     <Chip
                         label={meta.label}
-                        color={meta.color}
                         size="small"
                         icon={meta.icon}
+                        sx={flatChip(meta.bg, meta.text)}
                     />
-                    {statusMeta && (
+                    {sColors && (
                         <Chip
-                            label={material.is_ai_material ? `${statusMeta.label} · AI` : statusMeta.label}
-                            color={statusMeta.color}
+                            label={material.is_ai_material ? `${material.status} · AI` : material.status}
                             size="small"
                             icon={material.is_ai_material ? <SmartToy fontSize="small" /> : undefined}
+                            sx={flatChip(sColors.bg, sColors.text)}
                         />
                     )}
                 </Stack>
 
                 <Stack direction="row" spacing={3} mb={3}>
-                    <Typography variant="caption" color="text.secondary">
-                        Được tạo : {formatDate(material.dateCreate)}
+                    <Typography sx={{ fontSize: "0.75rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: COLORS.textSecondary }}>
+                        Được tạo: {formatDate(material.dateCreate)}
                     </Typography>
                     {material.dateUpdate && (
-                        <Typography variant="caption" color="text.secondary">
-                            Cập nhật lần cuối: {formatDate(material.dateUpdate)}
+                        <Typography sx={{ fontSize: "0.75rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: COLORS.textSecondary }}>
+                            Cập nhật: {formatDate(material.dateUpdate)}
                         </Typography>
                     )}
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography sx={{ fontSize: "0.75rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: COLORS.textSecondary }}>
                         Thứ tự #{material.order_num}
                     </Typography>
                 </Stack>
 
-                <Divider sx={{ mb: 3 }} />
+                <Divider sx={{ mb: 3, borderColor: COLORS.borderLight }} />
 
                 <MaterialTypeViewer
                     material={material}
@@ -346,16 +386,44 @@ export default function MaterialDetailPage() {
                 onSave={handleSave}
             />
 
-            <Dialog open={deleteConfirmOpen} onClose={() => setDeleteConfirmOpen(false)}>
-                <DialogTitle>Xoá tài liệu?</DialogTitle>
+            <Dialog
+                open={deleteConfirmOpen}
+                onClose={() => setDeleteConfirmOpen(false)}
+                PaperProps={{
+                    sx: {
+                        borderRadius: RADIUS,
+                        border: `1px solid ${COLORS.border}`,
+                        boxShadow: "none",
+                    },
+                }}
+            >
+                <DialogTitle sx={{ fontWeight: 700, fontSize: "1rem", color: COLORS.textDark }}>
+                    Xoá tài liệu?
+                </DialogTitle>
                 <DialogContent>
-                    <DialogContentText>
+                    <DialogContentText sx={{ color: COLORS.textSecondary }}>
                         Bạn có chắc chắn muốn xoá <strong>{material.title}</strong>? Hành động này không thể hoàn tác.
                     </DialogContentText>
                 </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setDeleteConfirmOpen(false)}>Huỷ</Button>
-                    <Button color="error" variant="contained" onClick={handleDelete}>
+                <DialogActions sx={{ px: 3, pb: 2 }}>
+                    <Button
+                        onClick={() => setDeleteConfirmOpen(false)}
+                        sx={flatButtonOutlined}
+                    >
+                        Huỷ
+                    </Button>
+                    <Button
+                        variant="contained"
+                        onClick={handleDelete}
+                        sx={{
+                            ...flatButtonContained,
+                            bgcolor: COLORS.error,
+                            "&:hover": {
+                                bgcolor: "#DC2626",
+                                boxShadow: "none",
+                            },
+                        }}
+                    >
                         Xoá
                     </Button>
                 </DialogActions>
