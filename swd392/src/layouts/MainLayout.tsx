@@ -30,6 +30,7 @@ import {
   Logout,
   Science,
   AdminPanelSettings,
+  History,
 } from '@mui/icons-material';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -66,11 +67,23 @@ const navItems: NavItem[] = [
     path: '/student/classes',
     roles: [UserRole.STUDENT],
   },
+  {
+    text: 'Lịch sử AI',
+    icon: <History />,
+    path: '/student/ai-history',
+    roles: [UserRole.STUDENT],
+  },
 
   {
     text: 'Quản lý lớp học',
     icon: <School />,
     path: '/teacher/classes',
+    roles: [UserRole.TEACHER],
+  },
+  {
+    text: 'Lịch sử AI',
+    icon: <History />,
+    path: '/teacher/ai-history',
     roles: [UserRole.TEACHER],
   },
   {
@@ -131,6 +144,12 @@ const navItems: NavItem[] = [
     text: 'Quản lý lớp/Quiz',
     icon: <AdminPanelSettings />,
     path: '/admin/system',
+    roles: [UserRole.ADMIN],
+  },
+  {
+    text: 'Lịch sử AI',
+    icon: <History />,
+    path: '/admin/ai-history',
     roles: [UserRole.ADMIN],
   },
 ];

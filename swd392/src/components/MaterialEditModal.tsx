@@ -18,7 +18,6 @@ import {
   pageTitle,
   flatButtonContained,
   flatButtonOutlined,
-  COLORS,
   RADIUS,
 } from "../pages/teacher/teacherStyles";
 
@@ -169,19 +168,41 @@ export default function MaterialEditModal({
         aria-describedby="edit-material-modal-description"
       >
         <Box sx={{ ...flatModal, width: { xs: "95%", sm: "80%", md: 800 } }}>
-          <Typography sx={sectionLabel}>Edit</Typography>
-          <Typography
-            id="edit-material-modal-title"
-            sx={{ ...pageTitle, fontSize: "1.25rem", mb: 3 }}
+          <Box
+            sx={{
+              mb: 3,
+              p: 2,
+              border: "1px solid #D6E7F4",
+              borderRadius: RADIUS,
+              bgcolor: "#F6FBFF",
+            }}
           >
-            Chỉnh sửa tài liệu
-          </Typography>
+            <Typography sx={sectionLabel}>Edit</Typography>
+            <Typography
+              id="edit-material-modal-title"
+              sx={{ ...pageTitle, fontSize: "1.25rem", mb: 0.75 }}
+            >
+              Chỉnh sửa tài liệu
+            </Typography>
+            <Typography sx={{ fontSize: "0.85rem", color: "#31536B" }}>
+              Cập nhật thông tin và nội dung cho tài liệu hiện tại.
+            </Typography>
+          </Box>
 
-          <MaterialForm
-            mode="edit"
-            material={material}
-            onDataChange={handleFormDataChange}
-          />
+          <Box
+            sx={{
+              p: 2,
+              border: "1px solid #D6E7F4",
+              borderRadius: RADIUS,
+              bgcolor: "#fff",
+            }}
+          >
+            <MaterialForm
+              mode="edit"
+              material={material}
+              onDataChange={handleFormDataChange}
+            />
+          </Box>
 
           <Stack
             direction="row"
