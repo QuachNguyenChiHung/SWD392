@@ -12,6 +12,7 @@ import {
     Alert,
     Chip,
     Avatar,
+    Tooltip,
 } from "@mui/material";
 import {
     ArrowBack,
@@ -21,6 +22,8 @@ import {
     ViewInAr,
     Quiz,
     Send,
+    ContentCopy,
+    Refresh,
 } from "@mui/icons-material";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ReactElement } from "react";
@@ -29,6 +32,7 @@ import type { ClassMaterial, ClassMaterialType, CreateClassMaterialDTO } from ".
 import MaterialTypeViewer from "../../components/MaterialTypeViewer";
 import chadApi from "../../services/teacherApi/chadApi";
 import CreateClassMaterialModal from "../../components/CreateClassMaterialModal";
+import { useAuth } from "../../contexts/AuthContext";
 import {
     pageTitle,
     sectionLabel,
@@ -94,6 +98,7 @@ export default function AiContentGenerator() {
     const navigate = useNavigate();
     const { classId } = useParams<{ classId: string }>();
     const location = useLocation();
+    const { user } = useAuth();
 
     const state = location.state as {
         topic?: {
@@ -150,21 +155,6 @@ export default function AiContentGenerator() {
         const lastUser = [...messages].reverse().find((m) => m.sender === "user");
         return lastUser?.content || "";
     }, [messages]);
-
-    const extractJsonObject = (raw: string) => {
-        const cleaned = raw.replace(/```json/gi, "").replace(/```/g, "").trim();
-        try {
-            return JSON.parse(cleaned);
-        } catch {
-            const m = cleaned.match(/\{[\s\S]*\}/);
-            if (!m) return null;
-            try {
-                return JSON.parse(m[0]);
-            } catch {
-                return null;
-            }
-        }
-    };
 
     const normalizeQuizCount = (value: number, fallback: number) =>
         Number.isFinite(value) && value > 0 ? Math.floor(value) : fallback;
@@ -230,25 +220,25 @@ export default function AiContentGenerator() {
         setIsChatLoading(true);
 
         try {
-            const response = await chadApi.getChadResponse(
-                nextMessages.map((m) => ({ sender: m.sender, content: m.content })),
-            );
-            await handleGeneratePreview(userMsg.content);
-            setMessages((prev) => [
-                ...prev,
-                {
-                    id: crypto.randomUUID(),
-                    sender: "assistant",
-                    content: response?.message || "I could not generate a response.",
-                },
-            ]);
+            // Instead of separate chat and generation calls, the generation call DOES the chat natively
+            const chatMessage = await handleGeneratePreview(userMsg.content);
+            if (chatMessage) {
+                setMessages((prev) => [
+                    ...prev,
+                    {
+                        id: crypto.randomUUID(),
+                        sender: "assistant",
+                        content: chatMessage,
+                    },
+                ]);
+            }
         } catch {
             setMessages((prev) => [
                 ...prev,
                 {
                     id: crypto.randomUUID(),
                     sender: "assistant",
-                    content: "Failed to contact AI service. Please try again.",
+                    content: "Failed to generate content. Please try again or check the format.",
                 },
             ]);
         } finally {
@@ -256,7 +246,45 @@ export default function AiContentGenerator() {
         }
     };
 
-    const handleGeneratePreview = async (overridePrompt?: string) => {
+    const handleRetry = async (promptText: string) => {
+        if (!selectedContentType || isChatLoading || isPreviewLoading) return;
+
+        const retryMsg: ChatMessage = {
+            id: crypto.randomUUID(),
+            sender: "user",
+            content: promptText,
+        };
+
+        setMessages((prev) => [...prev, retryMsg]);
+        setIsChatLoading(true);
+
+        try {
+            const chatMessage = await handleGeneratePreview(promptText);
+            if (chatMessage) {
+                setMessages((prev) => [
+                    ...prev,
+                    {
+                        id: crypto.randomUUID(),
+                        sender: "assistant",
+                        content: chatMessage,
+                    },
+                ]);
+            }
+        } catch {
+            setMessages((prev) => [
+                ...prev,
+                {
+                    id: crypto.randomUUID(),
+                    sender: "assistant",
+                    content: "Failed to generate content upon retry.",
+                },
+            ]);
+        } finally {
+            setIsChatLoading(false);
+        }
+    };
+
+    const handleGeneratePreview = async (overridePrompt?: string): Promise<string | void> => {
         if (!selectedContentType || isPreviewLoading) return;
 
         setPreviewError("");
@@ -267,7 +295,7 @@ export default function AiContentGenerator() {
         try {
             switch (selectedContentType) {
                 case "slide": {
-                    const blob = await chadApi.createSlide(topicTitle, topicDescription, promptForPreview);
+                    const { blob, message } = await chadApi.createSlide(topicTitle, topicDescription, promptForPreview);
                     const fileUrl = URL.createObjectURL(blob);
                     setNewPreviewUrl(fileUrl);
                     setAiPreviewMaterial({
@@ -286,10 +314,10 @@ export default function AiContentGenerator() {
                         is_ai_material: true,
                         ai_content_id: null,
                     });
-                    return;
+                    return message;
                 }
                 case "file": {
-                    const blob = await chadApi.createPdf(topicTitle, topicDescription, promptForPreview);
+                    const { blob, message } = await chadApi.createPdf(topicTitle, topicDescription, promptForPreview);
                     const fileUrl = URL.createObjectURL(blob);
                     setNewPreviewUrl(fileUrl);
                     setAiPreviewMaterial({
@@ -308,7 +336,7 @@ export default function AiContentGenerator() {
                         is_ai_material: true,
                         ai_content_id: null,
                     });
-                    return;
+                    return message;
                 }
                 case "quiz": {
                     const totalQuestions = normalizeQuizCount(quizCount, 5);
@@ -321,7 +349,7 @@ export default function AiContentGenerator() {
                         multipleChoiceQuestions,
                         trueFalseQuestions,
                     );
-                    const parsed = extractJsonObject(result?.message || "");
+                    const parsed = result?.rawContent ? JSON.parse(result.rawContent) : {};
                     const questionsRaw = Array.isArray(parsed?.questions) ? parsed.questions : [];
                     const mappedQuestions = questionsRaw.slice(0, totalQuestions).map((q: any, idx: number) => {
                         const rawOptions = Array.isArray(q.options) ? q.options.map((o: any) => String(o)) : [];
@@ -374,7 +402,7 @@ export default function AiContentGenerator() {
                         is_ai_material: true,
                         ai_content_id: null,
                     });
-                    return;
+                    return result?.message || "Quiz generated successfully.";
                 }
                 case "2d_render": {
                     setAiPreviewMaterial({
@@ -399,7 +427,7 @@ export default function AiContentGenerator() {
                         is_ai_material: true,
                         ai_content_id: null,
                     });
-                    return;
+                    return "2D render preview generated.";
                 }
                 default:
                     break;
@@ -489,7 +517,15 @@ export default function AiContentGenerator() {
                                     variant="outlined"
                                     size="small"
                                     disabled={!selectedContentType || isPreviewLoading}
-                                    onClick={() => handleGeneratePreview()}
+                                    onClick={async () => {
+                                        const msg = await handleGeneratePreview();
+                                        if (msg) {
+                                            setMessages((prev) => [
+                                                ...prev,
+                                                { id: crypto.randomUUID(), sender: "assistant", content: msg },
+                                            ]);
+                                        }
+                                    }}
                                     sx={flatButtonOutlined}
                                 >
                                     {isPreviewLoading ? "Generating..." : "Generate Preview"}
@@ -669,14 +705,43 @@ export default function AiContentGenerator() {
                                                 >
                                                     {m.sender === "user" ? "You" : "AI Assistant"}
                                                 </Typography>
-                                                <Typography variant="body2" sx={{ whiteSpace: "pre-wrap" }}>
+                                                <Typography variant="body2" sx={{ whiteSpace: "pre-wrap", mt: 0.5 }}>
                                                     {m.content}
                                                 </Typography>
+                                                
+                                                {/* Action Buttons */}
+                                                {m.sender === "user" && (
+                                                    <Stack direction="row" justifyContent="flex-end" sx={{ mt: 1 }}>
+                                                        <Tooltip title="Copy prompt">
+                                                            <IconButton
+                                                                size="small"
+                                                                onClick={() => navigator.clipboard.writeText(m.content)}
+                                                                sx={{ color: "rgba(255,255,255,0.7)", p: 0.5, "&:hover": { color: "#fff" } }}
+                                                            >
+                                                                <ContentCopy fontSize="small" />
+                                                            </IconButton>
+                                                        </Tooltip>
+                                                        <Tooltip title="Retry this prompt">
+                                                            <IconButton
+                                                                size="small"
+                                                                onClick={() => handleRetry(m.content)}
+                                                                disabled={isChatLoading || isPreviewLoading}
+                                                                sx={{ color: "rgba(255,255,255,0.7)", p: 0.5, "&:hover": { color: "#fff" } }}
+                                                            >
+                                                                <Refresh fontSize="small" />
+                                                            </IconButton>
+                                                        </Tooltip>
+                                                    </Stack>
+                                                )}
                                             </Box>
                                             {m.sender === "user" && (
-                                                <Avatar sx={{ bgcolor: COLORS.textDark, width: 28, height: 28 }}>
+                                                <Avatar 
+                                                    alt={user?.name || "You"} 
+                                                    src={user?.avatar} 
+                                                    sx={{ bgcolor: COLORS.textDark, width: 28, height: 28 }}
+                                                >
                                                     <Typography sx={{ fontSize: "0.65rem", fontWeight: 700, color: "#fff" }}>
-                                                        You
+                                                        {user?.name?.charAt(0).toUpperCase() || "Y"}
                                                     </Typography>
                                                 </Avatar>
                                             )}

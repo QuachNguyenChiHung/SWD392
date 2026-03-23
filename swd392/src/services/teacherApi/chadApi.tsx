@@ -25,22 +25,36 @@ class ChadApi {
         return await apiService.post('/teacher/ai-create-quiz', { topicTitle, topicDescription, count, mcCount, tfCount });
     }
 
-    async createSlide(topicTitle: string, topicDescription?: string, notes?: string): Promise<Blob> {
+    async createSlide(topicTitle: string, topicDescription?: string, notes?: string): Promise<{ blob: Blob, message: string }> {
         const response = await apiService.getAxiosInstance().post(
             '/teacher/ai-create-slide',
-            { topicTitle, topicDescription, notes },
-            { responseType: 'blob' },
+            { topicTitle, topicDescription, notes }
         );
-        return response.data as Blob;
+        const data = response.data;
+        const binaryString = window.atob(data.fileBase64);
+        const len = binaryString.length;
+        const bytes = new Uint8Array(len);
+        for (let i = 0; i < len; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+        }
+        const blob = new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation' });
+        return { blob, message: data.message };
     }
 
-    async createPdf(topicTitle: string, topicDescription?: string, notes?: string): Promise<Blob> {
+    async createPdf(topicTitle: string, topicDescription?: string, notes?: string): Promise<{ blob: Blob, message: string }> {
         const response = await apiService.getAxiosInstance().post(
             '/teacher/ai-create-pdf',
-            { topicTitle, topicDescription, notes },
-            { responseType: 'blob' },
+            { topicTitle, topicDescription, notes }
         );
-        return response.data as Blob;
+        const data = response.data;
+        const binaryString = window.atob(data.fileBase64);
+        const len = binaryString.length;
+        const bytes = new Uint8Array(len);
+        for (let i = 0; i < len; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+        }
+        const blob = new Blob([bytes], { type: 'application/pdf' });
+        return { blob, message: data.message };
     }
 
     downloadBlob(blob: Blob, filename: string) {
@@ -55,13 +69,13 @@ class ChadApi {
     }
 
     async createAndDownloadSlide(topicTitle: string, topicDescription?: string, notes?: string) {
-        const blob = await this.createSlide(topicTitle, topicDescription, notes);
+        const { blob } = await this.createSlide(topicTitle, topicDescription, notes);
         this.downloadBlob(blob, 'presentation.pptx');
         return blob;
     }
 
     async createAndDownloadPdf(topicTitle: string, topicDescription?: string, notes?: string) {
-        const blob = await this.createPdf(topicTitle, topicDescription, notes);
+        const { blob } = await this.createPdf(topicTitle, topicDescription, notes);
         this.downloadBlob(blob, 'document.pdf');
         return blob;
     }

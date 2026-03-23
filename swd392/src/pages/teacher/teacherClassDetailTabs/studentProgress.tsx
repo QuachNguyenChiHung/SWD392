@@ -1,5 +1,4 @@
 import {
-    Stack,
     Paper,
     TableContainer,
     TableHead,
@@ -10,6 +9,7 @@ import {
     CircularProgress,
     Typography,
 } from "@mui/material";
+import type { SxProps, Theme } from "@mui/material";
 import { type Student } from "../../../types/teacherType";
 import { useState, useEffect } from "react";
 import { classMaterialProgressionApi } from "../../../services/teacherApi/classMaterialProgressionApi";
@@ -63,7 +63,7 @@ export default function StudentProgress({ enrollId, student }: StudentProgressPr
 
     if (loading) {
         return (
-            <Paper elevation={0} sx={{ ...flatCard, ...loadingContainer }}>
+            <Paper elevation={0} sx={{ ...flatCard, ...loadingContainer } as SxProps<Theme>}>
                 <CircularProgress sx={{ color: COLORS.accent }} />
             </Paper>
         );
