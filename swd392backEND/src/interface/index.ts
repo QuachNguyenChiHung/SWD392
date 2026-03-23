@@ -7,6 +7,7 @@ export type { IClass } from './IClass.ts';
 export type { IEnroll } from './IEnroll.ts';
 export type { ITopic } from './ITopic.ts';
 export type { IAiRequest } from './IAiRequest.ts';
+export type { IAiSession } from './IAiSession.ts';
 export type { IAiContent } from './IAiContent.ts';
 export type { IClassMaterial } from './IClassMaterial.ts';
 export type { IFile } from './IFile.ts';

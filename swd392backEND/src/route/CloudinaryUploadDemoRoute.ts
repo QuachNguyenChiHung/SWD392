@@ -10,10 +10,10 @@ import {
     filesMulterUpload
 } from "../ultis/cloudinary.ts";
 
-const route = Router();
+const router = Router();
 
 // File upload routes
-route.post('/file', filesMulterUpload.single('file'), async (req, res, next) => {
+router.post('/file', filesMulterUpload.single('file'), async (req, res, next) => {
     try {
         console.log('File upload started...');
         if (!req.file) {
@@ -34,7 +34,7 @@ route.post('/file', filesMulterUpload.single('file'), async (req, res, next) => 
     }
 });
 
-route.put('/file/:url', filesMulterUpload.single('file'), async (req, res, next) => {
+router.put('/file/:url', filesMulterUpload.single('file'), async (req, res, next) => {
     const { url } = req.params;
     try {
         if (!url) {
@@ -50,7 +50,7 @@ route.put('/file/:url', filesMulterUpload.single('file'), async (req, res, next)
     }
 });
 
-route.delete('/file/:url', async (req, res, next) => {
+router.delete('/file/:url', async (req, res, next) => {
     const { url } = req.params;
     if (!url) {
         return res.status(400).json({ error: 'No URL provided' });
@@ -67,7 +67,7 @@ route.delete('/file/:url', async (req, res, next) => {
     }
 });
 //test upload image route
-route.post('/image', imageMulterUpload.single('image'), async (req, res, next) => {
+router.post('/image', imageMulterUpload.single('image'), async (req, res, next) => {
     try {
         if (!req.file) {
             return res.status(400).json({ error: 'No file uploaded' });
@@ -80,7 +80,7 @@ route.post('/image', imageMulterUpload.single('image'), async (req, res, next) =
 
 });
 
-route.put('/image/:url', imageMulterUpload.single('image'), async (req, res, next) => {
+router.put('/image/:url', imageMulterUpload.single('image'), async (req, res, next) => {
     const { url } = req.params;
     try {
         if (!url) {
@@ -96,7 +96,7 @@ route.put('/image/:url', imageMulterUpload.single('image'), async (req, res, nex
     }
 });
 
-route.delete('/image/:url', async (req, res, next) => {
+router.delete('/image/:url', async (req, res, next) => {
     const { url } = req.params;
     if (!url) {
         return res.status(400).json({ error: 'No URL provided' });
@@ -109,5 +109,4 @@ route.delete('/image/:url', async (req, res, next) => {
     }
 });
 
-//skibidi dom dom
-export default route;
+export default router;

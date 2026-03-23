@@ -1,12 +1,12 @@
 import { Router } from 'express';
 import TeacherController from '../controller/TeacherController.ts';
 
-const route = Router();
+const router = Router();
 
 // Public: get teacher info by teacher id
-route.get('/teachers/:id', TeacherController.getTeacherById);
+router.get('/teachers/:id', TeacherController.getTeacherById);
 
 // Public: get teacher info by user id
-route.get('/teachers/by-user/:userId', TeacherController.getTeacherByUserId);
+router.get('/teachers/by-user/:userId', TeacherController.getTeacherByUserId);
 
-export default route;
+export default router;

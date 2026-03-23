@@ -2,34 +2,34 @@ import { Router } from "express";
 import UserController from "../controller/UserController.ts";
 import verifyRole from "../ultis/verifyRole.ts";
 import { filesMulterUpload } from "../ultis/cloudinary.ts";
-const route = Router();
+const router = Router();
 // Admin statistics for users
-route.get('/admin/stats/users', verifyRole.verifyAdmin, UserController.getAdminUserStats);
+router.get('/admin/stats/users', verifyRole.verifyAdmin, UserController.getAdminUserStats);
 
 // Search users by keyword functionality
-route.get('/users/search', verifyRole.verifyAdminOrModerator, UserController.findByKeyWord);
-route.get('/users', verifyRole.verifyAdminOrModerator, UserController.getAllUsers);
-route.get('/users/:id', verifyRole.verifyAdminOrModerator, UserController.getUserById);
-route.post('/users', verifyRole.verifyAdmin, filesMulterUpload.single('credentialFile'), UserController.createUser);
-route.patch('/users/:id', verifyRole.verifyAdmin, UserController.updateUser);
-route.delete('/users/:id', verifyRole.verifyAdmin, UserController.deleteUser);
+router.get('/users/search', verifyRole.verifyAdminOrModerator, UserController.findByKeyWord);
+router.get('/users', verifyRole.verifyAdminOrModerator, UserController.getAllUsers);
+router.get('/users/:id', verifyRole.verifyAdminOrModerator, UserController.getUserById);
+router.post('/users', verifyRole.verifyAdmin, filesMulterUpload.single('credentialFile'), UserController.createUser);
+router.patch('/users/:id', verifyRole.verifyAdmin, UserController.updateUser);
+router.delete('/users/:id', verifyRole.verifyAdmin, UserController.deleteUser);
 
 // User status toggle route, only for admin to use, prevent user from updating their own status by themselves
-route.patch('/users/:id/status', verifyRole.verifyAdminOrModerator, UserController.toggleStatus);
+router.patch('/users/:id/status', verifyRole.verifyAdminOrModerator, UserController.toggleStatus);
 
 // Authentication routes
-route.post('/register', UserController.registerUser);
-route.post('/login', UserController.loginUser);
-route.get('/me', UserController.getUserInfo);
-route.get('/user/profile', verifyRole.verifyStudent, UserController.getUserProfile);
-route.get('/admin/profile', verifyRole.verifyAdmin, UserController.getUserAdminProfile);
-route.get('/teacher/profile', verifyRole.verifyTeacher, UserController.getUserTeacherProfile);
-route.patch('/teacher/profile/password', verifyRole.verifyTeacher, UserController.updateSelf);
-route.get('/admin/moderators', verifyRole.verifyAdmin, UserController.getListModerators);
-route.delete('/admin/moderators/:id', verifyRole.verifyAdmin, UserController.deleteModerator);
+router.post('/register', UserController.registerUser);
+router.post('/login', UserController.loginUser);
+router.get('/me', UserController.getUserInfo);
+router.get('/user/profile', verifyRole.verifyStudent, UserController.getUserProfile);
+router.get('/admin/profile', verifyRole.verifyAdmin, UserController.getUserAdminProfile);
+router.get('/teacher/profile', verifyRole.verifyTeacher, UserController.getUserTeacherProfile);
+router.patch('/teacher/profile/password', verifyRole.verifyTeacher, UserController.updateSelf);
+router.get('/admin/moderators', verifyRole.verifyAdmin, UserController.getListModerators);
+router.delete('/admin/moderators/:id', verifyRole.verifyAdmin, UserController.deleteModerator);
 // Update own profile, but needs to update token(fix this later)
-route.patch('/me', UserController.updateSelf);
+router.patch('/me', UserController.updateSelf);
 // Logout route
-route.post('/logout', UserController.removeToken);
+router.post('/logout', UserController.removeToken);
 
-export default route;
+export default router;
