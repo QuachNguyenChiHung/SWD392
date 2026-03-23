@@ -84,7 +84,7 @@ console.log(process.env.MONGO_URI);
                     process.exit(1);
                 }
             }
-app.get('/',(req,res)=>{
+app.get('/',(_req,res)=>{
     res.send("Hello");
 });
             app.use('/cloudinary-demo', CloudinaryUploadDemoRoute);
