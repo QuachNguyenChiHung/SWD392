@@ -9,6 +9,7 @@ import {
   EmojiEvents, Quiz, BarChart, Replay
 } from '@mui/icons-material';
 import { apiService } from '../../services/api';
+import StudentPageShell from '../../components/student/StudentPageShell';
 
 interface QuizResult {
   _id: string;
@@ -44,7 +45,6 @@ const QuizResultView = () => {
   const [score, setScore] = useState<Score | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [quizId, setQuizId] = useState<string | null>(null);
   const [maxAttempts, setMaxAttempts] = useState<number>(999);
   const [attemptCount, setAttemptCount] = useState<number>(0);
   const [searchParams] = useSearchParams();
@@ -63,13 +63,12 @@ const QuizResultView = () => {
           setError('Bài kiểm tra chưa có nội dung');
           return;
         }
-        setQuizId(qId);
 
         // Fetch quiz info for max_attempt_number
         try {
           const quizInfo: any = await apiService.get(`/quizzes/${qId}`);
           setMaxAttempts(quizInfo?.max_attempt_number ?? 999);
-        } catch {}
+        } catch { }
 
         // 2. Get my attempts, find latest for this quiz
         const myAttempts: any[] = await apiService.get('/my-quiz-attempts');
@@ -163,28 +162,31 @@ const QuizResultView = () => {
   const timeTaken = attempt?.record_json?.time_taken;
 
   return (
-    <Box>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" mb={3}>
-        <Button
-          startIcon={<ArrowBack />}
-          onClick={() => navigate('/student/quizzes')}
-          sx={{ textTransform: 'none', fontWeight: 600, color: 'text.secondary' }}
-        >
-          Quay lại
-        </Button>
-        <Button
-          variant="outlined"
-          startIcon={<Replay />}
-          onClick={() => navigate(`/student/take-quiz/${id}`, { replace: true })}
-          disabled={attemptCount >= maxAttempts}
-          sx={{ textTransform: 'none', fontWeight: 600 }}
-        >
-          {attemptCount >= maxAttempts ? `Hết lượt (${maxAttempts} lần)` : 'Làm lại'}
-        </Button>
-      </Stack>
-
-      <Typography variant="h4" fontWeight="bold" gutterBottom>Kết quả bài kiểm tra</Typography>
-      <Typography color="text.secondary" mb={3}>{quizTitle}</Typography>
+    <StudentPageShell
+      title="Kết quả bài kiểm tra"
+      subtitle={quizTitle}
+      chipLabel="Đánh giá học tập"
+      actions={(
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ width: { xs: '100%', md: 'auto' } }}>
+          <Button
+            startIcon={<ArrowBack />}
+            onClick={() => navigate('/student/quizzes')}
+            sx={{ textTransform: 'none', fontWeight: 700, color: '#12344d' }}
+          >
+            Quay lại
+          </Button>
+          <Button
+            variant="outlined"
+            startIcon={<Replay />}
+            onClick={() => navigate(`/student/take-quiz/${id}`, { replace: true })}
+            disabled={attemptCount >= maxAttempts}
+            sx={{ textTransform: 'none', fontWeight: 700, borderRadius: 2 }}
+          >
+            {attemptCount >= maxAttempts ? `Hết lượt (${maxAttempts} lần)` : 'Làm lại'}
+          </Button>
+        </Stack>
+      )}
+    >
 
       <Grid container spacing={3}>
         {/* Score Summary */}
@@ -210,7 +212,7 @@ const QuizResultView = () => {
               </Typography>
             </Paper>
 
-            <Paper sx={{ p: 2.5, borderRadius: 3 }}>
+            <Paper elevation={0} sx={{ p: 2.5, borderRadius: 3, border: '1px solid #d6e7f4' }}>
               <Typography variant="subtitle2" fontWeight="bold" mb={2}>
                 <BarChart sx={{ fontSize: 16, mr: 0.5, verticalAlign: 'middle' }} />
                 Thống kê
@@ -265,7 +267,7 @@ const QuizResultView = () => {
 
         {/* Question Results */}
         <Grid size={{ xs: 12, md: 8 }}>
-          <Paper sx={{ p: 3, borderRadius: 3 }}>
+          <Paper elevation={0} sx={{ p: 3, borderRadius: 3, border: '1px solid #d6e7f4' }}>
             <Stack direction="row" spacing={1} alignItems="center" mb={3}>
               <Quiz sx={{ color: '#6366f1' }} />
               <Typography variant="h6" fontWeight="bold">Chi tiết câu hỏi</Typography>
@@ -373,7 +375,7 @@ const QuizResultView = () => {
           </Paper>
         </Grid>
       </Grid>
-    </Box>
+    </StudentPageShell>
   );
 };
 

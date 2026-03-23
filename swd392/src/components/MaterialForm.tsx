@@ -8,6 +8,7 @@ import {
   MenuItem,
   Switch,
   FormControlLabel,
+  Typography,
 } from "@mui/material";
 import { useState, useEffect } from "react";
 import type {
@@ -21,6 +22,11 @@ import type {
 import FileUploadForm from "./createMaterial/FileUploadForm";
 import Render2DForm from "./createMaterial/Render2DForm";
 import QuizForm from "./createMaterial/QuizForm";
+import {
+  sectionTitle,
+  COLORS,
+  RADIUS,
+} from "../pages/teacher/teacherStyles";
 
 interface MaterialFormProps {
   mode: "create" | "edit";
@@ -34,7 +40,6 @@ export interface MaterialFormData {
   title: string;
   orderNum: number;
   isAi: boolean;
-  description?: string;
   materialType: ClassMaterialType | "";
   classMaterialStatus: "published" | "draft" | "deleted";
 
@@ -62,7 +67,6 @@ export default function MaterialForm({
     title: "",
     orderNum: 1,
     isAi: false,
-    description: "",
     materialType: "",
     classMaterialStatus: "draft",
     selectedFile: null,
@@ -84,7 +88,6 @@ export default function MaterialForm({
         title: material.title,
         orderNum: material.order_num,
         isAi: material.is_ai_material,
-        description: "",
         materialType: material.type,
         classMaterialStatus:
           material.status === "published" ? "published" : "draft",
@@ -141,6 +144,12 @@ export default function MaterialForm({
     }
   };
 
+  const inputSx = {
+    "& .MuiOutlinedInput-root": {
+      borderRadius: RADIUS,
+    },
+  };
+
   return (
     <Box>
       <Stack spacing={3}>
@@ -150,20 +159,11 @@ export default function MaterialForm({
           onChange={(e) => updateFormData({ title: e.target.value })}
           fullWidth
           required
+          sx={inputSx}
         />
 
         {mode === "create" && (
           <>
-            <TextField
-              label="Mô tả tài liệu"
-              multiline
-              rows={3}
-              value={formData.description}
-              onChange={(e) => updateFormData({ description: e.target.value })}
-              fullWidth
-              placeholder="Nhập mô tả cho tài liệu (tùy chọn)..."
-            />
-
             <FormControl fullWidth>
               <InputLabel>Loại tài liệu</InputLabel>
               <Select
@@ -174,6 +174,7 @@ export default function MaterialForm({
                   })
                 }
                 label="Loại tài liệu"
+                sx={inputSx}
               >
                 <MenuItem value="file">Tệp tin (PDF, DOC, etc.)</MenuItem>
                 <MenuItem value="slide">Slide thuyết trình</MenuItem>
@@ -194,6 +195,7 @@ export default function MaterialForm({
                 updateFormData({ orderNum: Number(e.target.value) })
               }
               fullWidth
+              sx={inputSx}
             />
 
             <FormControlLabel
@@ -201,9 +203,21 @@ export default function MaterialForm({
                 <Switch
                   checked={formData.isAi}
                   onChange={(e) => updateFormData({ isAi: e.target.checked })}
+                  sx={{
+                    "& .MuiSwitch-switchBase.Mui-checked": {
+                      color: COLORS.accent,
+                    },
+                    "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
+                      bgcolor: COLORS.accent,
+                    },
+                  }}
                 />
               }
-              label="Tài liệu do AI tạo"
+              label={
+                <Typography sx={{ fontSize: "0.85rem", fontWeight: 600, color: COLORS.textDark }}>
+                  Tài liệu do AI tạo
+                </Typography>
+              }
             />
 
             <FormControl fullWidth>
@@ -219,6 +233,7 @@ export default function MaterialForm({
                   })
                 }
                 label="Trạng thái tài liệu"
+                sx={inputSx}
               >
                 <MenuItem value="draft">Bản nháp</MenuItem>
                 <MenuItem value="published">Xuất bản</MenuItem>
@@ -248,6 +263,7 @@ export default function MaterialForm({
                         updateFormData({ fileName: e.target.value })
                       }
                       fullWidth
+                      sx={inputSx}
                     />
                   )}
                   {formData.materialType === "slide" && (
@@ -258,6 +274,7 @@ export default function MaterialForm({
                         updateFormData({ slideName: e.target.value })
                       }
                       fullWidth
+                      sx={inputSx}
                     />
                   )}
                   {/* Allow file replacement in edit mode */}
@@ -286,9 +303,21 @@ export default function MaterialForm({
                     onChange={(e) =>
                       updateFormData({ quizStatus: e.target.checked })
                     }
+                    sx={{
+                      "& .MuiSwitch-switchBase.Mui-checked": {
+                        color: COLORS.accent,
+                      },
+                      "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
+                        bgcolor: COLORS.accent,
+                      },
+                    }}
                   />
                 }
-                label="Đang hoạt động (học sinh có thể thấy)"
+                label={
+                  <Typography sx={{ fontSize: "0.85rem", fontWeight: 600, color: COLORS.textDark }}>
+                    Đang hoạt động (học sinh có thể thấy)
+                  </Typography>
+                }
               />
             )}
 

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import type { DashboardStats, AdminClassMaterial } from '../../types/adminType';
 import { adminDashboardApi, adminMaterialsApi, adminUsersApi } from '../../services/adminApi';
 import { useNavigate } from 'react-router-dom';
+import StudentPageShell from '../../components/student/StudentPageShell';
 
 interface MaterialItem {
   _id: string;
@@ -85,20 +86,30 @@ const AdminDashboard = () => {
   // Loading state
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
-        <CircularProgress />
-      </Box>
+      <StudentPageShell
+        title="Dashboard Quản trị"
+        subtitle="Đang tải dữ liệu thống kê hệ thống"
+        chipLabel="Khu vực quản trị"
+      >
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '280px' }}>
+          <CircularProgress />
+        </Box>
+      </StudentPageShell>
     );
   }
 
   // Error state
   if (error || !stats) {
     return (
-      <Box sx={{ p: 3 }}>
+      <StudentPageShell
+        title="Dashboard Quản trị"
+        subtitle="Không thể tải dữ liệu dashboard"
+        chipLabel="Khu vực quản trị"
+      >
         <Alert severity="error">
           {error || 'Failed to load dashboard data'}
         </Alert>
-      </Box>
+      </StudentPageShell>
     );
   }
 
@@ -177,27 +188,21 @@ const AdminDashboard = () => {
   };
 
   return (
-    <Box>
-      <Box
-        sx={{
-          mb: 4,
-          p: { xs: 2.5, md: 3 },
-          borderRadius: 3,
-          background: 'linear-gradient(120deg, #0f4c81 0%, #1565c0 52%, #1e88e5 100%)',
-          color: 'white',
-          boxShadow: 4,
-        }}
-      >
-        <Typography variant="h4" gutterBottom fontWeight="bold">
-          Dashboard Quản trị
-        </Typography>
-        <Typography variant="body1" sx={{ opacity: 0.92 }}>
-          Tổng quan hệ thống và hoạt động theo vai trò admin
-        </Typography>
-        <Typography variant="caption" sx={{ opacity: 0.85, mt: 1, display: 'block' }}>
-          Cập nhật lần cuối: {lastUpdated || '-'}
-        </Typography>
-      </Box>
+    <StudentPageShell
+      title="Dashboard Quản trị"
+      subtitle="Tổng quan hệ thống và hoạt động theo vai trò admin"
+      chipLabel="Khu vực quản trị"
+      actions={(
+        <Chip
+          label={`Cập nhật: ${lastUpdated || '-'}`}
+          sx={{
+            fontWeight: 700,
+            bgcolor: '#eaf3ff',
+            color: '#1b6cb5',
+          }}
+        />
+      )}
+    >
 
       {/* Stats Cards */}
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', xl: 'repeat(6, 1fr)' }, gap: 2, mb: 3 }}>
@@ -205,11 +210,15 @@ const AdminDashboard = () => {
           <Card
             key={index}
             sx={{
+              borderRadius: 3,
+              border: '1px solid #d6e7f4',
+              boxShadow: 'none',
               cursor: stat.onClick ? 'pointer' : 'default',
               transition: 'all 0.3s',
               '&:hover': stat.onClick ? {
                 transform: 'translateY(-4px)',
-                boxShadow: 6,
+                boxShadow: '0 14px 28px rgba(20, 64, 106, 0.15)',
+                borderColor: '#9fc4e5',
               } : {},
             }}
             onClick={stat.onClick}
@@ -240,7 +249,7 @@ const AdminDashboard = () => {
 
       {/* Analytics Grid */}
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '1.3fr 1fr' }, gap: 3 }}>
-        <Card>
+        <Card sx={{ borderRadius: 3, border: '1px solid #d6e7f4', boxShadow: 'none' }}>
           <CardContent>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
               <BarChart color="primary" />
@@ -267,7 +276,7 @@ const AdminDashboard = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card sx={{ borderRadius: 3, border: '1px solid #d6e7f4', boxShadow: 'none' }}>
           <CardContent>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
               <AutoGraph color="primary" />
@@ -287,7 +296,7 @@ const AdminDashboard = () => {
           </CardContent>
         </Card>
 
-        <Card sx={{ gridColumn: { xs: 'span 1', lg: 'span 1' } }}>
+        <Card sx={{ gridColumn: { xs: 'span 1', lg: 'span 1' }, borderRadius: 3, border: '1px solid #d6e7f4', boxShadow: 'none' }}>
           <CardContent>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
               <Timeline color="primary" />
@@ -320,7 +329,7 @@ const AdminDashboard = () => {
         </Card>
 
         {/* Recent Materials */}
-        <Card sx={{ gridColumn: { xs: 'span 1', lg: 'span 1' } }}>
+        <Card sx={{ gridColumn: { xs: 'span 1', lg: 'span 1' }, borderRadius: 3, border: '1px solid #d6e7f4', boxShadow: 'none' }}>
           <CardContent>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -396,7 +405,7 @@ const AdminDashboard = () => {
       </Box>
 
       {/* Quick Actions */}
-      <Card sx={{ mt: 3 }}>
+      <Card sx={{ mt: 3, borderRadius: 3, border: '1px solid #d6e7f4', boxShadow: 'none' }}>
         <CardContent>
           <Typography variant="h6" gutterBottom fontWeight="bold">
             Quản lý nhanh
@@ -450,7 +459,7 @@ const AdminDashboard = () => {
           </Box>
         </CardContent>
       </Card>
-    </Box>
+    </StudentPageShell>
   );
 };
 

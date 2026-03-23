@@ -8,6 +8,7 @@ import {
 import { apiService } from '../../services/api';
 import type { ClassItem } from '../../types/studentType';
 import { useNavigate } from 'react-router-dom';
+import StudentPageShell from '../../components/student/StudentPageShell';
 
 const CLASS_COLORS = ['#6366f1', '#0ea5e9', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6'];
 const CLASSES_PER_PAGE = 4;
@@ -40,13 +41,6 @@ interface QuizAttempt {
     score: number;
     percentage: number;
   };
-}
-
-interface DashboardStats {
-  total_classes: number;
-  total_quizzes: number;
-  average_score: number;
-  completed_materials: number;
 }
 
 const getEnrollClassId = (enrollment: Enrollment): string => {
@@ -133,11 +127,11 @@ const StudentDashboard = () => {
   );
 
   return (
-    <Box>
-      <Typography variant="body1" color="text.secondary" paragraph>
-        Quản lý lớp học và theo dõi lộ trình học tập của bạn
-      </Typography>
-
+    <StudentPageShell
+      title="Dashboard học tập"
+      subtitle="Theo dõi lớp học, tiến độ và kết quả quiz mới nhất trong một giao diện thống nhất"
+      chipLabel="Khu vực học sinh"
+    >
       <Stack spacing={3}>
         <Grid container spacing={3}>
           <Grid size={{ xs: 12, md: 8 }}>
@@ -145,7 +139,15 @@ const StudentDashboard = () => {
 
               {/* Classes */}
               <Grid size={{ xs: 12 }}>
-                <Paper sx={{ p: 3 }}>
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: 3,
+                    borderRadius: 3,
+                    border: '1px solid #d6e7f4',
+                    backgroundColor: '#fff',
+                  }}
+                >
                   <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
                     <Typography variant="h6">Lớp học của tôi</Typography>
                     <Typography variant="body2" color="text.secondary">
@@ -209,9 +211,6 @@ const StudentDashboard = () => {
                                 <Typography variant="subtitle1" fontWeight="bold" noWrap>
                                   {cls.class_name}
                                 </Typography>
-                                <Typography variant="body2" color="text.secondary" noWrap sx={{ height: 20 }}>
-                                  {cls.keywords || 'Chưa có mô tả'}
-                                </Typography>
                                 <Divider />
                                 <Typography variant="caption" color="text.secondary">
                                   Tạo ngày: <b>{formatDate(cls.date_create)}</b>
@@ -248,7 +247,15 @@ const StudentDashboard = () => {
 
               {/* Quiz Attempts */}
               <Grid size={{ xs: 12 }}>
-                <Paper sx={{ p: 3 }}>
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: 3,
+                    borderRadius: 3,
+                    border: '1px solid #d6e7f4',
+                    backgroundColor: '#fff',
+                  }}
+                >
                   <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
                     <Typography variant="h6">Bài kiểm tra gần đây</Typography>
                     <Typography variant="body2" color="text.secondary">
@@ -269,12 +276,12 @@ const StudentDashboard = () => {
                         const hasScore = score != null;
                         const scoreColor = !hasScore ? '#94a3b8'
                           : score >= 70 ? '#059669'
-                          : score >= 50 ? '#b45309'
-                          : '#dc2626';
+                            : score >= 50 ? '#b45309'
+                              : '#dc2626';
                         const scoreBg = !hasScore ? '#f1f5f9'
                           : score >= 70 ? '#d1fae5'
-                          : score >= 50 ? '#fef3c7'
-                          : '#fee2e2';
+                            : score >= 50 ? '#fef3c7'
+                              : '#fee2e2';
 
                         return (
                           <Paper
@@ -315,7 +322,15 @@ const StudentDashboard = () => {
             <Grid container direction="column" spacing={3}>
 
               <Grid size={{ xs: 12 }}>
-                <Paper sx={{ p: 3, bgcolor: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: 3,
+                    borderRadius: 3,
+                    background: 'linear-gradient(120deg, rgba(255,255,255,0.96) 0%, rgba(236,247,255,0.96) 45%, rgba(240,255,246,0.96) 100%)',
+                    border: '1px solid #dce8f4',
+                  }}
+                >
                   <Typography variant="subtitle1" fontWeight="bold" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <TrendingUp fontSize="small" />
                     Trạng thái học tập
@@ -358,7 +373,15 @@ const StudentDashboard = () => {
               </Grid>
 
               <Grid size={{ xs: 12 }}>
-                <Paper sx={{ p: 3, bgcolor: '#f0f9ff', border: '1px solid #bfdbfe' }}>
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: 3,
+                    borderRadius: 3,
+                    bgcolor: '#f0f9ff',
+                    border: '1px solid #bfdbfe',
+                  }}
+                >
                   <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
                     Thông tin ghi danh
                   </Typography>
@@ -398,7 +421,7 @@ const StudentDashboard = () => {
           </Grid>
         </Grid>
       </Stack>
-    </Box>
+    </StudentPageShell>
   );
 };
 

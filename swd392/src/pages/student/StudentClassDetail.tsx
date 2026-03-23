@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
     Box, Typography, Stack, Paper, Button, Chip, Skeleton, Grid, Divider,
     LinearProgress, Alert, Dialog, DialogTitle, DialogContent, DialogActions,
-    Fab, IconButton
+    Fab
 } from '@mui/material';
 import {
     ArrowBack, MenuBook, CalendarToday, CheckCircle, SmartToy, Close
@@ -14,6 +14,7 @@ import ClassTopicsTab from '../../components/student/ClassTopicsTab';
 import StudentAIChat from '../../components/student/StudentAIChatBox';
 import FileViewer from '../../components/materialViewers/FileViewer';
 import SlideViewer from '../../components/materialViewers/SlideViewer';
+import StudentPageShell from '../../components/student/StudentPageShell';
 
 interface FileItem {
     _id: string;
@@ -63,7 +64,6 @@ export default function StudentClassDetail() {
     const [enrollment, setEnrollment] = useState<Enrollment | null>(null);
     const [progressRecords, setProgressRecords] = useState<ProgressRecord[]>([]);
     const [quizAttempts, setQuizAttempts] = useState<any[]>([]);
-    const [render2dIds, setRender2dIds] = useState<string[]>([]);
     const [allMaterials, setAllMaterials] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -74,12 +74,12 @@ export default function StudentClassDetail() {
     // completedMaterials = list of classmaterial_id that are completed
     const completedMaterials = useMemo(() => {
         const quizMaterialIds = quizzes.map(q => q._id);
-        
+
         // Exclude quizzes from generic progress records to prevent old "Mark Complete" clicks from skewing progress
         const fromProgress = progressRecords
             .filter(p => p.completion_status === 'completed' && !quizMaterialIds.includes(p.classmaterial_id))
             .map(p => p.classmaterial_id);
-            
+
         const fromQuizzes = quizzes
             .filter(q => quizAttempts.some(a => {
                 const qId = typeof a.quiz_id === 'object' ? a.quiz_id._id : a.quiz_id;
@@ -194,8 +194,6 @@ export default function StudentClassDetail() {
                     setFiles(fileItems);
                     setSlides(slideItems);
                     setQuizzes(quizItems);
-                    setRender2dIds(render2dList);
-
                     // Build allMaterials with resolved file_path for ClassTopicsTab
                     const resolvedMaterials = await Promise.all(materialsData.map(async (m) => {
                         if (m.type === 'quiz') return { _id: m._id, title: m.title, type: m.type, topic_id: m.topic_id, content_id: m.content_id, file_path: '', status: m.status, isFlagged: m.isFlagged, isFlaggable: m.isFlaggable };
@@ -233,7 +231,7 @@ export default function StudentClassDetail() {
                         } catch (err) {
                             console.warn('Failed to fetch progress:', err);
                         }
-                        
+
                         // 6. Get quiz attempts
                         try {
                             const myAttempts: any[] = await apiService.get('/my-quiz-attempts');
@@ -265,7 +263,7 @@ export default function StudentClassDetail() {
         setExpandedTopic(prev => prev === topicId ? false : topicId);
     };
 
-    const handleMarkMaterialCompleted = async (item: FileItem | Slide, type: 'file' | 'slide' | 'quiz') => {
+    const handleMarkMaterialCompleted = async (item: FileItem | Slide, _type: 'file' | 'slide' | 'quiz') => {
         if (!classId || !enrollment) return;
 
         // Đã completed rồi thì không làm gì
@@ -340,21 +338,34 @@ export default function StudentClassDetail() {
     const isCompleted = enrollment?.status === 'completed';
 
     return (
-        <Box>
-            <Stack direction="row" alignItems="center" mb={3}>
+        <StudentPageShell
+            title={cls?.class_name || 'Chi tiết lớp học'}
+            subtitle="Theo dõi tiến độ, học theo chủ đề và đánh dấu tài liệu hoàn thành"
+            chipLabel="Chi tiết lớp học"
+            actions={(
                 <Button
                     startIcon={<ArrowBack />}
                     onClick={() => navigate('/student/classes')}
-                    sx={{ textTransform: 'none', fontWeight: 600, color: 'text.secondary' }}
+                    sx={{ textTransform: 'none', fontWeight: 700, color: '#12344d' }}
                 >
                     Quay lại
                 </Button>
-            </Stack>
+            )}
+        >
 
             <Grid container spacing={3}>
                 <Grid size={{ xs: 12, md: 8 }}>
                     {cls && (
-                        <Paper sx={{ p: 3, mb: 3 }}>
+                        <Paper
+                            elevation={0}
+                            sx={{
+                                p: 3,
+                                mb: 3,
+                                borderRadius: 3,
+                                border: '1px solid #d6e7f4',
+                                backgroundColor: '#fff',
+                            }}
+                        >
                             <Stack direction="row" spacing={3} alignItems="center">
                                 <Box sx={{
                                     width: 100, height: 100, borderRadius: 2,
@@ -431,9 +442,9 @@ export default function StudentClassDetail() {
                         completedMaterials={completedMaterials}
                         expandedTopic={expandedTopic}
                         onExpandTopic={handleExpandTopic}
-                        onPreviewMaterial={(mat) => setPreviewItem({ 
-                            file: { _id: mat._id, file_name: mat.title, slide_name: mat.title, file_path: mat.file_path || '' } as any, 
-                            type: (mat.type === 'slide' || mat.type === 'slides') ? 'slide' : 'file' 
+                        onPreviewMaterial={(mat) => setPreviewItem({
+                            file: { _id: mat._id, file_name: mat.title, slide_name: mat.title, file_path: mat.file_path || '' } as any,
+                            type: (mat.type === 'slide' || mat.type === 'slides') ? 'slide' : 'file'
                         })}
                         onOpenQuiz={(mat, isDone) => navigate(isDone ? `/student/quiz-result/${mat._id}` : `/student/take-quiz/${mat._id}`)}
                         onFlagMaterial={handleFlagMaterial}
@@ -442,7 +453,16 @@ export default function StudentClassDetail() {
                 </Grid>
 
                 <Grid size={{ xs: 12, md: 4 }}>
-                    <Paper sx={{ p: 3, mb: 2, bgcolor: '#f8fafc' }}>
+                    <Paper
+                        elevation={0}
+                        sx={{
+                            p: 3,
+                            mb: 2,
+                            borderRadius: 3,
+                            border: '1px solid #dce8f4',
+                            background: 'linear-gradient(120deg, rgba(255,255,255,0.96) 0%, rgba(236,247,255,0.96) 45%, rgba(240,255,246,0.96) 100%)',
+                        }}
+                    >
                         <Typography fontWeight="bold" gutterBottom sx={{ mb: 2 }}>
                             Thông tin lớp học
                         </Typography>
@@ -481,6 +501,7 @@ export default function StudentClassDetail() {
                         <Button
                             fullWidth variant="outlined" color="inherit"
                             onClick={() => navigate('/student/classes')}
+                            sx={{ borderRadius: 2, fontWeight: 700 }}
                         >
                             Quay về danh sách lớp
                         </Button>
@@ -515,14 +536,14 @@ export default function StudentClassDetail() {
                                 Tài liệu này chưa có file đính kèm
                             </Alert>
                         )}
-                        
+
                         {/* Nút Hoàn thành ở dưới cùng của Modal Content */}
                         {previewItem && (
                             <Box sx={{ mt: 'auto', pt: 4, display: 'flex', justifyContent: 'center' }}>
                                 {!completedMaterials.includes(previewItem.file._id) ? (
-                                    <Button 
-                                        variant="contained" 
-                                        color="success" 
+                                    <Button
+                                        variant="contained"
+                                        color="success"
                                         size="large"
                                         startIcon={<CheckCircle />}
                                         onClick={() => handleMarkMaterialCompleted(previewItem.file, previewItem.type)}
@@ -567,6 +588,6 @@ export default function StudentClassDetail() {
                     {chatOpen ? <Close /> : <SmartToy />}
                 </Fab>
             </Box>
-        </Box>
+        </StudentPageShell>
     );
 }

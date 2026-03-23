@@ -4,7 +4,6 @@ import {
     Paper,
     Stack,
     Button,
-    Chip,
     Divider,
     Grid,
     TextField,
@@ -13,127 +12,128 @@ import {
     ListItem,
     ListItemText,
     Avatar,
+    Tooltip,
     CircularProgress,
-    Select,
-    MenuItem,
-    FormControl,
-    InputLabel,
-    Card,
-    CardContent,
+    Alert,
+    Chip,
 } from "@mui/material";
-import ReactMarkdown from "react-markdown"
-import remarkGfm from "remark-gfm"
 import {
     ArrowBack,
-    Send,
     SmartToy,
-    Person,
     Description,
     Slideshow,
     ViewInAr,
     Quiz,
-    AutoAwesome,
-    Add,
+    Send,
+    ContentCopy,
+    Refresh,
 } from "@mui/icons-material";
-import { useState, useRef, useEffect } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { ReactElement } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import type { ClassMaterial, ClassMaterialType, Quiz as QuizType, Question } from "../../types/teacherType";
+import type { ClassMaterial, ClassMaterialType, Quiz as QuizType, Question, CreateClassMaterialDTO } from "../../types/teacherType";
 import MaterialTypeViewer from "../../components/MaterialTypeViewer";
-import QuizForm from "../../components/createMaterial/QuizForm";
 import chadApi from "../../services/teacherApi/chadApi";
-import { quizApiService, questionApiService } from "../../services/teacherApi/materialApi";
-import classMaterialApi from "../../services/teacherApi/classMaterialApi";
-import type { FrontendQuestionData } from "../../services/teacherApi/materialApi/questionApi";
+import CreateClassMaterialModal from "../../components/CreateClassMaterialModal";
+import { useAuth } from "../../contexts/AuthContext";
+import {
+    pageTitle,
+    sectionLabel,
+    sectionTitle,
+    flatCard,
+    flatButtonContained,
+    flatButtonOutlined,
+    flatChip,
+    chatBubbleUser,
+    chatBubbleAssistant,
+    loadingContainer,
+    COLORS,
+    RADIUS,
+} from "./teacherStyles";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-export interface ChatMessage {
+type ChatMessage = {
     id: string;
-    content: string;
     sender: "user" | "assistant";
-    timestamp?: Date;
-}
-
-
-// ─── Constants ─────────────────────────────────────────────────────────────────
+    content: string;
+};
 
 const TYPE_META: Record<
     ClassMaterialType,
     {
         label: string;
-        color: "default" | "primary" | "secondary" | "error" | "info" | "success" | "warning";
+        bg: string;
+        text: string;
         icon: ReactElement;
         description: string;
     }
 > = {
     file: {
         label: "File",
-        color: "info",
+        bg: COLORS.infoBg,
+        text: COLORS.info,
         icon: <Description fontSize="small" />,
-        description: "Generate documents, PDFs, or text-based materials",
+        description: "Generate documents or PDFs",
     },
     slide: {
         label: "Slide",
-        color: "primary",
+        bg: COLORS.accentLight,
+        text: COLORS.accent,
         icon: <Slideshow fontSize="small" />,
-        description: "Create presentation slides with content and visuals",
+        description: "Generate presentation slides",
     },
     "2d_render": {
         label: "2D Render",
-        color: "secondary",
+        bg: "#F5F3FF",
+        text: "#7C3AED",
         icon: <ViewInAr fontSize="small" />,
-        description: "Generate 2D visualizations and diagrams",
+        description: "Generate 2D data preview",
     },
     quiz: {
         label: "Quiz",
-        color: "warning",
+        bg: COLORS.warningBg,
+        text: COLORS.warning,
         icon: <Quiz fontSize="small" />,
-        description: "Create interactive quizzes with questions and answers",
+        description: "Generate editable quiz content",
     },
 };
-
-const formatDate = (d: Date | null | undefined) => {
-    if (!d) return "—";
-    return new Date(d).toLocaleDateString("en-GB", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-    });
-};
-
-// ─── Main Component ────────────────────────────────────────────────────────────
 
 export default function AiContentGenerator() {
     const navigate = useNavigate();
     const { classId } = useParams<{ classId: string }>();
     const location = useLocation();
-    // ─── State ──────────────────────────────────────────────────────────────────
-    const state = location.state;
+    const { user } = useAuth();
+
+    const state = location.state as {
+        topic?: {
+            _id?: string;
+            topic_id?: string;
+            title?: string;
+            description?: string;
+            classMaterials?: ClassMaterial[];
+        };
+    } | null;
+
+    const topicTitle = state?.topic?.title || "Untitled topic";
+    const topicDescription = state?.topic?.description || "No description available.";
+    const topicId = state?.topic?._id || state?.topic?.topic_id || "";
+    const topicMaterials = state?.topic?.classMaterials || [];
+
     const [messages, setMessages] = useState<ChatMessage[]>([
         {
-            id: new Date().getTime().toString(),
-            content: `
-Hello! I'm your AI assistant for content generation.
-
-I can help you create files, slides, 2D renders, and quizzes. What would you like to create today?
-
-Topic: ${state.topic.title}
-Description: ${state.topic.description}
-`.trim(),
+            id: crypto.randomUUID(),
             sender: "assistant",
-            timestamp: new Date(),
+            content: `Hello, what do you want today bro?`,
         },
     ]);
+    const [input, setInput] = useState("");
+    const [isChatLoading, setIsChatLoading] = useState(false);
 
     const [inputValue, setInputValue] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [generatedMaterials, setGeneratedMaterials] = useState<ClassMaterial[]>([]);
     const [selectedContentType, setSelectedContentType] = useState<ClassMaterialType | "">("");
     const [showGenerationForm, setShowGenerationForm] = useState(false);
-    const [quizPreview, setQuizPreview] = useState<null | { title: string; questions: FrontendQuestionData[] }>(null);
+    const [quizPreview, setQuizPreview] = useState<null | { title: string; questions: any[] }>(null);
     const [quizTitle, setQuizTitle] = useState<string>("");
     const [quizType, setQuizType] = useState<'interactive' | 'standard'>('interactive');
     const [isSavingQuiz, setIsSavingQuiz] = useState(false);
@@ -144,347 +144,334 @@ Description: ${state.topic.description}
     const [quizTFCount, setQuizTFCount] = useState<number>(0);
     const [quizMCCount, setQuizMCCount] = useState<number>(5);
 
-    const messagesEndRef = useRef<HTMLDivElement>(null);
+    // Restored Original Application State
+    const [quizCount, setQuizCount] = useState(5);
+    const [quizMcCount, setQuizMcCount] = useState(4);
+    const [quizTfCount, setQuizTfCount] = useState(1);
+    const [aiPreviewMaterial, setAiPreviewMaterial] = useState<ClassMaterial | null>(null);
+    const [isPreviewLoading, setIsPreviewLoading] = useState(false);
+    const [previewError, setPreviewError] = useState("");
+    const [previewUrl, setPreviewUrl] = useState("");
+    const [createModalOpen, setCreateModalOpen] = useState(false);
+    const [createdCount, setCreatedCount] = useState(0);
 
-    // ─── Effects ────────────────────────────────────────────────────────────────
+    const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-        console.log(state);
+    }, [messages, isChatLoading]);
+
+    useEffect(() => {
+        return () => {
+            if (previewUrl) {
+                URL.revokeObjectURL(previewUrl);
+            }
+        };
+    }, [previewUrl]);
+
+    const latestUserPrompt = useMemo(() => {
+        const lastUser = [...messages].reverse().find((m) => m.sender === "user");
+        return lastUser?.content || "";
     }, [messages]);
 
-    // ─── Handlers ───────────────────────────────────────────────────────────────
+    const normalizeQuizCount = (value: number, fallback: number) =>
+        Number.isFinite(value) && value > 0 ? Math.floor(value) : fallback;
 
-    const handleSendMessage = async () => {
+    const syncQuizSplitFromTotal = (nextTotal: number) => {
+        const normalizedTotal = Math.max(1, Math.floor(nextTotal));
+        const currentSplitTotal = quizMcCount + quizTfCount;
 
-
-        // Simulate AI response delay
-
-        try {
-            if (!inputValue.trim() || isLoading) return;
-
-            const userMessage: ChatMessage = {
-                id: Date.now().toString(),
-                content: inputValue,
-                sender: "user",
-                timestamp: new Date(),
-            };
-
-            // include the new user message when sending to the API
-            const payload = [...messages, userMessage];
-            setMessages(payload);
-            setInputValue("");
-            setIsLoading(true);
-
-            const p = await chadApi.getChadResponse(payload);
-            console.log("API response", JSON.parse(p.message));
-            // apiService returns response.data, so p is the data object
-            const s = p?.message;
-            const aiResponse: ChatMessage = {
-                id: (Date.now() + 1).toString(),
-                content: s ?? "",
-                sender: "assistant",
-                timestamp: new Date(),
-            };
-            setMessages(prev => [...prev, aiResponse]);
-            setIsLoading(false);
-
-        } catch (error) {
-            console.error("Error getting AI response:", error);
-            setIsLoading(false);
+        if (currentSplitTotal <= 0) {
+            setQuizCount(normalizedTotal);
+            setQuizMcCount(normalizedTotal);
+            setQuizTfCount(0);
+            return;
         }
 
+        const nextMcCount = Math.min(
+            normalizedTotal,
+            Math.max(0, Math.round((normalizedTotal * quizMcCount) / currentSplitTotal)),
+        );
+        const nextTfCount = normalizedTotal - nextMcCount;
+
+        setQuizCount(normalizedTotal);
+        setQuizMcCount(nextMcCount);
+        setQuizTfCount(nextTfCount);
     };
 
-    const generateAIResponse = (userInput: string): string => {
-        const responses = [
-            "I understand you'd like to create content. Could you provide more details about what specific material you need?",
-            "That's a great idea! Let me help you create that content. What subject area should we focus on?",
-            "I can help you with that. Would you prefer to create a quiz, slide presentation, document, or 2D visualization?",
-            "Excellent! I'll help you generate that content. Please provide more context about your requirements.",
-            "That sounds interesting! Let me know the target audience and learning objectives for better customization.",
-        ];
-        return responses[Math.floor(Math.random() * responses.length)];
-    };
+    const syncQuizTotalFromSplit = (nextMcCount: number, nextTfCount: number) => {
+        const normalizedMcCount = Math.max(0, Math.floor(nextMcCount));
+        const normalizedTfCount = Math.max(0, Math.floor(nextTfCount));
+        const nextTotal = normalizedMcCount + normalizedTfCount;
 
-    const handleGenerateContent = async () => {
-        if (!selectedContentType) return;
-
-        setIsLoading(true);
-
-        // Simulate content generation delay
-        setTimeout(() => {
-            // TODO: Replace with actual AI content generation
-            // const newMaterial = generateMockMaterial(generationRequest);
-            // setGeneratedMaterials(prev => [...prev, newMaterial]);
-
-            const aiMessage: ChatMessage = {
-                id: Date.now().toString(),
-                content: `I've successfully generated a ${TYPE_META[selectedContentType].label.toLowerCase()} based on our conversation. You can see it in the content display panel on the left. Would you like me to create anything else?`,
-                sender: "assistant",
-                timestamp: new Date(),
-            };
-
-            setMessages(prev => [...prev, aiMessage]);
-            setIsLoading(false);
-        }, 2000);
-    };
-
-    // buildQuizPrompt removed — quiz prompt construction now happens server-side
-
-    // Fisher-Yates shuffle
-    const shuffleArray = <T,>(arr: T[]) => {
-        const a = arr.slice();
-        for (let i = a.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            const tmp = a[i];
-            a[i] = a[j];
-            a[j] = tmp;
+        if (nextTotal <= 0) {
+            setQuizCount(1);
+            setQuizMcCount(1);
+            setQuizTfCount(0);
+            return;
         }
-        return a;
-    }
 
-    const generateQuizPreview = async () => {
-        if (!state?.topic) return;
-        setIsLoading(true);
-        try {
-            const totalDesired = typeof quizQuestionCount === 'number' && quizQuestionCount > 0 ? quizQuestionCount : 5;
+        setQuizCount(nextTotal);
+        setQuizMcCount(normalizedMcCount);
+        setQuizTfCount(normalizedTfCount);
+    };
 
-            // If there's an existing preview, only request the remaining questions to reach the desired total
-            const existingQuestions = quizPreview?.questions?.length || 0;
-            const remaining = Math.max(0, totalDesired - existingQuestions);
-            if (remaining === 0) {
-                alert('You already have the requested number of questions in the preview. Edit or clear before generating more.');
-                setIsLoading(false);
-                return;
-            }
-
-            // Determine how many MC/TF to request for the remaining slots based on desired distribution minus existing
-            const existingTF = (quizPreview?.questions || []).filter(q => Array.isArray(q.options) && q.options.length === 2 && q.options.includes('True') && q.options.includes('False')).length;
-            const existingMC = (quizPreview?.questions || []).length - existingTF;
-            const desiredTF = Math.max(0, Math.min(totalDesired, quizTFCount || 0));
-            const desiredMC = Math.max(0, Math.min(totalDesired, quizMCCount || 0));
-            let needTF = Math.max(0, desiredTF - existingTF);
-            let needMC = Math.max(0, desiredMC - existingMC);
-
-            // Adjust to ensure needTF + needMC == remaining
-            if (needTF + needMC < remaining) {
-                needMC += remaining - (needTF + needMC);
-            } else if (needTF + needMC > remaining) {
-                // trim MC first
-                const excess = (needTF + needMC) - remaining;
-                needMC = Math.max(0, needMC - excess);
-            }
-
-            const userMessage: ChatMessage = {
-                id: Date.now().toString(),
-                content: `Generate quiz: ${remaining} questions (${needMC} MC, ${needTF} TF)`,
-                sender: "user",
-                timestamp: new Date(),
-            };
-
-            // Call backend route to generate quiz JSON
-            const p = await chadApi.createQuiz(state.topic.title, state.topic.description, remaining, needMC, needTF);
-            let raw = p?.message ?? "";
-            raw = raw.replace('```json', '');
-            console.log("Raw AI response for quiz generation:", raw);
-
-            let parsed: any = null;
-            let isParsed = false;
-            try { parsed = JSON.parse(raw); isParsed = true; } catch (e) {
-                const m = raw.match(/```(?:json)?([\s\S]*?)```/i) || raw.match(/\{[\s\S]*\}/);
-                if (m) {
-                    const jsonText = m[1] ? m[1].trim() : m[0];
-                    try { parsed = JSON.parse(jsonText); isParsed = true; } catch (er) { parsed = null; }
-                }
-            }
-            if (parsed) {
-                alert('AI response parsed successfully. Preview will be generated based on the content. Please review the questions and edit as needed before saving.');
-            }
-            if (parsed && Array.isArray(parsed.questions)) {
-                const questionsRaw = parsed.questions.slice(0, remaining);
-                const newQuestions: FrontendQuestionData[] = questionsRaw.map((q: any) => {
-                    const content = q.content || q.title || '';
-                    let options: string[] = Array.isArray(q.options) ? q.options.map(String) : [];
-                    let correctAnswer = q.correctAnswer ?? q.correct_answer ?? '';
-
-                    const caLower = String(correctAnswer).toLowerCase();
-
-                    // If the model returned a true/false type or a boolean-like correct answer,
-                    // represent it as multiple-choice with exact options ["True","False"].
-                    if (q.type === 'true-false' || /^(true|false)$/i.test(String(correctAnswer))) {
-                        options = ['True', 'False'];
-                        if (caLower === 'true') correctAnswer = 'True';
-                        else if (caLower === 'false') correctAnswer = 'False';
-                        else correctAnswer = '';
-                    }
-
-                    // Normalize options: trim and dedupe while preserving order
-                    options = options.map((o: any) => String(o).trim()).filter((o: string) => o !== '');
-                    options = Array.from(new Set(options));
-
-                    // Ensure at least the True/False options if options are empty but correctAnswer looks boolean
-                    if (options.length === 0 && /^(true|false)$/i.test(String(correctAnswer))) {
-                        options = ['True', 'False'];
-                        correctAnswer = correctAnswer.toLowerCase() === 'true' ? 'True' : 'False';
-                    }
-
-                    // As a final guarantee, ensure the question type is multiple-choice
-                    const finalType: FrontendQuestionData['type'] = 'multiple-choice';
-
-                    // Make sure correctAnswer matches an option (case-sensitive exact match).
-                    if (correctAnswer && !options.includes(correctAnswer)) {
-                        // Try case-insensitive match
-                        const found = options.find((o) => o.toLowerCase() === String(correctAnswer).toLowerCase());
-                        if (found) correctAnswer = found;
-                        else if (options.length > 0) correctAnswer = options[0];
-                        else correctAnswer = '';
-                    }
-
-                    return {
-                        content,
-                        type: finalType,
-                        options,
-                        correctAnswer,
-                    };
-                });
-
-                // Append to existing preview questions (if any) and shuffle
-                const combined = [...(quizPreview?.questions || []), ...newQuestions];
-                const shuffled = shuffleArray<FrontendQuestionData>(combined);
-                const derivedTitle = parsed.title || quizPreview?.title || `Quiz on ${state.topic.title}`;
-                setQuizPreview({ title: derivedTitle, questions: shuffled });
-                setQuizTitle(derivedTitle);
-                // Validate distribution and warn if AI did not obey counts
-                const actualTF = (quizPreview?.questions || []).filter(q => Array.isArray(q.options) && q.options.length === 2 && q.options.includes('True') && q.options.includes('False')).length;
-                const actualMC = (quizPreview?.questions || []).length - actualTF;
-                if (typeof quizQuestionCount === 'number') {
-                    const desiredTF = quizTFCount;
-                    const desiredMC = quizMCCount;
-                }
-            } else {
-                const derivedTitle = `Quiz on ${state.topic.title}`;
-                setQuizPreview(prev => ({ title: derivedTitle, questions: prev?.questions || [] }));
-                setQuizTitle(derivedTitle);
-            }
-
-            const aiMessage: ChatMessage = {
-                id: (Date.now() + 1).toString(),
-                content: raw,
-                sender: "assistant",
-                timestamp: new Date(),
-            };
-            setMessages(prev => [...prev, userMessage, aiMessage]);
-        } catch (error) {
-            console.error('generateQuizPreview error', error);
-        } finally {
-            setIsLoading(false);
+    const setNewPreviewUrl = (url: string) => {
+        if (previewUrl) {
+            URL.revokeObjectURL(previewUrl);
         }
-    }
+        setPreviewUrl(url);
+    };
 
-    const saveQuizAndCreateMaterial = async () => {
-        if (!quizPreview || !classId) return;
-        setIsSavingQuiz(true);
-        let content_id: string | undefined = undefined;
+    const handleSend = async () => {
+        if (!selectedContentType || !input.trim() || isChatLoading) return;
+
+        const userMsg: ChatMessage = {
+            id: crypto.randomUUID(),
+            sender: "user",
+            content: input.trim(),
+        };
+
+        const nextMessages = [...messages, userMsg];
+        setMessages(nextMessages);
+        setInput("");
+        setIsChatLoading(true);
+
         try {
-            // Validate preview matches requested distribution before saving
-            if (typeof quizQuestionCount === 'number') {
-                const total = quizQuestionCount;
-                const actualTotal = quizPreview.questions.length;
-                const actualTF = quizPreview.questions.filter(q => Array.isArray(q.options) && q.options.length === 2 && q.options.includes('True') && q.options.includes('False')).length;
-                const actualMC = actualTotal - actualTF;
-                if (actualTotal !== total || actualTF !== quizTFCount || actualMC !== quizMCCount) {
-                    alert('Quiz questions do not match the requested distribution. Please edit the preview so counts match before saving.');
-                    setIsSavingQuiz(false);
-                    return;
-                }
-            }
-            // Step 1: Create Quiz record
-            const quizData = {
-                title: (quizTitle && quizTitle.trim()) ? quizTitle.trim() : quizPreview.title,
-                type: 'interactive',
-                status: true,
-                ...(quizMaxAttempts !== '' && { max_attempt_number: quizMaxAttempts }),
-                ...(quizStartDate && { available_date: new Date(quizStartDate) }),
-                ...(quizEndDate && { end_date: new Date(quizEndDate) }),
-            } as any;
-            const createdQuiz = await quizApiService.createQuiz(quizData);
-            content_id = (createdQuiz as any)?._id;
-
-            // Step 2: Create questions sequentially
-            for (const q of quizPreview.questions) {
-                await questionApiService.createQuestion(
+            const chatMessage = await handleGeneratePreview(userMsg.content);
+            if (chatMessage) {
+                setMessages((prev) => [
+                    ...prev,
                     {
-                        content: q.content,
-                        type: q.type,
-                        options: q.options || [],
-                        correctAnswer: q.correctAnswer,
-                        has2DVisualization: false,
+                        id: crypto.randomUUID(),
+                        sender: "assistant",
+                        content: chatMessage,
                     },
-                    content_id as string,
-                );
+                ]);
             }
-
-            // Step 3: Create ClassMaterial linking to the quiz
-            const newMaterial = {
-                type: 'quiz',
-                order_num: (generatedMaterials.length || 0) + 1,
-                class_assign_id: classId,
-                title: quizPreview.title,
-                topic_id: state?.topic?._id,
-                content_id: content_id,
-                is_ai_material: true,
-                description: quizPreview.title,
-            } as any;
-
-            const createdMaterial = await classMaterialApi.createMaterial(newMaterial, content_id);
-            if (!createdMaterial) {
-                // cleanup
-                if (content_id) {
-                    try { await quizApiService.deleteQuiz(content_id); } catch (e) { console.error('cleanup failed', e); }
-                }
-                alert('Error creating class material. Operation rolled back.');
-                return;
-            }
-
-            // If the created material references a quiz content_id, fetch the quiz and its questions
-            let materialWithContent: any = createdMaterial;
-            try {
-                const cid = (createdMaterial as any)?.content_id ?? content_id;
-                if (cid && newMaterial.type === 'quiz') {
-                    const quizData = await quizApiService.getQuizById(cid);
-                    const questionData = await questionApiService.getQuestionsByQuizId(cid);
-                    materialWithContent = { ...(createdMaterial ?? {}), content: { ...quizData, questions: questionData } };
-                }
-            } catch (err) {
-                console.warn('Failed to fetch material content after creation', err);
-            }
-
-            setGeneratedMaterials(prev => [{ ...(materialWithContent ?? {}), type: 'quiz' } as ClassMaterial, ...prev]);
-            // Reset preview and quiz-specific form state so teacher can create another quiz immediately
-            setQuizPreview(null);
-            setQuizTitle("");
-            setQuizMaxAttempts(3);
-            setQuizStartDate("");
-            setQuizEndDate("");
-            // Reset question counts to defaults
-            setQuizQuestionCount(5);
-            setQuizMCCount(5);
-            setQuizTFCount(0);
-            // Keep the quiz content type selected so user can create another quiz right away
-            setSelectedContentType("quiz");
-            setMessages(prev => [...prev, { id: Date.now().toString(), content: `Saved quiz "${(quizTitle && quizTitle.trim()) ? quizTitle : quizPreview?.title || ''}" and created class material.`, sender: 'assistant', timestamp: new Date() }]);
-        } catch (error) {
-            console.error('saveQuizAndCreateMaterial error', error);
-            // try cleanup
-            if (content_id) {
-                try { await quizApiService.deleteQuiz(content_id); } catch (e) { console.error('cleanup failed', e); }
-            }
-            alert('An error occurred while saving the quiz. Changes were rolled back if possible.');
+        } catch {
+            setMessages((prev) => [
+                ...prev,
+                {
+                    id: crypto.randomUUID(),
+                    sender: "assistant",
+                    content: "Failed to generate content. Please try again or check the format.",
+                },
+            ]);
         } finally {
-            setIsSavingQuiz(false);
+            setIsChatLoading(false);
+        }
+    };
+
+    const handleRetry = async (promptText: string) => {
+        if (!selectedContentType || isChatLoading || isPreviewLoading) return;
+
+        const retryMsg: ChatMessage = {
+            id: crypto.randomUUID(),
+            sender: "user",
+            content: promptText,
+        };
+
+        setMessages((prev) => [...prev, retryMsg]);
+        setIsChatLoading(true);
+
+        try {
+            const chatMessage = await handleGeneratePreview(promptText);
+            if (chatMessage) {
+                setMessages((prev) => [
+                    ...prev,
+                    {
+                        id: crypto.randomUUID(),
+                        sender: "assistant",
+                        content: chatMessage,
+                    },
+                ]);
+            }
+        } catch {
+            setMessages((prev) => [
+                ...prev,
+                {
+                    id: crypto.randomUUID(),
+                    sender: "assistant",
+                    content: "Failed to generate content upon retry.",
+                },
+            ]);
+        } finally {
+            setIsChatLoading(false);
+        }
+    };
+
+    const handleGeneratePreview = async (overridePrompt?: string): Promise<string | void> => {
+        if (!selectedContentType || isPreviewLoading) return;
+
+        const promptForPreview = overridePrompt ?? latestUserPrompt;
+
+        // Fisher-Yates shuffle helper
+        const shuffleArray = <T,>(arr: T[]) => {
+            const a = arr.slice();
+            for (let i = a.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                const tmp = a[i];
+                a[i] = a[j];
+                a[j] = tmp;
+            }
+            return a;
+        }
+
+        setPreviewError("");
+        setIsPreviewLoading(true);
+
+        try {
+            switch (selectedContentType) {
+                case "slide": {
+                    const { blob, message } = await chadApi.createSlide(topicTitle, topicDescription, promptForPreview);
+                    const fileUrl = URL.createObjectURL(blob);
+                    setNewPreviewUrl(fileUrl);
+                    setAiPreviewMaterial({
+                        _id: `preview-slide-${Date.now()}`,
+                        status: "draft",
+                        type: "slide",
+                        order_num: 0,
+                        class_assign_id: classId || "",
+                        title: `AI Slide Preview - ${topicTitle}`,
+                        dateUpdate: new Date(),
+                        dateCreate: new Date(),
+                        content: {
+                            slide_name: `AI ${topicTitle}.pptx`,
+                            file_path: fileUrl,
+                        },
+                        is_ai_material: true,
+                        ai_content_id: null,
+                    });
+                    return message;
+                }
+                case "file": {
+                    const { blob, message } = await chadApi.createPdf(topicTitle, topicDescription, promptForPreview);
+                    const fileUrl = URL.createObjectURL(blob);
+                    setNewPreviewUrl(fileUrl);
+                    setAiPreviewMaterial({
+                        _id: `preview-file-${Date.now()}`,
+                        status: "draft",
+                        type: "file",
+                        order_num: 0,
+                        class_assign_id: classId || "",
+                        title: `AI File Preview - ${topicTitle}`,
+                        dateUpdate: new Date(),
+                        dateCreate: new Date(),
+                        content: {
+                            file_name: `AI ${topicTitle}.pdf`,
+                            file_path: fileUrl,
+                        },
+                        is_ai_material: true,
+                        ai_content_id: null,
+                    });
+                    return message;
+                }
+                case "quiz": {
+                    const totalQuestions = normalizeQuizCount(quizCount, 5);
+                    const multipleChoiceQuestions = normalizeQuizCount(quizMcCount, 4);
+                    const trueFalseQuestions = normalizeQuizCount(quizTfCount, 1);
+                    const result = await chadApi.createQuiz(
+                        topicTitle,
+                        topicDescription,
+                        totalQuestions,
+                        multipleChoiceQuestions,
+                        trueFalseQuestions,
+                    );
+                    const parsed = result?.rawContent ? JSON.parse(result.rawContent) : {};
+                    const questionsRaw = Array.isArray(parsed?.questions) ? parsed.questions : [];
+                    const mappedQuestions = questionsRaw.slice(0, totalQuestions).map((q: any, idx: number) => {
+                        const rawOptions = Array.isArray(q.options) ? q.options.map((o: any) => String(o)) : [];
+                        const normalizedOptions: string[] = Array.from(new Set(rawOptions));
+                        const normalizedType =
+                            q.type === "true_false" || q.type === "multiple_choice"
+                                ? q.type
+                                : normalizedOptions.length === 2 &&
+                                    normalizedOptions.includes("True") &&
+                                    normalizedOptions.includes("False")
+                                    ? "true_false"
+                                    : "multiple_choice";
+                        const explicitIndex = Number.isInteger(q.correct_index) ? Number(q.correct_index) : -1;
+                        const answer = String(q.correctAnswer ?? "");
+                        const fallbackIndex = normalizedOptions.findIndex(
+                            (o) => o.toLowerCase() === answer.toLowerCase(),
+                        );
+                        const answerIndex = Math.max(0, explicitIndex >= 0 ? explicitIndex : fallbackIndex);
+
+                        return {
+                            _id: `preview-q-${idx}`,
+                            title: String(q.title || q.content || `Question ${idx + 1}`),
+                            type: normalizedType,
+                            options: normalizedOptions,
+                            correct_index: answerIndex,
+                        };
+                    });
+
+                    setAiPreviewMaterial({
+                        _id: `preview-quiz-${Date.now()}`,
+                        status: "draft",
+                        type: "quiz",
+                        order_num: 0,
+                        class_assign_id: classId || "",
+                        title: String(parsed?.title || `Quiz on ${topicTitle}`),
+                        dateUpdate: new Date(),
+                        dateCreate: new Date(),
+                        content: {
+                            _id: `preview-quiz-content-${Date.now()}`,
+                            material_id: "preview",
+                            title: String(parsed?.title || `Quiz on ${topicTitle}`),
+                            keyword: parsed?.keyword ?? null,
+                            type: parsed?.type === "standard" ? "standard" : "interactive",
+                            available_date: null,
+                            max_attempt_number: null,
+                            end_date: null,
+                            status: parsed?.status ?? true,
+                            questions: mappedQuestions,
+                        },
+                        is_ai_material: true,
+                        ai_content_id: null,
+                    });
+                    return result?.message || "Quiz generated successfully.";
+                }
+                case "2d_render": {
+                    setAiPreviewMaterial({
+                        _id: `preview-2d-${Date.now()}`,
+                        status: "draft",
+                        type: "2d_render",
+                        order_num: 0,
+                        class_assign_id: classId || "",
+                        title: `2D Preview - ${topicTitle}`,
+                        dateUpdate: new Date(),
+                        dateCreate: new Date(),
+                        content: {
+                            render_data: JSON.stringify(
+                                {
+                                    topic: topicTitle,
+                                    notes: promptForPreview || "No additional prompt",
+                                },
+                                null,
+                                2,
+                            ),
+                        },
+                        is_ai_material: true,
+                        ai_content_id: null,
+                    });
+                    return "2D render preview generated.";
+                }
+                default:
+                    break;
+            }
+        } catch (error) {
+            setPreviewError(error instanceof Error ? error.message : "Failed to generate preview.");
+        } finally {
+            setIsPreviewLoading(false);
         }
     }
+
+    const handleMaterialCreated = (_topicId: string, _material: CreateClassMaterialDTO) => {
+        setCreatedCount((prev) => prev + 1);
+        setCreateModalOpen(false);
+    };
 
     const resetQuizPreview = () => {
         setQuizPreview(null);
@@ -497,366 +484,376 @@ Description: ${state.topic.description}
     const handleKeyPress = (event: React.KeyboardEvent) => {
         if (event.key === "Enter" && !event.shiftKey) {
             event.preventDefault();
-            handleSendMessage();
+            handleSend();
         }
     };
 
-    // ─── Render ─────────────────────────────────────────────────────────────────
+    const inputSx = {
+        "& .MuiOutlinedInput-root": {
+            borderRadius: RADIUS,
+        },
+    };
 
     return (
         <Box>
+            <CreateClassMaterialModal
+                open={createModalOpen}
+                onClose={() => setCreateModalOpen(false)}
+                onMaterialCreated={handleMaterialCreated}
+                topicId={topicId}
+                classId={classId || ""}
+                currentMaterialCount={topicMaterials.length + createdCount}
+                topicTitle={topicTitle}
+                aiPreviewMaterial={aiPreviewMaterial}
+            />
+
             {/* ── Header ── */}
             <Stack direction="row" justifyContent="space-between" alignItems="center" mb={3}>
                 <Stack direction="row" alignItems="center" spacing={2}>
                     <Button
                         startIcon={<ArrowBack />}
                         onClick={() => navigate(`/teacher/class/${classId}`)}
-                        variant="text"
+                        sx={{
+                            ...flatButtonOutlined,
+                            borderColor: "transparent",
+                            "&:hover": {
+                                borderColor: COLORS.border,
+                                bgcolor: COLORS.accentLight,
+                                boxShadow: "none",
+                            },
+                        }}
                     >
                         Quay lại lớp học
                     </Button>
-                    <Divider orientation="vertical" flexItem />
+                    <Divider orientation="vertical" flexItem sx={{ borderColor: COLORS.borderLight }} />
                     <Stack direction="row" alignItems="center" spacing={1}>
-                        <SmartToy color="primary" />
-                        <Typography variant="h5" fontWeight={700}>
-                            AI Content Generator
-                        </Typography>
+                        <SmartToy sx={{ color: COLORS.accent }} />
+                        <Box>
+                            <Typography sx={sectionLabel}>AI Workspace</Typography>
+                            <Typography sx={{ ...pageTitle, fontSize: "1.25rem" }}>
+                                AI Content Generator
+                            </Typography>
+                        </Box>
                     </Stack>
                 </Stack>
             </Stack>
 
-            {/* ── Main Layout ── */}
-            <Grid container spacing={3} sx={{ height: "calc(100vh - 200px)" }}>
-                {/* ── Content Display Panel ── */}
-                <Grid size={{ xs: 12, md: 6 }}>
-                    <Paper sx={{ p: 3, height: "90vh", display: "flex", flexDirection: "column" }}>
-                        {/* Selected Content Type Header (moved to AI generator tab) */}
-                        {selectedContentType && (
-                            <Card variant="outlined" sx={{ mb: 2, bgcolor: "primary.50" }}>
-                                <CardContent sx={{ py: 2, minHeight: '700px' }}>
-                                    <Stack direction="column" alignItems="center" justifyContent="space-between" spacing={2}>
-                                        <Stack direction="row" alignItems="center" spacing={1} sx={{ minWidth: 200 }}>
-                                            {TYPE_META[selectedContentType].icon}
-                                            <Typography variant="subtitle2">
-                                                Creating: {TYPE_META[selectedContentType].label}
-                                            </Typography>
-                                        </Stack>
+            <Grid container spacing={2} sx={{ height: "calc(100vh - 230px)" }}>
+                {/* ── Preview Panel ── */}
+                <Grid size={{ xs: 12, md: 7 }}>
+                    <Paper
+                        elevation={0}
+                        sx={{
+                            ...flatCard,
+                            height: "78vh",
+                            display: "flex",
+                            flexDirection: "column",
+                            borderTop: `3px solid ${COLORS.accent}`,
+                        }}
+                    >
+                        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
+                            <Stack direction="row" alignItems="center" spacing={1}>
+                                <SmartToy sx={{ color: COLORS.accent, fontSize: 20 }} />
+                                <Typography sx={sectionTitle}>AI Preview</Typography>
+                            </Stack>
+                            <Stack direction="row" spacing={1}>
+                                <Button
+                                    variant="outlined"
+                                    size="small"
+                                    disabled={!selectedContentType || isPreviewLoading}
+                                    onClick={async () => {
+                                        const msg = await handleGeneratePreview();
+                                        if (msg) {
+                                            setMessages((prev) => [
+                                                ...prev,
+                                                { id: crypto.randomUUID(), sender: "assistant", content: msg },
+                                            ]);
+                                        }
+                                    }}
+                                    sx={flatButtonOutlined}
+                                >
+                                    {isPreviewLoading ? "Generating..." : "Generate Preview"}
+                                </Button>
+                                <Button
+                                    variant="contained"
+                                    size="small"
+                                    onClick={() => setCreateModalOpen(true)}
+                                    disabled={!topicId || !classId || !aiPreviewMaterial}
+                                    sx={flatButtonContained}
+                                >
+                                    Create Class Material
+                                </Button>
+                            </Stack>
+                        </Stack>
 
-                                        {/* Center controls: total / MC / TF - kept on one line */}
-                                        {selectedContentType === 'quiz' && (
-                                            <Stack direction="row" alignItems="center" spacing={2} sx={{ flex: 1, justifyContent: 'center' }}>
-                                                <TextField
-                                                    size="small"
-                                                    type="number"
-                                                    label="# Questions"
-                                                    value={quizQuestionCount}
-                                                    onChange={(e) => {
-                                                        const raw = e.target.value;
-                                                        const total = raw === '' ? '' : Math.max(1, Number(raw));
-                                                        setQuizQuestionCount(total as any);
-                                                        if (typeof total === 'number') {
-                                                            const mc = Math.min(quizMCCount, total);
-                                                            setQuizMCCount(mc);
-                                                            setQuizTFCount(total - mc);
-                                                        }
-                                                    }}
-                                                    sx={{ width: 110 }}
-                                                />
-                                                <TextField
-                                                    size="small"
-                                                    type="number"
-                                                    label="Multiple Choice"
-                                                    value={quizMCCount}
-                                                    onChange={(e) => {
-                                                        const total = typeof quizQuestionCount === 'number' ? quizQuestionCount : 0;
-                                                        let mc = Math.max(0, Number(e.target.value) || 0);
-                                                        mc = Math.min(mc, total);
-                                                        setQuizMCCount(mc);
-                                                        setQuizTFCount(total - mc);
-                                                    }}
-                                                    sx={{ width: 100 }}
-                                                />
-                                                <TextField
-                                                    size="small"
-                                                    type="number"
-                                                    label="True/False"
-                                                    value={quizTFCount}
-                                                    onChange={(e) => {
-                                                        const total = typeof quizQuestionCount === 'number' ? quizQuestionCount : 0;
-                                                        let tf = Math.max(0, Number(e.target.value) || 0);
-                                                        tf = Math.min(tf, total);
-                                                        setQuizTFCount(tf);
-                                                        setQuizMCCount(total - tf);
-                                                    }}
-                                                    sx={{ width: 100 }}
-                                                />
-                                            </Stack>
-                                        )}
+                        <Divider sx={{ mb: 2, borderColor: COLORS.borderLight }} />
 
-                                        {/* Right actions: generate + change in one line */}
-                                        <Stack direction="row" spacing={1} sx={{ minWidth: 160, justifyContent: 'flex-end' }}>
-                                            {selectedContentType === 'quiz' && (
-                                                <Button size="small" variant="outlined" onClick={generateQuizPreview} disabled={isLoading}>
-                                                    {isLoading ? 'Generating...' : 'Generate Preview'}
-                                                </Button>
-                                            )}
-                                            <Button
-                                                size="small"
-                                                variant="outlined"
-                                                onClick={() => {
-                                                    setSelectedContentType("");
-                                                    setMessages([]);
-                                                }}
-                                            >
-                                                Change
-                                            </Button>
-                                        </Stack>
-                                    </Stack>
-                                </CardContent>
-                            </Card>
+                        <Typography sx={{ fontWeight: 700, fontSize: "1rem", color: COLORS.textDark, mb: 1 }}>
+                            {topicTitle}
+                        </Typography>
+
+                        {previewError && (
+                            <Alert
+                                severity="error"
+                                sx={{
+                                    mb: 2,
+                                    borderRadius: RADIUS,
+                                    border: `1px solid ${COLORS.error}`,
+                                    boxShadow: "none",
+                                }}
+                            >
+                                {previewError}
+                            </Alert>
                         )}
-                        {quizPreview ? (
-                            <Box sx={{ maxHeight: '90vh', overflow: 'auto' }}>
-                                <Stack direction="column" spacing={3} alignItems="stretch" justifyContent="flex-start" mb={2}>
-                                    <Stack style={{ padding: '1rem 0px' }} spacing={1}>
-                                        <Typography variant="h6">Quiz Preview (editable)</Typography>
-                                        <Typography variant="caption" color="text.secondary">Preview generated by AI — edit title and questions before saving.</Typography>
-                                    </Stack>
 
-                                    <QuizForm
-                                        quizType={quizType}
-                                        onQuizTypeChange={(v) => setQuizType(v as 'interactive' | 'standard')}
-                                        quizTitle={quizTitle}
-                                        onQuizTitleChange={(v) => { setQuizTitle(v); setQuizPreview(prev => prev ? { ...prev, title: v } : prev); }}
-                                        quizStartDate={quizStartDate}
-                                        onQuizStartDateChange={setQuizStartDate}
-                                        quizEndDate={quizEndDate}
-                                        onQuizEndDateChange={setQuizEndDate}
-                                        maxAttempts={quizMaxAttempts}
-                                        onMaxAttemptsChange={setQuizMaxAttempts}
-                                        questions={quizPreview.questions as any}
-                                        onQuestionsChange={(qs) => setQuizPreview(prev => prev ? { ...prev, questions: qs as FrontendQuestionData[] } : prev)}
-                                    />
-
-                                    <Stack direction="row" spacing={2} justifyContent="flex-end">
-                                        <Button size="small" variant="outlined" onClick={resetQuizPreview}>Clear</Button>
-                                        <Button size="small" variant="contained" onClick={saveQuizAndCreateMaterial} disabled={isSavingQuiz || !quizPreview?.questions || quizPreview.questions.length === 0}>
-                                            {isSavingQuiz ? 'Saving...' : 'Save Quiz'}
-                                        </Button>
-                                    </Stack>
-
-                                </Stack>
-                            </Box>
-                        ) : generatedMaterials.length === 0 ? (
-                            <>
-                                <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
-                                    <AutoAwesome color="primary" />
-                                    <Typography variant="h6">
-                                        Generated Content
-                                    </Typography>
-                                </Stack>
-                                <Divider sx={{ mb: 2 }} />
+                        <Box sx={{ flex: 1, minHeight: 0, overflow: "auto" }}>
+                            {isPreviewLoading ? (
+                                <Box sx={loadingContainer}>
+                                    <CircularProgress sx={{ color: COLORS.accent }} />
+                                </Box>
+                            ) : aiPreviewMaterial ? (
+                                <MaterialTypeViewer material={aiPreviewMaterial} />
+                            ) : (
                                 <Box
                                     display="flex"
                                     justifyContent="center"
                                     alignItems="center"
                                     height="100%"
                                     flexDirection="column"
-                                    color="text.secondary"
+                                    textAlign="center"
                                 >
-                                    <SmartToy sx={{ fontSize: 64, mb: 2, opacity: 0.5 }} />
-                                    <Typography variant="body1" textAlign="center">
-                                        No content generated yet.<br />
-                                        Start a conversation with AI to create materials.
+                                    <Typography sx={{ color: COLORS.textSecondary, fontSize: "0.9rem" }}>
+                                        Pick a content type, chat with AI, then click Generate Preview.
                                     </Typography>
                                 </Box>
-                            </>
-                        ) : (
-                            <Box sx={{ height: "100%", overflow: "auto" }}>
-                                {generatedMaterials.map((material, index) => {
-                                    const meta = TYPE_META[material.type];
-                                    return (
-                                        <Box key={material._id ?? index} sx={{ mb: index < generatedMaterials.length - 1 ? 4 : 0 }}>
-                                            {/* Back to generator button */}
-                                            {index === 0 && (
-                                                <Stack direction="row" justifyContent="space-between" alignItems="center" mb={3}>
-                                                    <Button
-                                                        startIcon={<AutoAwesome />}
-                                                        onClick={() => setGeneratedMaterials([])}
-                                                        variant="text"
-                                                        size="small"
-                                                    >
-                                                        Generate More Content
-                                                    </Button>
-                                                </Stack>
-                                            )}
-
-                                            {/* Material header similar to MaterialDetailPage */}
-                                            <Stack direction="row" spacing={2} alignItems="center" mb={1}>
-                                                {meta.icon}
-                                                <Typography variant="h5" fontWeight={700}>
-                                                    {material.title}
-                                                </Typography>
-                                                <Chip
-                                                    label={meta.label}
-                                                    color={meta.color}
-                                                    size="small"
-                                                    icon={meta.icon}
-                                                />
-                                                <Chip
-                                                    label="AI generated"
-                                                    color="success"
-                                                    size="small"
-                                                    icon={<SmartToy fontSize="small" />}
-                                                />
-                                            </Stack>
-
-                                            {/* Meta row similar to MaterialDetailPage */}
-                                            <Stack direction="row" spacing={3} mb={3}>
-                                                <Typography variant="caption" color="text.secondary">
-                                                    Generated: {formatDate(material.dateCreate)}
-                                                </Typography>
-                                                {material.dateUpdate && (
-                                                    <Typography variant="caption" color="text.secondary">
-                                                        Last update: {formatDate(material.dateUpdate)}
-                                                    </Typography>
-                                                )}
-                                                <Typography variant="caption" color="text.secondary">
-                                                    Order #{material.order_num}
-                                                </Typography>
-                                            </Stack>
-
-                                            <Divider sx={{ mb: 3 }} />
-
-                                            {/* Content viewer - reusing MaterialTypeViewer */}
-                                            <MaterialTypeViewer material={material} />
-
-                                            {index < generatedMaterials.length - 1 && <Divider sx={{ mt: 4 }} />}
-                                        </Box>
-                                    );
-                                })}
-                            </Box>
-                        )}
+                            )}
+                        </Box>
                     </Paper>
                 </Grid>
 
                 {/* ── Chat Panel ── */}
-                <Grid size={{ xs: 12, md: 6 }}>
-                    <Paper sx={{ p: 3, height: "90vh", display: "flex", flexDirection: "column" }}>
-                        <Typography variant="h6" gutterBottom>
-                            AI Assistant
-                        </Typography>
-                        <Divider sx={{ mb: 2 }} />
-
-                        {/* Content Type Selection */}
-                        {!selectedContentType ? (
-                            <Box sx={{ textAlign: "center", py: 4 }}>
-                                <SmartToy sx={{ fontSize: 48, color: "primary.main", mb: 2 }} />
-                                <Typography variant="h6" gutterBottom>
-                                    What would you like to create today?
+                <Grid size={{ xs: 12, md: 5 }}>
+                    <Paper
+                        elevation={0}
+                        sx={{
+                            ...flatCard,
+                            height: "78vh",
+                            display: "flex",
+                            flexDirection: "column",
+                        }}
+                    >
+                        <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: 1 }}>
+                            <Avatar sx={{ bgcolor: COLORS.accent, width: 36, height: 36 }}>
+                                <SmartToy fontSize="small" />
+                            </Avatar>
+                            <Box>
+                                <Typography sx={sectionTitle}>AI Assistant</Typography>
+                                <Typography sx={{ fontSize: "0.7rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: COLORS.textSecondary }}>
+                                    Ready to help you generate content
                                 </Typography>
-                                <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                                    Choose a content type to get started with AI assistance
-                                </Typography>
-                                <Stack spacing={2} maxWidth={400} mx="auto">
-                                    {Object.entries(TYPE_META).map(([type, meta]) => (
-                                        <Button
-                                            key={type}
-                                            variant="outlined"
-                                            startIcon={meta.icon}
-                                            onClick={() => {
-                                                setSelectedContentType(type as ClassMaterialType);
-
-                                            }}
-                                            sx={{
-                                                justifyContent: "flex-start",
-                                                py: 2,
-                                                textTransform: "none"
-                                            }}
-                                        >
-                                            <Box sx={{ textAlign: "left", ml: 1 }}>
-                                                <Typography variant="subtitle2">
-                                                    {meta.label}
-                                                </Typography>
-                                                <Typography variant="caption" color="text.secondary">
-                                                    {meta.description}
-                                                </Typography>
-                                            </Box>
-                                        </Button>
-                                    ))}
-                                </Stack>
                             </Box>
-                        ) : (
-                            <>
+                        </Stack>
+                        <Divider sx={{ mb: 2, borderColor: COLORS.borderLight }} />
 
-
-                                {/* Messages */}
-                                <Box sx={{ flexGrow: 1, overflow: "auto", mb: 2 }}>
-                                    <List dense>
-                                        {messages.map((message) => (
-                                            <ListItem key={message.id} alignItems="flex-start">
-                                                <Stack direction="row" spacing={1} width="100%">
-                                                    <Avatar sx={{ width: 32, height: 32, bgcolor: message.sender === "assistant" ? "primary.main" : "grey.500" }}>
-                                                        {message.sender === "assistant" ? <SmartToy fontSize="small" /> : <Person fontSize="small" />}
-                                                    </Avatar>
-                                                    <Box flexGrow={1}>
-                                                        <Typography variant="body2" fontWeight={500}>
-                                                            {message.sender === "assistant" ? "AI Assistant" : "You"}
-                                                        </Typography>
-                                                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.75rem" }}>
-                                                            {formatDate(message.timestamp)}
-                                                        </Typography>
-                                                        <Typography variant="body2" sx={{ mt: 0.5 }}>
-                                                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                                                {message.content}
-                                                            </ReactMarkdown>
-                                                        </Typography>
-                                                    </Box>
-                                                </Stack>
-                                            </ListItem>
-                                        ))}
-                                        {isLoading && (
-                                            <ListItem alignItems="flex-start">
-                                                <Stack direction="row" spacing={1} width="100%">
-                                                    <Avatar sx={{ width: 32, height: 32, bgcolor: "primary.main" }}>
-                                                        <SmartToy fontSize="small" />
-                                                    </Avatar>
-                                                    <Box display="flex" alignItems="center">
-                                                        <CircularProgress size={16} sx={{ mr: 1 }} />
-                                                        <Typography variant="body2" color="text.secondary">
-                                                            AI is thinking...
-                                                        </Typography>
-                                                    </Box>
-                                                </Stack>
-                                            </ListItem>
-                                        )}
-                                        <div ref={messagesEndRef} />
-                                    </List>
-                                </Box>
-
-                                {/* Input
-                                <Stack direction="row" spacing={1}>
-                                    <TextField
-                                        size="small"
-                                        placeholder={`Describe the ${selectedContentType ? TYPE_META[selectedContentType].label.toLowerCase() : 'content'} you want to create...`}
-                                        value={inputValue}
-                                        onChange={(e) => setInputValue(e.target.value)}
-                                        onKeyPress={handleKeyPress}
-                                        disabled={isLoading}
-                                        multiline
-                                        maxRows={3}
-                                        sx={{ flex: 1 }}
+                        {/* Content type chips */}
+                        <Stack direction="row" spacing={1} sx={{ mb: 2, flexWrap: "wrap" }}>
+                            {(Object.keys(TYPE_META) as ClassMaterialType[]).map((type) => {
+                                const meta = TYPE_META[type];
+                                const isSelected = selectedContentType === type;
+                                return (
+                                    <Chip
+                                        key={type}
+                                        label={meta.label}
+                                        icon={meta.icon}
+                                        onClick={() => setSelectedContentType(type)}
+                                        clickable
+                                        sx={isSelected
+                                            ? flatChip(COLORS.accent, "#fff")
+                                            : flatChip(COLORS.bg, COLORS.textSecondary)
+                                        }
                                     />
-                                    <IconButton
-                                        color="primary"
-                                        onClick={handleSendMessage}
-                                        disabled={!inputValue.trim() || isLoading}
-                                    >
-                                        <Send />
-                                    </IconButton>
-                                </Stack> */}
-                            </>
+                                );
+                            })}
+                        </Stack>
+
+                        {/* Quiz config */}
+                        {selectedContentType === "quiz" && (
+                            <Stack direction="row" gap={2} sx={{ mb: 2, flexWrap: "wrap" }}>
+                                <TextField
+                                    label="Total questions"
+                                    type="number"
+                                    size="small"
+                                    value={quizCount}
+                                    onChange={(e) => syncQuizSplitFromTotal(Number(e.target.value))}
+                                    inputProps={{ min: 1 }}
+                                    sx={{ width: 150, ...inputSx }}
+                                />
+                                <TextField
+                                    label="Multiple choice"
+                                    type="number"
+                                    size="small"
+                                    value={quizMcCount}
+                                    onChange={(e) => syncQuizTotalFromSplit(Number(e.target.value), quizTfCount)}
+                                    inputProps={{ min: 0 }}
+                                    sx={{ width: 150, ...inputSx }}
+                                />
+                                <TextField
+                                    label="True / false"
+                                    type="number"
+                                    size="small"
+                                    value={quizTfCount}
+                                    onChange={(e) => syncQuizTotalFromSplit(quizMcCount, Number(e.target.value))}
+                                    inputProps={{ min: 0 }}
+                                    sx={{ width: 150, ...inputSx }}
+                                />
+                            </Stack>
                         )}
+
+                        {/* Chat messages */}
+                        <Box
+                            sx={{
+                                flex: 1,
+                                overflow: "auto",
+                                pr: 1,
+                                bgcolor: COLORS.bg,
+                                borderRadius: RADIUS,
+                                border: `1px solid ${COLORS.border}`,
+                                p: 2,
+                            }}
+                        >
+                            {selectedContentType ? (
+                                <Stack spacing={1.5}>
+                                    {messages.map((m) => (
+                                        <Stack
+                                            key={m.id}
+                                            direction="row"
+                                            spacing={1}
+                                            alignSelf={m.sender === "user" ? "flex-end" : "flex-start"}
+                                            sx={{ maxWidth: "92%" }}
+                                        >
+                                            {m.sender === "assistant" && (
+                                                <Avatar sx={{ bgcolor: COLORS.accent, width: 28, height: 28 }}>
+                                                    <SmartToy sx={{ fontSize: 16 }} />
+                                                </Avatar>
+                                            )}
+                                            <Box sx={m.sender === "user" ? chatBubbleUser : chatBubbleAssistant}>
+                                                <Typography
+                                                    sx={{
+                                                        fontSize: "0.65rem",
+                                                        fontWeight: 700,
+                                                        textTransform: "uppercase",
+                                                        letterSpacing: "0.08em",
+                                                        color: m.sender === "user" ? "rgba(255,255,255,0.7)" : COLORS.textSecondary,
+                                                        mb: 0.25,
+                                                    }}
+                                                >
+                                                    {m.sender === "user" ? "You" : "AI Assistant"}
+                                                </Typography>
+                                                <Typography variant="body2" sx={{ whiteSpace: "pre-wrap", mt: 0.5 }}>
+                                                    {m.content}
+                                                </Typography>
+                                                
+                                                {/* Action Buttons */}
+                                                {m.sender === "user" && (
+                                                    <Stack direction="row" justifyContent="flex-end" sx={{ mt: 1 }}>
+                                                        <Tooltip title="Copy prompt">
+                                                            <IconButton
+                                                                size="small"
+                                                                onClick={() => navigator.clipboard.writeText(m.content)}
+                                                                sx={{ color: "rgba(255,255,255,0.7)", p: 0.5, "&:hover": { color: "#fff" } }}
+                                                            >
+                                                                <ContentCopy fontSize="small" />
+                                                            </IconButton>
+                                                        </Tooltip>
+                                                        <Tooltip title="Retry this prompt">
+                                                            <IconButton
+                                                                size="small"
+                                                                onClick={() => handleRetry(m.content)}
+                                                                disabled={isChatLoading || isPreviewLoading}
+                                                                sx={{ color: "rgba(255,255,255,0.7)", p: 0.5, "&:hover": { color: "#fff" } }}
+                                                            >
+                                                                <Refresh fontSize="small" />
+                                                            </IconButton>
+                                                        </Tooltip>
+                                                    </Stack>
+                                                )}
+                                            </Box>
+                                            {m.sender === "user" && (
+                                                <Avatar 
+                                                    alt={user?.name || "You"} 
+                                                    src={user?.avatar} 
+                                                    sx={{ bgcolor: COLORS.textDark, width: 28, height: 28 }}
+                                                >
+                                                    <Typography sx={{ fontSize: "0.65rem", fontWeight: 700, color: "#fff" }}>
+                                                        {user?.name?.charAt(0).toUpperCase() || "Y"}
+                                                    </Typography>
+                                                </Avatar>
+                                            )}
+                                        </Stack>
+                                    ))}
+
+                                    {isChatLoading && (
+                                        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                            <CircularProgress size={16} sx={{ color: COLORS.accent }} />
+                                            <Typography sx={{ fontSize: "0.75rem", color: COLORS.textSecondary }}>
+                                                AI is typing...
+                                            </Typography>
+                                        </Box>
+                                    )}
+
+                                    <div ref={messagesEndRef} />
+                                </Stack>
+                            ) : (
+                                <Box
+                                    display="flex"
+                                    alignItems="center"
+                                    justifyContent="center"
+                                    height="100%"
+                                    textAlign="center"
+                                >
+                                    <Typography sx={{ fontSize: "0.85rem", color: COLORS.textSecondary }}>
+                                        Choose a material type to start chatting.
+                                    </Typography>
+                                </Box>
+                            )}
+                        </Box>
+
+                        {/* Input */}
+                        <Stack direction="row" spacing={1} sx={{ mt: 2, alignItems: "center" }}>
+                            <TextField
+                                fullWidth
+                                size="small"
+                                placeholder="Ask AI..."
+                                value={input}
+                                onChange={(e) => setInput(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === "Enter" && !e.shiftKey) {
+                                        e.preventDefault();
+                                        handleSend();
+                                    }
+                                }}
+                                disabled={isChatLoading || !selectedContentType}
+                                sx={{ flex: 1, minWidth: 0, ...inputSx }}
+                            />
+                            <IconButton
+                                onClick={handleSend}
+                                disabled={!selectedContentType || !input.trim() || isChatLoading}
+                                sx={{
+                                    bgcolor: COLORS.accent,
+                                    color: "#fff",
+                                    borderRadius: RADIUS,
+                                    "&:hover": {
+                                        bgcolor: "#5a6fd6",
+                                    },
+                                    "&.Mui-disabled": {
+                                        bgcolor: COLORS.borderLight,
+                                        color: COLORS.textSecondary,
+                                    },
+                                }}
+                            >
+                                <Send />
+                            </IconButton>
+                        </Stack>
                     </Paper>
                 </Grid>
             </Grid>

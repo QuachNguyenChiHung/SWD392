@@ -16,6 +16,7 @@ import {
   Menu,
   MenuItem,
   Divider,
+  Chip,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -51,7 +52,7 @@ const navItems: NavItem[] = [
     text: 'Trang chủ',
     icon: <HomeRounded />,
     path: '/',
-    roles: [UserRole.GUEST, UserRole.STUDENT, UserRole.TEACHER, UserRole.MODERATOR, UserRole.ADMIN],
+    roles: [UserRole.GUEST, UserRole.STUDENT],
   },
   {
     text: 'Dashboard',
@@ -182,21 +183,49 @@ const MainLayout = () => {
     user ? item.roles.includes(user.role) : false
   );
 
+  const roleLabel =
+    user?.role === UserRole.TEACHER
+      ? 'Giáo viên'
+      : user?.role === UserRole.STUDENT
+        ? 'Học sinh'
+        : user?.role === UserRole.ADMIN
+          ? 'Quản trị viên'
+          : user?.role === UserRole.MODERATOR
+            ? 'Kiểm duyệt viên'
+            : 'Khách';
+
   const drawer = (
-    <Box>
-      <Toolbar>
-        <Science sx={{ mr: 1 }} />
-        <Typography variant="h6" noWrap>
+    <Box sx={{ height: '100%', background: 'linear-gradient(180deg, #f7fcff 0%, #f1f8ff 100%)' }}>
+      <Toolbar sx={{ minHeight: 72 }}>
+        <Science sx={{ mr: 1, color: '#1b6cb5' }} />
+        <Typography variant="h6" noWrap sx={{ fontWeight: 700, color: '#12344d' }}>
           Hóa học THPT
         </Typography>
       </Toolbar>
-      <Divider />
+      <Divider sx={{ borderColor: '#d5e3f8' }} />
       <List>
         {filteredNavItems.map((item) => (
           <ListItem key={item.text} disablePadding>
-            <ListItemButton onClick={() => handleNavigation(item.path)}>
-              <ListItemIcon>{item.icon}</ListItemIcon>
-              <ListItemText primary={item.text} />
+            <ListItemButton
+              onClick={() => handleNavigation(item.path)}
+              sx={{
+                mx: 1,
+                mb: 0.5,
+                borderRadius: 2,
+                '&:hover': {
+                  backgroundColor: '#eaf3ff',
+                },
+              }}
+            >
+              <ListItemIcon sx={{ color: '#35658a', minWidth: 38 }}>{item.icon}</ListItemIcon>
+              <ListItemText
+                primary={item.text}
+                primaryTypographyProps={{
+                  fontWeight: 600,
+                  color: '#1c4b6e',
+                  fontSize: '0.92rem',
+                }}
+              />
             </ListItemButton>
           </ListItem>
         ))}
@@ -212,6 +241,9 @@ const MainLayout = () => {
         sx={{
           width: { sm: `calc(100% - ${drawerWidth}px)` },
           ml: { sm: `${drawerWidth}px` },
+          background: 'linear-gradient(130deg, #0f4c81 0%, #1b6cb5 58%, #2d8bd4 100%)',
+          borderBottom: '1px solid rgba(255,255,255,0.2)',
+          boxShadow: '0 10px 24px rgba(12, 56, 97, 0.24)',
         }}
       >
         <Toolbar>
@@ -224,21 +256,38 @@ const MainLayout = () => {
           >
             <MenuIcon />
           </IconButton>
-          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-            {user?.role === UserRole.TEACHER && 'Giáo viên'}
-            {user?.role === UserRole.STUDENT && 'Học sinh'}
-            {user?.role === UserRole.ADMIN && 'Quản trị viên'}
-            {user?.role === UserRole.MODERATOR && 'Kiểm duyệt viên'}
-            {user?.role === UserRole.GUEST && 'Khách'}
-          </Typography>
-          <IconButton
-            color="inherit"
-            onClick={() => navigate('/')}
-            aria-label="go home"
-            sx={{ mr: 1 }}
-          >
-            <HomeRounded />
-          </IconButton>
+          <Box sx={{ flexGrow: 1 }}>
+            <Typography
+              variant="h6"
+              noWrap
+              component="div"
+              sx={{ fontWeight: 700, letterSpacing: '-0.01em', fontFamily: '"Space Grotesk", "Nunito", sans-serif' }}
+            >
+              {roleLabel}
+            </Typography>
+            <Chip
+              size="small"
+              label="Không gian học tập"
+              sx={{
+                mt: 0.5,
+                height: 22,
+                color: '#175c45',
+                bgcolor: '#d9f6e9',
+                fontWeight: 700,
+                fontSize: '0.72rem',
+              }}
+            />
+          </Box>
+          {(user?.role === UserRole.GUEST || user?.role === UserRole.STUDENT) && (
+            <IconButton
+              color="inherit"
+              onClick={() => navigate('/')}
+              aria-label="go home"
+              sx={{ mr: 1 }}
+            >
+              <HomeRounded />
+            </IconButton>
+          )}
           <IconButton onClick={handleMenuOpen} sx={{ p: 0 }}>
             <Avatar alt={user?.name} src={user?.avatar}>
               {user?.name?.charAt(0).toUpperCase()}
@@ -306,7 +355,8 @@ const MainLayout = () => {
           p: 3,
           width: { sm: `calc(100% - ${drawerWidth}px)` },
           minHeight: '100vh',
-          backgroundColor: (theme) => theme.palette.grey[100],
+          background:
+            'radial-gradient(circle at 0% 0%, #dff5f2 0%, transparent 36%), radial-gradient(circle at 100% 18%, #ffe9cd 0%, transparent 40%), linear-gradient(160deg, #f6fbff 0%, #eef6ff 48%, #fef8ef 100%)',
         }}
       >
         <Toolbar />

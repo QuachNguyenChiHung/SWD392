@@ -12,6 +12,12 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import CreateClassMaterialModal from "../../../components/CreateClassMaterialModal";
 import classMaterialApi from "../../../services/teacherApi/classMaterialApi";
+import {
+  flatCard,
+  flatButtonContained,
+  flatButtonOutlined,
+  COLORS,
+} from "../teacherStyles";
 
 const getMaterialIcon = (type: ClassMaterialType) => {
   switch (type) {
@@ -33,14 +39,13 @@ interface ClassMaterialProps {
   classId: string;
 }
 
-export default function ClassMaterial({ topics, classId }: ClassMaterialProps) {
+export default function ClassMaterialTab({ topics, classId }: ClassMaterialProps) {
   const navigate = useNavigate();
   const [modalOpen, setModalOpen] = useState(false);
   const [currentTopicId, setCurrentTopicId] = useState<string>("");
   const [currentTopic, setCurrentTopic] = useState<Topic | null>(null);
   const [materialsByTopic, setMaterialsByTopic] = useState<Record<string, ClassMaterial[]>>({});
 
-  // Fetch materials for all topics
   useEffect(() => {
     const fetchMaterials = async () => {
       const materialMap: Record<string, ClassMaterial[]> = {};
@@ -110,41 +115,82 @@ export default function ClassMaterial({ topics, classId }: ClassMaterialProps) {
       />
 
       {topics.map((topic) => (
-        <Paper key={getTopicId(topic)} sx={{ p: 3 }}>
+        <Paper
+          key={getTopicId(topic)}
+          elevation={0}
+          sx={{
+            ...flatCard,
+            borderLeft: `3px solid ${COLORS.accent}`,
+          }}
+        >
           <Stack spacing={2} mb={2}>
             <Stack
               direction="row"
               justifyContent="space-between"
               alignItems="flex-start"
             >
-              <Typography variant="h6" flex={3}>{topic.title}</Typography>
-              <div style={{ display: "flex", gap: "8px", height: "2rem" }}>
-                <Button variant="contained" size="small" startIcon={<Add />} onClick={() => handleOpenModal(getTopicId(topic))}>
+              <Box sx={{ flex: 3 }}>
+                <Typography sx={{ fontWeight: 700, fontSize: "1rem", color: COLORS.textDark }}>
+                  {topic.title}
+                </Typography>
+                <Typography
+                  sx={{
+                    fontSize: "0.7rem",
+                    fontWeight: 600,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.08em",
+                    color: COLORS.textSecondary,
+                    mt: 0.5,
+                  }}
+                >
+                  Chủ đề {topic.order_num} · {materialsByTopic[getTopicId(topic)]?.length || 0} tài liệu
+                </Typography>
+              </Box>
+              <Stack direction="row" spacing={1}>
+                <Button
+                  variant="contained"
+                  size="small"
+                  startIcon={<Add />}
+                  onClick={() => handleOpenModal(getTopicId(topic))}
+                  sx={flatButtonContained}
+                >
                   Thêm tài liệu
                 </Button>
                 <Button
-                  variant="contained"
+                  variant="outlined"
+                  size="small"
                   startIcon={<AutoAwesome />}
-                  onClick={() => navigate(`/teacher/class/${classId}/ai-generator`, {
-                    state: { topic: topic, classId: classId }
-                  })}
+                  onClick={() => {
+                    const topicId = getTopicId(topic);
+                    const topicMaterials = materialsByTopic[topicId] || [];
+                    navigate(`/teacher/class/${classId}/ai-generator`, {
+                      state: {
+                        topic: {
+                          ...topic,
+                          classMaterials: topicMaterials,
+                        },
+                        classId,
+                      }
+                    });
+                  }}
+                  sx={{
+                    ...flatButtonOutlined,
+                    borderColor: COLORS.accent,
+                    color: COLORS.accent,
+                    "&:hover": {
+                      bgcolor: COLORS.accentLight,
+                      borderColor: COLORS.accent,
+                      boxShadow: "none",
+                    },
+                  }}
                 >
                   Tạo với AI
                 </Button>
-              </div>
-
+              </Stack>
             </Stack>
-            <Box>
-              <Typography variant="body2" color="text.secondary" marginBottom={1}>
-                {topic.description}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                Chủ đề {topic.order_num} · {materialsByTopic[getTopicId(topic)]?.length || 0} tài liệu
-              </Typography>
-            </Box>
           </Stack>
 
-          <Stack spacing={1}>
+          <Stack spacing={1.2}>
             {materialsByTopic[getTopicId(topic)]?.map((material) => (
               <Box
                 key={material._id}
@@ -153,22 +199,41 @@ export default function ClassMaterial({ topics, classId }: ClassMaterialProps) {
                   justifyContent: "space-between",
                   alignItems: "center",
                   gap: 2,
-                  py: 1,
-                  borderBottom: "1px solid",
-                  borderColor: "divider",
+                  py: 1.25,
+                  px: 1.5,
+                  borderRadius: 2,
+                  border: `1px solid ${COLORS.border}`,
+                  backgroundColor: COLORS.accentLight,
+                  "&:hover": {
+                    borderColor: COLORS.accent,
+                    backgroundColor: "#e3f0ff",
+                  },
+                  transition: "background-color 0.15s ease, border-color 0.15s ease",
                 }}
               >
                 <Stack
                   direction="row"
-                  spacing={1}
+                  spacing={1.5}
                   alignItems="center"
                   sx={{ cursor: "pointer" }}
                   onClick={() => handleMaterialClick(material)}
                 >
-                  {getMaterialIcon(material.type)}
+                  <Box sx={{ color: COLORS.accent }}>
+                    {getMaterialIcon(material.type)}
+                  </Box>
                   <Box>
-                    <Typography variant="subtitle2">{material.title}</Typography>
-                    <Typography variant="caption" color="text.secondary" display="block">
+                    <Typography sx={{ fontWeight: 600, fontSize: "0.875rem", color: COLORS.textDark }}>
+                      {material.title}
+                    </Typography>
+                    <Typography
+                      sx={{
+                        fontSize: "0.7rem",
+                        fontWeight: 600,
+                        textTransform: "uppercase",
+                        letterSpacing: "0.05em",
+                        color: COLORS.textSecondary,
+                      }}
+                    >
                       {{
                         file: "Tệp",
                         slide: "Slide",
@@ -178,15 +243,31 @@ export default function ClassMaterial({ topics, classId }: ClassMaterialProps) {
                     </Typography>
                   </Box>
                 </Stack>
-                <Button size="small" onClick={() => handleMaterialClick(material)}>
+                <Button
+                  size="small"
+                  onClick={() => handleMaterialClick(material)}
+                  sx={{
+                    ...flatButtonOutlined,
+                    fontSize: "0.75rem",
+                    px: 2,
+                    minWidth: "auto",
+                  }}
+                >
                   Xem
                 </Button>
               </Box>
             )) || (
-                <Typography variant="body2" color="text.secondary" sx={{ py: 2, textAlign: 'center' }}>
-                  Chưa có tài liệu nào cho chủ đề này
-                </Typography>
-              )}
+              <Typography
+                sx={{
+                  py: 2,
+                  textAlign: 'center',
+                  color: COLORS.textSecondary,
+                  fontSize: "0.85rem",
+                }}
+              >
+                Chưa có tài liệu nào cho chủ đề này
+              </Typography>
+            )}
           </Stack>
         </Paper>
       ))}

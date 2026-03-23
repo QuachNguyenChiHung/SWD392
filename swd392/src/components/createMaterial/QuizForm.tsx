@@ -84,7 +84,7 @@ export default function QuizForm({
                             label="Ngày bắt đầu"
                             fullWidth
                             value={quizStartDate ? dayjs(quizStartDate) : null}
-                            format="MM-DD-YYYY"
+                            format="DD/MM/YYYY"
                             onChange={(value: Dayjs | null) => onQuizStartDateChange(value && value.isValid() ? value.toISOString() : "")}
                             helperText="Thời gian mở bài kiểm tra (tùy chọn)"
                         />
@@ -92,7 +92,7 @@ export default function QuizForm({
                             label="Ngày kết thúc"
                             fullWidth
                             value={quizEndDate ? dayjs(quizEndDate) : null}
-                            format="MM-DD-YYYY"
+                            format="DD/MM/YYYY"
                             onChange={(value: Dayjs | null) => onQuizEndDateChange(value && value.isValid() ? value.toISOString() : "")}
                             helperText="Thời gian đóng bài kiểm tra (tùy chọn)"
                         />

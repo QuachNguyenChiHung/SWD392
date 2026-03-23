@@ -1,5 +1,4 @@
 import {
-    Stack,
     Paper,
     TableContainer,
     TableHead,
@@ -10,9 +9,19 @@ import {
     CircularProgress,
     Typography,
 } from "@mui/material";
+import type { SxProps, Theme } from "@mui/material";
 import { type Student } from "../../../types/teacherType";
 import { useState, useEffect } from "react";
 import { classMaterialProgressionApi } from "../../../services/teacherApi/classMaterialProgressionApi";
+import {
+    sectionTitle,
+    flatCard,
+    tableContainer,
+    tableHeadRow,
+    tableBodyRow,
+    loadingContainer,
+    COLORS,
+} from "../teacherStyles";
 
 interface StudentProgressProp {
     enrollId: string;
@@ -54,21 +63,22 @@ export default function StudentProgress({ enrollId, student }: StudentProgressPr
 
     if (loading) {
         return (
-            <Paper sx={{ p: 3, display: "flex", justifyContent: "center" }}>
-                <CircularProgress />
+            <Paper elevation={0} sx={{ ...flatCard, ...loadingContainer } as SxProps<Theme>}>
+                <CircularProgress sx={{ color: COLORS.accent }} />
             </Paper>
         );
     }
 
     return (
-        <Paper sx={{ p: 3 }}>
-            <Typography variant="h6" sx={{ mb: 2 }}>
+        <Paper elevation={0} sx={flatCard}>
+            <Typography sx={sectionTitle}>
                 Progress: {student.username} ({student.email})
             </Typography>
-            <TableContainer component={Stack} p={2} spacing={2}>
+
+            <TableContainer sx={tableContainer}>
                 <Table>
                     <TableHead>
-                        <TableRow>
+                        <TableRow sx={tableHeadRow}>
                             <TableCell>Index</TableCell>
                             <TableCell>Class Material</TableCell>
                             <TableCell>Status</TableCell>
@@ -79,16 +89,39 @@ export default function StudentProgress({ enrollId, student }: StudentProgressPr
                     <TableBody>
                         {progressRows.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={4} align="center">
-                                    No progress records found
+                                <TableCell colSpan={4} align="center" sx={{ py: 4, border: "none" }}>
+                                    <Typography sx={{ color: COLORS.textSecondary }}>
+                                        No progress records found
+                                    </Typography>
                                 </TableCell>
                             </TableRow>
                         ) : (
                             progressRows.map((row, index) => (
-                                <TableRow key={index}>
+                                <TableRow key={index} sx={tableBodyRow}>
                                     <TableCell>{index + 1}</TableCell>
-                                    <TableCell>{row.materialId}</TableCell>
-                                    <TableCell>{row.completionStatus}</TableCell>
+                                    <TableCell>
+                                        <Typography sx={{ fontFamily: "monospace", fontSize: "0.8rem" }}>
+                                            {row.materialId}
+                                        </Typography>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Typography
+                                            sx={{
+                                                fontSize: "0.75rem",
+                                                fontWeight: 600,
+                                                textTransform: "uppercase",
+                                                letterSpacing: "0.05em",
+                                                color:
+                                                    row.completionStatus === "completed"
+                                                        ? COLORS.success
+                                                        : row.completionStatus === "in_progress"
+                                                            ? COLORS.accent
+                                                            : COLORS.textSecondary,
+                                            }}
+                                        >
+                                            {row.completionStatus}
+                                        </Typography>
+                                    </TableCell>
                                     <TableCell>{row.dateCompleted ?? "—"}</TableCell>
                                 </TableRow>
                             ))

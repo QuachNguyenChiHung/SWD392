@@ -95,13 +95,13 @@ export const teacherClassApi = {
     },
 
     // Update image cover
-    updateImageCover: async (imageFile: File, imageId: string) => {
+    updateImageCover: async (imageFile: File, imageUrl: string) => {
         try {
             const formData = new FormData();
             formData.append('image', imageFile);
-            formData.append('imageId', imageId);
+            formData.append('url', imageUrl);
 
-            const response = await apiService.put('/teacher/update-image', formData);
+            const response = await apiService.updateFileUpload('/teacher/update-image', formData);
             return response;
         } catch (error) {
             console.error('Error updating image cover:', error);

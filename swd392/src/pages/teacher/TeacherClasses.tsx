@@ -6,6 +6,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableContainer,
   TableHead,
   TableRow,
   Paper,
@@ -14,7 +15,7 @@ import {
   Autocomplete,
   CircularProgress,
   Alert,
-  Chip,
+  CardMedia,
 } from "@mui/material";
 import { Add } from "@mui/icons-material";
 import ClassTableRow from "../../components/teacher/ClassTableRow";
@@ -23,6 +24,20 @@ import { useState, useEffect } from "react";
 import { teacherClassApi } from "../../services/teacherApi/teacherClassApi";
 import { courseApi } from "../../services/teacherApi/courseApi";
 import { topicApi } from "../../services/teacherApi/topicApi";
+import {
+  pageTitle,
+  pageSubtitle,
+  sectionLabel,
+  sectionTitle,
+  flatButtonContained,
+  flatButtonOutlined,
+  flatModal,
+  tableContainer as tableContainerStyle,
+  tableHeadRow,
+  loadingContainer,
+  COLORS,
+  RADIUS,
+} from "./teacherStyles";
 
 const TeacherClasses = () => {
   const [classes, setClasses] = useState<Class[]>([]);
@@ -35,6 +50,15 @@ const TeacherClasses = () => {
   const [showDeleted, setShowDeleted] = useState(false);
   const [courseTopics, setCourseTopics] = useState<Topic[]>([]);
   const [topicsLoading, setTopicsLoading] = useState(false);
+  const [createImageFile, setCreateImageFile] = useState<File | null>(null);
+  const [createImagePreview, setCreateImagePreview] = useState<string>("");
+
+  // Change image modal states
+  const [imageModalOpen, setImageModalOpen] = useState(false);
+  const [selectedClassForImage, setSelectedClassForImage] = useState<Class | null>(null);
+  const [changeImageFile, setChangeImageFile] = useState<File | null>(null);
+  const [changeImagePreview, setChangeImagePreview] = useState<string>("");
+  const [changingImage, setChangingImage] = useState(false);
 
   // Pagination states
   const [page, setPage] = useState(1);
@@ -54,11 +78,9 @@ const TeacherClasses = () => {
     try {
       setLoading(true);
       setError(null);
-      // Fetch current page
       const currentPageClasses = await teacherClassApi.getClassesByTeacher(pageNum, viewHidden);
       setClasses(Array.isArray(currentPageClasses) ? currentPageClasses : []);
 
-      // Prefetch next page
       const nextPageClasses = await teacherClassApi.getClassesByTeacher(pageNum + 1, viewHidden);
       setNextPageData(Array.isArray(nextPageClasses) ? nextPageClasses : []);
       setNextPageEmpty(!nextPageClasses || nextPageClasses.length === 0);
@@ -90,19 +112,73 @@ const TeacherClasses = () => {
 
   const handleModalOpen = async () => {
     setModalClassCreation(true);
-    // Fetch courses when modal opens
     await fetchCourses();
   };
 
   const handleModalClose = () => {
+    if (createImagePreview.startsWith("blob:")) {
+      URL.revokeObjectURL(createImagePreview);
+    }
     setModalClassCreation(false);
     setSelectedCourse(null);
     setClassName("");
+    setCreateImageFile(null);
+    setCreateImagePreview("");
     setCreating(false);
     setCourses([]);
     setCourseTopics([]);
     setTopicsLoading(false);
     setError(null);
+  };
+
+  const handleImageModalClose = () => {
+    if (changeImagePreview.startsWith("blob:")) {
+      URL.revokeObjectURL(changeImagePreview);
+    }
+    setImageModalOpen(false);
+    setSelectedClassForImage(null);
+    setChangeImageFile(null);
+    setChangeImagePreview("");
+    setChangingImage(false);
+  };
+
+  const handleCreateImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0] || null;
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      alert("Vui lòng chọn tệp ảnh hợp lệ");
+      return;
+    }
+
+    if (createImagePreview.startsWith("blob:")) {
+      URL.revokeObjectURL(createImagePreview);
+    }
+
+    setCreateImageFile(file);
+    setCreateImagePreview(URL.createObjectURL(file));
+  };
+
+  const handleChangeImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0] || null;
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      alert("Vui lòng chọn tệp ảnh hợp lệ");
+      return;
+    }
+
+    if (changeImagePreview.startsWith("blob:")) {
+      URL.revokeObjectURL(changeImagePreview);
+    }
+
+    setChangeImageFile(file);
+    setChangeImagePreview(URL.createObjectURL(file));
+  };
+
+  const handleOpenImageModal = (classItem: Class) => {
+    setSelectedClassForImage(classItem);
+    setImageModalOpen(true);
   };
 
   const fetchTopicsByCourse = async (courseId: string) => {
@@ -134,7 +210,7 @@ const TeacherClasses = () => {
     if (classItem.status === status) return;
     try {
       await teacherClassApi.updateClass(classItem._id, { status });
-      await fetchClasses(page);
+      await fetchClasses(page, showDeleted);
     } catch (err) {
       console.error('Error updating class status:', err);
       alert('Không thể cập nhật trạng thái lớp học. Vui lòng thử lại.');
@@ -153,18 +229,21 @@ const TeacherClasses = () => {
 
     try {
       setCreating(true);
+      let uploadedImageUrl: string | undefined;
+
+      if (createImageFile) {
+        const uploadResponse = await teacherClassApi.uploadImageCover(createImageFile);
+        uploadedImageUrl = uploadResponse?.url;
+      }
 
       const createData: CreateClassData = {
         class_name: className.trim(),
         course_id: selectedCourse._id,
+        ...(uploadedImageUrl ? { img_cover_link: uploadedImageUrl } : {}),
       };
 
       await teacherClassApi.createClass(createData);
-
-      // Refresh classes list
       await fetchClasses(page, showDeleted);
-
-      // Close modal and reset form
       handleModalClose();
 
     } catch (err) {
@@ -174,40 +253,84 @@ const TeacherClasses = () => {
       setCreating(false);
     }
   };
+
+  const handleUpdateClassImage = async () => {
+    if (!selectedClassForImage) return;
+
+    if (!changeImageFile) {
+      alert("Vui lòng chọn ảnh mới");
+      return;
+    }
+
+    try {
+      setChangingImage(true);
+
+      if (selectedClassForImage.img_cover_link) {
+        await teacherClassApi.updateImageCover(changeImageFile, selectedClassForImage.img_cover_link);
+      } else {
+        const uploadResponse = await teacherClassApi.uploadImageCover(changeImageFile);
+        const imageUrl = uploadResponse?.url;
+
+        if (!imageUrl) {
+          throw new Error("Không nhận được URL ảnh từ server");
+        }
+
+        await teacherClassApi.updateClass(selectedClassForImage._id, { img_cover_link: imageUrl });
+      }
+
+      await fetchClasses(page, showDeleted);
+      handleImageModalClose();
+    } catch (err) {
+      console.error('Error changing class image:', err);
+      alert('Không thể cập nhật ảnh lớp học. Vui lòng thử lại.');
+    } finally {
+      setChangingImage(false);
+    }
+  };
+
   return (
     <Box>
+      {/* ── Page Header ── */}
       <Box
         sx={{
           display: "flex",
           justifyContent: "space-between",
-          alignItems: "center",
+          alignItems: "flex-start",
           mb: 3,
         }}
       >
-        <Typography variant="h4" fontWeight="bold">Quản lý lớp học</Typography>
+        <Box>
+          <Typography sx={sectionLabel}>Classes</Typography>
+          <Typography sx={pageTitle}>Quản lý lớp học</Typography>
+        </Box>
         <Stack direction="row" spacing={1.5}>
           <Button
             variant="outlined"
             onClick={() => setShowDeleted((prev) => !prev)}
+            sx={flatButtonOutlined}
           >
             {showDeleted ? "Ẩn lớp đã xóa" : "Hiện lớp đã xóa"}
           </Button>
-          <Button variant="contained" startIcon={<Add />} onClick={handleModalOpen}>
+          <Button
+            variant="contained"
+            startIcon={<Add />}
+            onClick={handleModalOpen}
+            sx={flatButtonContained}
+          >
             Tạo lớp học mới
           </Button>
         </Stack>
       </Box>
 
-      <Stack spacing={1} mb={2}>
-        <Typography variant="subtitle1" color="text.secondary">
-          Theo dõi mã lớp học, course ID, trạng thái, ngày khởi tạo và khóa truy cập (ẩn mặc định).
-        </Typography>
-      </Stack>
+      <Typography sx={{ ...pageSubtitle, mb: 2 }}>
+        Theo dõi mã lớp học, course ID, trạng thái, ngày khởi tạo và khóa truy cập.
+      </Typography>
 
-      <Paper sx={{ width: "100%", overflowX: "auto" }}>
+      {/* ── Table ── */}
+      <Paper elevation={0} sx={{ ...tableContainerStyle, width: "100%", overflowX: "auto" }}>
         <Table size="medium">
           <TableHead>
-            <TableRow>
+            <TableRow sx={tableHeadRow}>
               <TableCell>Lớp học</TableCell>
               <TableCell>Course ID</TableCell>
               <TableCell>Ngày khởi tạo</TableCell>
@@ -218,20 +341,20 @@ const TeacherClasses = () => {
           <TableBody>
             {loading ? (
               <TableRow key="loading">
-                <TableCell colSpan={6} sx={{ textAlign: 'center', py: 4 }}>
-                  <CircularProgress size={30} />
-                  <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                <TableCell colSpan={6} sx={{ textAlign: 'center', py: 4, border: 'none' }}>
+                  <CircularProgress size={30} sx={{ color: COLORS.accent }} />
+                  <Typography variant="body2" sx={{ color: COLORS.textSecondary, mt: 1 }}>
                     Đang tải danh sách lớp học...
                   </Typography>
                 </TableCell>
               </TableRow>
             ) : !classes?.length ? (
               <TableRow key="empty">
-                <TableCell colSpan={6} sx={{ textAlign: 'center', py: 4 }}>
-                  <Typography variant="body1" color="text.secondary">
+                <TableCell colSpan={6} sx={{ textAlign: 'center', py: 4, border: 'none' }}>
+                  <Typography sx={{ fontWeight: 600, color: COLORS.textDark }}>
                     Không có lớp học phù hợp
                   </Typography>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="body2" sx={{ color: COLORS.textSecondary, mt: 0.5 }}>
                     {showDeleted ? 'Chưa có lớp học nào.' : 'Bật "Hiện lớp đã xóa" để xem các lớp đã xóa.'}
                   </Typography>
                 </TableCell>
@@ -242,17 +365,26 @@ const TeacherClasses = () => {
                   key={classItem._id}
                   {...classItem}
                   onStatusChange={handleStatusChange}
+                  onChangeImage={handleOpenImageModal}
                 />
               ))
             )}
           </TableBody>
         </Table>
-        {/* Simple Next/Prev buttons */}
-        <Stack direction="row" spacing={2} justifyContent="flex-end" alignItems="center" sx={{ mt: 2 }} paddingBottom={1} paddingRight={1}>
+
+        {/* Pagination */}
+        <Stack
+          direction="row"
+          spacing={2}
+          justifyContent="flex-end"
+          alignItems="center"
+          sx={{ mt: 2, pb: 1, pr: 1 }}
+        >
           <Button
             variant="outlined"
             disabled={page === 1}
             onClick={() => setPage(page - 1)}
+            sx={flatButtonOutlined}
           >
             Trang trước
           </Button>
@@ -260,53 +392,32 @@ const TeacherClasses = () => {
             variant="outlined"
             disabled={nextPageEmpty}
             onClick={() => {
-              // Use cached next page data for instant update
               setClasses(nextPageData);
               setPage(page + 1);
             }}
+            sx={flatButtonOutlined}
           >
             Trang sau
           </Button>
         </Stack>
       </Paper>
 
-
-
+      {/* ── Create Class Modal ── */}
       <Modal
         open={modalClassCreation}
         onClose={handleModalClose}
         aria-labelledby="modal-modal-title"
         aria-describedby="modal-modal-description"
       >
-        <Box sx={{
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          width: { xs: '95%', sm: '80%', md: 700 },
-          bgcolor: 'background.paper',
-          borderRadius: 2,
-          boxShadow: 24,
-          p: 4,
-          maxHeight: '85vh',
-          overflowY: 'auto'
-        }}>
-          <Typography id="modal-modal-title" variant="h6" component="h2" gutterBottom>
+        <Box sx={{ ...flatModal, width: { xs: '95%', sm: '80%', md: 700 } }}>
+          <Typography sx={sectionLabel}>New class</Typography>
+          <Typography sx={{ ...pageTitle, fontSize: "1.25rem", mb: 3 }}>
             Tạo lớp học mới
           </Typography>
 
           {coursesLoading ? (
-            <Box sx={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              py: 6
-            }}>
-              <CircularProgress size={40} sx={{ mb: 2 }} />
-              <Typography variant="body1" color="text.secondary">
-                Đang tải danh sách khóa học...
-              </Typography>
+            <Box sx={loadingContainer}>
+              <CircularProgress size={40} sx={{ color: COLORS.accent }} />
             </Box>
           ) : (
             <>
@@ -319,6 +430,11 @@ const TeacherClasses = () => {
                   onChange={(e) => setClassName(e.target.value)}
                   placeholder="VD: Hóa học 9A"
                   disabled={creating}
+                  sx={{
+                    "& .MuiOutlinedInput-root": {
+                      borderRadius: RADIUS,
+                    },
+                  }}
                 />
 
                 <Autocomplete
@@ -331,7 +447,7 @@ const TeacherClasses = () => {
                     return `${name} (Lớp ${grade})`;
                   }}
                   value={selectedCourse}
-                  onChange={(event, value) => {
+                  onChange={(_event, value) => {
                     handleCourseSelection(value);
                   }}
                   disabled={creating}
@@ -343,15 +459,20 @@ const TeacherClasses = () => {
                       variant="outlined"
                       required
                       placeholder="Tìm và chọn khóa học"
+                      sx={{
+                        "& .MuiOutlinedInput-root": {
+                          borderRadius: RADIUS,
+                        },
+                      }}
                     />
                   }
                   renderOption={(props, option) => (
                     <Box component="li" {...props} key={option._id}>
                       <Box>
-                        <Typography variant="body1">
+                        <Typography sx={{ fontWeight: 600, fontSize: "0.9rem" }}>
                           {option.course_name || 'Unknown Course'}
                         </Typography>
-                        <Typography variant="body2" color="text.secondary">
+                        <Typography sx={{ fontSize: "0.8rem", color: COLORS.textSecondary }}>
                           Lớp {option.grade_level || 'N/A'} • {option.description ? 'Có mô tả' : 'Chưa có mô tả'}
                         </Typography>
                       </Box>
@@ -361,30 +482,100 @@ const TeacherClasses = () => {
 
                 {selectedCourse && (
                   <Box>
-                    <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                    <Typography sx={sectionTitle}>
                       Chủ đề của khóa học đã chọn
                     </Typography>
                     {topicsLoading ? (
-                      <Typography variant="body2" color="text.secondary">
+                      <Typography variant="body2" sx={{ color: COLORS.textSecondary }}>
                         Đang tải chủ đề...
                       </Typography>
                     ) : courseTopics.length > 0 ? (
-                      <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
-                        {courseTopics.map((topic) => (
-                          <Chip key={topic._id} label={topic.title} size="small" />
-                        ))}
-                      </Stack>
+                      <TableContainer sx={tableContainerStyle}>
+                        <Table size="small">
+                          <TableHead>
+                            <TableRow sx={tableHeadRow}>
+                              <TableCell sx={{ width: 60 }}>#</TableCell>
+                              <TableCell>Chủ đề</TableCell>
+                              <TableCell>Mô tả</TableCell>
+                            </TableRow>
+                          </TableHead>
+                          <TableBody>
+                            {courseTopics.map((topic, idx) => (
+                              <TableRow key={topic._id} sx={{
+                                "&:hover": { bgcolor: COLORS.accentLight },
+                                "& .MuiTableCell-body": {
+                                  fontSize: "0.85rem",
+                                  color: COLORS.textDark,
+                                  py: 1.25,
+                                  borderBottom: `1px solid ${COLORS.borderLight}`,
+                                },
+                              }}>
+                                <TableCell>
+                                  <Typography sx={{ fontWeight: 600, fontSize: "0.8rem", color: COLORS.textSecondary }}>
+                                    {idx + 1}
+                                  </Typography>
+                                </TableCell>
+                                <TableCell>
+                                  <Typography sx={{ fontWeight: 600, fontSize: "0.85rem" }}>
+                                    {topic.title}
+                                  </Typography>
+                                </TableCell>
+                                <TableCell>
+                                  <Typography sx={{ fontSize: "0.8rem", color: COLORS.textSecondary }}>
+                                    {topic.description || "—"}
+                                  </Typography>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </TableContainer>
                     ) : (
-                      <Typography variant="body2" color="text.secondary">
+                      <Typography variant="body2" sx={{ color: COLORS.textSecondary }}>
                         Khóa học này chưa có chủ đề.
                       </Typography>
                     )}
                   </Box>
                 )}
+
+                <Stack spacing={1}>
+                  <Typography sx={sectionTitle}>Ảnh bìa lớp học (tùy chọn)</Typography>
+                  <Button
+                    variant="outlined"
+                    component="label"
+                    disabled={creating}
+                    sx={flatButtonOutlined}
+                  >
+                    Chọn ảnh
+                    <input hidden accept="image/*" type="file" onChange={handleCreateImageSelect} />
+                  </Button>
+                  {createImagePreview && (
+                    <CardMedia
+                      component="img"
+                      image={createImagePreview}
+                      alt="Ảnh bìa lớp học"
+                      sx={{
+                        width: 220,
+                        height: 130,
+                        borderRadius: RADIUS,
+                        objectFit: "cover",
+                        border: `1px solid ${COLORS.border}`,
+                      }}
+                    />
+                  )}
+                </Stack>
               </Stack>
 
               {error && (
-                <Alert severity="error" sx={{ mt: 2 }}>
+                <Alert
+                  severity="error"
+                  sx={{
+                    mt: 2,
+                    borderRadius: RADIUS,
+                    border: `1px solid ${COLORS.error}`,
+                    boxShadow: "none",
+                  }}
+                >
                   {error}
                 </Alert>
               )}
@@ -394,15 +585,16 @@ const TeacherClasses = () => {
                   variant="outlined"
                   onClick={handleModalClose}
                   disabled={creating}
+                  sx={flatButtonOutlined}
                 >
                   Hủy
                 </Button>
                 <Button
                   variant="contained"
-                  color="primary"
                   onClick={handleCreateClass}
                   disabled={!className.trim() || !selectedCourse || creating}
                   startIcon={creating ? <CircularProgress size={20} /> : <Add />}
+                  sx={flatButtonContained}
                 >
                   {creating ? 'Đang tạo...' : 'Tạo lớp học'}
                 </Button>
@@ -412,7 +604,71 @@ const TeacherClasses = () => {
         </Box>
       </Modal>
 
-    </Box >
+      {/* ── Change Image Modal ── */}
+      <Modal
+        open={imageModalOpen}
+        onClose={handleImageModalClose}
+        aria-labelledby="change-class-image-title"
+      >
+        <Box sx={{ ...flatModal, width: { xs: '95%', sm: 520 } }}>
+          <Typography sx={sectionLabel}>Update</Typography>
+          <Typography sx={{ ...pageTitle, fontSize: "1.25rem", mb: 1 }}>
+            Đổi ảnh lớp học
+          </Typography>
+
+          <Typography variant="body2" sx={{ color: COLORS.textSecondary, mb: 2 }}>
+            {selectedClassForImage ? `Lớp: ${selectedClassForImage.class_name}` : ""}
+          </Typography>
+
+          <Stack spacing={2}>
+            <Button
+              variant="outlined"
+              component="label"
+              disabled={changingImage}
+              sx={flatButtonOutlined}
+            >
+              Chọn ảnh mới
+              <input hidden accept="image/*" type="file" onChange={handleChangeImageSelect} />
+            </Button>
+
+            {(changeImagePreview || selectedClassForImage?.img_cover_link) && (
+              <CardMedia
+                component="img"
+                image={changeImagePreview || selectedClassForImage?.img_cover_link || ""}
+                alt="Ảnh lớp học"
+                sx={{
+                  width: '100%',
+                  height: 210,
+                  borderRadius: RADIUS,
+                  objectFit: "cover",
+                  border: `1px solid ${COLORS.border}`,
+                }}
+              />
+            )}
+          </Stack>
+
+          <Stack direction="row" spacing={2} justifyContent="flex-end" sx={{ mt: 4 }}>
+            <Button
+              variant="outlined"
+              onClick={handleImageModalClose}
+              disabled={changingImage}
+              sx={flatButtonOutlined}
+            >
+              Hủy
+            </Button>
+            <Button
+              variant="contained"
+              onClick={handleUpdateClassImage}
+              disabled={!changeImageFile || changingImage}
+              startIcon={changingImage ? <CircularProgress size={20} /> : undefined}
+              sx={flatButtonContained}
+            >
+              {changingImage ? 'Đang cập nhật...' : 'Cập nhật ảnh'}
+            </Button>
+          </Stack>
+        </Box>
+      </Modal>
+    </Box>
   );
 };
 
