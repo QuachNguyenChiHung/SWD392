@@ -13,6 +13,9 @@ import {
     ListItemText,
     Avatar,
     Tooltip,
+    CircularProgress,
+    Alert,
+    Chip,
 } from "@mui/material";
 import {
     ArrowBack,
@@ -28,7 +31,7 @@ import {
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ReactElement } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import type { ClassMaterial, ClassMaterialType, Quiz as QuizType, Question } from "../../types/teacherType";
+import type { ClassMaterial, ClassMaterialType, Quiz as QuizType, Question, CreateClassMaterialDTO } from "../../types/teacherType";
 import MaterialTypeViewer from "../../components/MaterialTypeViewer";
 import chadApi from "../../services/teacherApi/chadApi";
 import CreateClassMaterialModal from "../../components/CreateClassMaterialModal";
@@ -130,7 +133,7 @@ export default function AiContentGenerator() {
     const [generatedMaterials, setGeneratedMaterials] = useState<ClassMaterial[]>([]);
     const [selectedContentType, setSelectedContentType] = useState<ClassMaterialType | "">("");
     const [showGenerationForm, setShowGenerationForm] = useState(false);
-    const [quizPreview, setQuizPreview] = useState<null | { title: string; questions: FrontendQuestionData[] }>(null);
+    const [quizPreview, setQuizPreview] = useState<null | { title: string; questions: any[] }>(null);
     const [quizTitle, setQuizTitle] = useState<string>("");
     const [quizType, setQuizType] = useState<'interactive' | 'standard'>('interactive');
     const [isSavingQuiz, setIsSavingQuiz] = useState(false);
@@ -140,6 +143,17 @@ export default function AiContentGenerator() {
     const [quizQuestionCount, setQuizQuestionCount] = useState<number | "">(5);
     const [quizTFCount, setQuizTFCount] = useState<number>(0);
     const [quizMCCount, setQuizMCCount] = useState<number>(5);
+
+    // Restored Original Application State
+    const [quizCount, setQuizCount] = useState(5);
+    const [quizMcCount, setQuizMcCount] = useState(4);
+    const [quizTfCount, setQuizTfCount] = useState(1);
+    const [aiPreviewMaterial, setAiPreviewMaterial] = useState<ClassMaterial | null>(null);
+    const [isPreviewLoading, setIsPreviewLoading] = useState(false);
+    const [previewError, setPreviewError] = useState("");
+    const [previewUrl, setPreviewUrl] = useState("");
+    const [createModalOpen, setCreateModalOpen] = useState(false);
+    const [createdCount, setCreatedCount] = useState(0);
 
     const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
@@ -163,71 +177,67 @@ export default function AiContentGenerator() {
     const normalizeQuizCount = (value: number, fallback: number) =>
         Number.isFinite(value) && value > 0 ? Math.floor(value) : fallback;
 
-    const handleSendMessage = async () => {
+    const syncQuizSplitFromTotal = (nextTotal: number) => {
+        const normalizedTotal = Math.max(1, Math.floor(nextTotal));
+        const currentSplitTotal = quizMcCount + quizTfCount;
 
-
-        // Simulate AI response delay
-
-        try {
-            if (!inputValue.trim() || isLoading) return;
-
-            const userMessage: ChatMessage = {
-                id: Date.now().toString(),
-                content: inputValue,
-                sender: "user",
-                timestamp: new Date(),
-            };
-
-            // include the new user message when sending to the API
-            const payload = [...messages, userMessage];
-            setMessages(payload);
-            setInputValue("");
-            setIsLoading(true);
-
-            const p = await chadApi.getChadResponse(payload);
-            console.log("API response", JSON.parse(p.message));
-            // apiService returns response.data, so p is the data object
-            const s = p?.message;
-            const aiResponse: ChatMessage = {
-                id: (Date.now() + 1).toString(),
-                content: s ?? "",
-                sender: "assistant",
-                timestamp: new Date(),
-            };
-            setMessages(prev => [...prev, aiResponse]);
-            setIsLoading(false);
-
-        } catch (error) {
-            console.error("Error getting AI response:", error);
-            setIsLoading(false);
+        if (currentSplitTotal <= 0) {
+            setQuizCount(normalizedTotal);
+            setQuizMcCount(normalizedTotal);
+            setQuizTfCount(0);
+            return;
         }
 
+        const nextMcCount = Math.min(
+            normalizedTotal,
+            Math.max(0, Math.round((normalizedTotal * quizMcCount) / currentSplitTotal)),
+        );
+        const nextTfCount = normalizedTotal - nextMcCount;
+
+        setQuizCount(normalizedTotal);
+        setQuizMcCount(nextMcCount);
+        setQuizTfCount(nextTfCount);
     };
 
-    const generateAIResponse = (userInput: string): string => {
-        const responses = [
-            "I understand you'd like to create content. Could you provide more details about what specific material you need?",
-            "That's a great idea! Let me help you create that content. What subject area should we focus on?",
-            "I can help you with that. Would you prefer to create a quiz, slide presentation, document, or 2D visualization?",
-            "Excellent! I'll help you generate that content. Please provide more context about your requirements.",
-            "That sounds interesting! Let me know the target audience and learning objectives for better customization.",
-        ];
-        return responses[Math.floor(Math.random() * responses.length)];
+    const syncQuizTotalFromSplit = (nextMcCount: number, nextTfCount: number) => {
+        const normalizedMcCount = Math.max(0, Math.floor(nextMcCount));
+        const normalizedTfCount = Math.max(0, Math.floor(nextTfCount));
+        const nextTotal = normalizedMcCount + normalizedTfCount;
+
+        if (nextTotal <= 0) {
+            setQuizCount(1);
+            setQuizMcCount(1);
+            setQuizTfCount(0);
+            return;
+        }
+
+        setQuizCount(nextTotal);
+        setQuizMcCount(normalizedMcCount);
+        setQuizTfCount(normalizedTfCount);
     };
 
-    const handleGenerateContent = async () => {
-        if (!selectedContentType) return;
+    const setNewPreviewUrl = (url: string) => {
+        if (previewUrl) {
+            URL.revokeObjectURL(previewUrl);
+        }
+        setPreviewUrl(url);
+    };
 
-        setIsLoading(true);
+    const handleSend = async () => {
+        if (!selectedContentType || !input.trim() || isChatLoading) return;
 
-        // Simulate content generation delay
-        setTimeout(() => {
-            // TODO: Replace with actual AI content generation
-            // const newMaterial = generateMockMaterial(generationRequest);
-            // setGeneratedMaterials(prev => [...prev, newMaterial]);
+        const userMsg: ChatMessage = {
+            id: crypto.randomUUID(),
+            sender: "user",
+            content: input.trim(),
+        };
+
+        const nextMessages = [...messages, userMsg];
+        setMessages(nextMessages);
+        setInput("");
+        setIsChatLoading(true);
 
         try {
-            // Instead of separate chat and generation calls, the generation call DOES the chat natively
             const chatMessage = await handleGeneratePreview(userMsg.content);
             if (chatMessage) {
                 setMessages((prev) => [
@@ -294,23 +304,23 @@ export default function AiContentGenerator() {
     const handleGeneratePreview = async (overridePrompt?: string): Promise<string | void> => {
         if (!selectedContentType || isPreviewLoading) return;
 
-    // buildQuizPrompt removed — quiz prompt construction now happens server-side
+        const promptForPreview = overridePrompt ?? latestUserPrompt;
 
-    // Fisher-Yates shuffle
-    const shuffleArray = <T,>(arr: T[]) => {
-        const a = arr.slice();
-        for (let i = a.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            const tmp = a[i];
-            a[i] = a[j];
-            a[j] = tmp;
+        // Fisher-Yates shuffle helper
+        const shuffleArray = <T,>(arr: T[]) => {
+            const a = arr.slice();
+            for (let i = a.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                const tmp = a[i];
+                a[i] = a[j];
+                a[j] = tmp;
+            }
+            return a;
         }
-        return a;
-    }
 
-    const generateQuizPreview = async () => {
-        if (!state?.topic) return;
-        setIsLoading(true);
+        setPreviewError("");
+        setIsPreviewLoading(true);
+
         try {
             switch (selectedContentType) {
                 case "slide": {
@@ -458,6 +468,11 @@ export default function AiContentGenerator() {
         }
     }
 
+    const handleMaterialCreated = (_topicId: string, _material: CreateClassMaterialDTO) => {
+        setCreatedCount((prev) => prev + 1);
+        setCreateModalOpen(false);
+    };
+
     const resetQuizPreview = () => {
         setQuizPreview(null);
         setQuizTitle("");
@@ -469,7 +484,7 @@ export default function AiContentGenerator() {
     const handleKeyPress = (event: React.KeyboardEvent) => {
         if (event.key === "Enter" && !event.shiftKey) {
             event.preventDefault();
-            handleSendMessage();
+            handleSend();
         }
     };
 
