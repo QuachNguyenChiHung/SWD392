@@ -261,7 +261,7 @@ class UserController {
       res.cookie("Authorization", `Bearer ${token}`, {
         expires: new Date(Date.now() + 3600000),
         httpOnly: true,
-        sameSite: "strict",
+        sameSite: "lax",
         secure:true,
         signed: true,
       });
