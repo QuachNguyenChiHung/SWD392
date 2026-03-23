@@ -1,8 +1,8 @@
-import { Box, Typography, Button } from "@mui/material";
-import { Download } from "@mui/icons-material";
+import { Box, Typography, Button, Stack } from "@mui/material";
+import { Download, OpenInNew } from "@mui/icons-material";
 import type { FileMaterial } from "../../types/teacherType";
 import { isImageExtension, isPdfExtension, isPptxExtension } from "./viewerUtils";
-import { COLORS, RADIUS, flatButtonContained } from "../../pages/teacher/teacherStyles";
+import { COLORS, RADIUS, flatButtonContained, flatButtonOutlined } from "../../pages/teacher/teacherStyles";
 
 interface FileViewerProps {
     content: FileMaterial;
@@ -81,37 +81,58 @@ export default function FileViewer({ content }: FileViewerProps) {
                 </Typography>
             )}
 
-            <Button
-                variant="contained"
-                startIcon={<Download />}
-                onClick={async () => {
-                    try {
-                        const response = await fetch(content.file_path);
-                        const blob = await response.blob();
-                        const url = URL.createObjectURL(blob);
-                        const link = document.createElement('a');
-                        link.href = url;
-                        link.download = content.file_name;
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
-                        URL.revokeObjectURL(url);
-                    } catch {
-                        window.open(content.file_path, '_blank');
-                    }
-                }}
-                sx={{
-                    ...flatButtonContained,
-                    mt: 3,
-                    bgcolor: COLORS.info,
-                    "&:hover": {
-                        bgcolor: "#2563EB",
-                        boxShadow: "none",
-                    },
-                }}
-            >
-                Tải tệp về
-            </Button>
+            <Stack direction="row" spacing={1.5} sx={{ mt: 3 }}>
+                <Button
+                    variant="contained"
+                    startIcon={<Download />}
+                    onClick={async () => {
+                        try {
+                            const response = await fetch(content.file_path);
+                            const blob = await response.blob();
+                            const url = URL.createObjectURL(blob);
+                            const link = document.createElement('a');
+                            link.href = url;
+                            link.download = content.file_name;
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                            URL.revokeObjectURL(url);
+                        } catch {
+                            window.open(content.file_path, '_blank');
+                        }
+                    }}
+                    sx={{
+                        ...flatButtonContained,
+                        mt: 3,
+                        bgcolor: COLORS.info,
+                        "&:hover": {
+                            bgcolor: "#2563EB",
+                            boxShadow: "none",
+                        },
+                    }}
+                >
+                    Tải tệp về
+                </Button>
+                <Button
+                    variant="outlined"
+                    startIcon={<OpenInNew />}
+                    href={content.file_path}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    sx={{
+                        ...flatButtonOutlined,
+                        borderColor: COLORS.info,
+                        color: COLORS.info,
+                        "&:hover": {
+                            bgcolor: COLORS.infoBg,
+                            borderColor: COLORS.info,
+                            boxShadow: "none",
+                        },
+                    }}
+                >
+                    Mở tab mới
+                </Button>
+            </Stack>
         </Box>
     );
 }

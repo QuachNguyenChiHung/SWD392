@@ -318,7 +318,7 @@ const StudentDashboard = () => {
           </Grid>
 
           {/* Right column */}
-          <Grid size={{ xs: 12, md: 4 }}>
+          <Grid size={{ xs: 12, md: 4}}>
             <Grid container direction="column" spacing={3}>
 
               <Grid size={{ xs: 12 }}>
@@ -371,52 +371,6 @@ const StudentDashboard = () => {
                   </Stack>
                 </Paper>
               </Grid>
-
-              <Grid size={{ xs: 12 }}>
-                <Paper
-                  elevation={0}
-                  sx={{
-                    p: 3,
-                    borderRadius: 3,
-                    bgcolor: '#f0f9ff',
-                    border: '1px solid #bfdbfe',
-                  }}
-                >
-                  <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
-                    Thông tin ghi danh
-                  </Typography>
-                  <Stack spacing={1.5}>
-                    {loading ? (
-                      <>
-                        <Skeleton variant="rounded" height={40} />
-                        <Skeleton variant="rounded" height={40} />
-                      </>
-                    ) : enrollments.length > 0 ? (
-                      <>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                          <Typography variant="body2" color="text.secondary">Tổng ghi danh:</Typography>
-                          <Typography variant="body2" fontWeight="bold">{enrollments.length}</Typography>
-                        </Box>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                          <Typography variant="body2" color="text.secondary">Đang học:</Typography>
-                          <Typography variant="body2" fontWeight="bold">
-                            {enrollments.filter(e => e.status === 'in_progress').length}
-                          </Typography>
-                        </Box>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                          <Typography variant="body2" color="text.secondary">Đã hoàn thành:</Typography>
-                          <Typography variant="body2" fontWeight="bold">
-                            {enrollments.filter(e => e.status === 'completed').length}
-                          </Typography>
-                        </Box>
-                      </>
-                    ) : (
-                      <Typography variant="body2" color="text.secondary">Chưa ghi danh lớp nào</Typography>
-                    )}
-                  </Stack>
-                </Paper>
-              </Grid>
-
             </Grid>
           </Grid>
         </Grid>

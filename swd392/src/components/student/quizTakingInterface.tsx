@@ -236,11 +236,6 @@ const QuizTakingInterface = () => {
                 <Typography variant="h6" color="primary" fontWeight="bold">
                   Câu {currentIdx + 1}/{questions.length}
                 </Typography>
-                <Chip
-                  label={currentQuestion?.type === 'true_false' ? 'Đúng/Sai' : 'Trắc nghiệm'}
-                  size="small"
-                  sx={{ bgcolor: '#f0f7ff', color: '#3b82f6', fontWeight: 'bold' }}
-                />
               </Stack>
               <IconButton onClick={toggleFlag} color={flagged.includes(currentIdx) ? 'error' : 'default'}>
                 {flagged.includes(currentIdx) ? <Flag color="error" /> : <FlagOutlined />}
