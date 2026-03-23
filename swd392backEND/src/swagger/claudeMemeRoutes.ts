@@ -116,6 +116,25 @@
  *         description: Forbidden - teacher role required
  *       500:
  *         description: Internal server error
+ * /api/student/ai-history:
+ *   get:
+ *     tags:
+ *       - Claude AI History
+ *     summary: Get AI requests history for the logged-in student
+ *     description: "[Student Only] Returns an array of AI requests made by the currently authenticated student."
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Array of AI requests
+ *       400:
+ *         description: User ID not found in token
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - student role required
+ *       500:
+ *         description: Internal server error
  * /api/admin/ai-history/{userId}:
  *   get:
  *     tags:

@@ -395,6 +395,14 @@ route.post("/claude", async (req, res, next) => {
         const { prompt } = req.body;
         if (!prompt) return res.status(400).json({ message: "Prompt is required" });
         const msg = await runModel(prompt);
+
+        const savedRequest = await AiRepo.saveRequest(null, prompt, "chat").catch(() => null);
+        if (savedRequest) {
+            AiRepo.saveContent(savedRequest._id as any, "chat", {
+                response: msg
+            }, msg).catch(() => null);
+        }
+
         res.json({ message: msg });
     } catch (error) {
         next(error);
@@ -405,7 +413,17 @@ route.post("/teacher/ai-chad", verifyRole.verifyTeacher, async (req, res, next) 
     try {
         const { prompt } = req.body;
         if (!prompt) return res.status(400).json({ message: "Prompt is required" });
+
+        const userId = (req as any).user?.id ?? null;
         const msg = await runModelWithHistory(prompt);
+
+        const savedRequest = await AiRepo.saveRequest(userId, prompt, "chat").catch(() => null);
+        if (savedRequest) {
+            AiRepo.saveContent(savedRequest._id as any, "chat", {
+                response: msg
+            }, msg).catch(() => null);
+        }
+
         res.json({ message: msg });
     } catch (error) {
         next(error);
@@ -711,6 +729,23 @@ Design rules you MUST follow:
  * Returns all AI requests made by the currently authenticated teacher.
  */
 route.get("/teacher/ai-history", verifyRole.verifyTeacher, async (req, res, next) => {
+    try {
+        const userId = (req as any).user?.id;
+        console.log(userId)
+        if (!userId) return res.status(400).json({ message: "User ID not found in token" });
+
+        const requests = await AiRepo.getRequestsByUser(userId);
+        return res.json({ data: requests });
+    } catch (error) {
+        next(error);
+    }
+});
+
+/**
+ * GET /student/ai-history
+ * Returns all AI requests made by the currently authenticated student.
+ */
+route.get("/student/ai-history", verifyRole.verifyStudent, async (req, res, next) => {
     try {
         const userId = (req as any).user?.id;
         console.log(userId)
