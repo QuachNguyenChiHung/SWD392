@@ -46,9 +46,11 @@ class AuthService {
                 user: userResponse,
                 token: loginResponse.token
             };
-        } catch (error) {
+        } catch (error: any) {
             console.error('Login API error:', error);
-            throw new Error(error instanceof Error ? error.message : 'Login failed');
+            // Extract proper error message
+            const errorMessage = error?.message || 'Login failed';
+            throw new Error(errorMessage);
         }
     }
 
@@ -69,9 +71,10 @@ class AuthService {
                 user: userResponse,
                 token: loginResponse.token
             };
-        } catch (error) {
+        } catch (error: any) {
             console.error('Google login API error:', error);
-            throw new Error(error instanceof Error ? error.message : 'Google login failed');
+            const errorMessage = error?.message || 'Google login failed';
+            throw new Error(errorMessage);
         }
     }
 
@@ -92,9 +95,10 @@ class AuthService {
             }
 
             throw new Error('Registration failed - no user data received');
-        } catch (error) {
+        } catch (error: any) {
             console.error('Register API error:', error);
-            throw new Error(error instanceof Error ? error.message : 'Registration failed');
+            const errorMessage = error?.message || 'Registration failed';
+            throw new Error(errorMessage);
         }
     }
 

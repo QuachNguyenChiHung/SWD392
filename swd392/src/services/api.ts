@@ -39,8 +39,15 @@ class ApiService {
             },
             (error: AxiosError) => {
                 console.error('API request error:', error.response?.data || error.message);
-                const message = (error.response?.data as any)?.message || error.message;
-                throw new Error(message);
+                const errorData = error.response?.data as any;
+                const message = errorData?.message || error.message || 'Request failed';
+                
+                // Create a proper error object with the message
+                const apiError = new Error(message);
+                (apiError as any).status = error.response?.status;
+                (apiError as any).data = errorData;
+                
+                return Promise.reject(apiError);
             }
         );
     }
