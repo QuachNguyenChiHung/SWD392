@@ -26,6 +26,7 @@ import QuizAttemptRoute from './route/QuizAttemptRoute.ts';
 import ClaudeMemeRoute from './route/ClaudeMemeRoute.ts';
 import TeacherRequestRoute from './route/TeacherRequestRoute.ts';
 import TeacherRoute from './route/TeacherRoute.ts';
+import AiRoute from './route/AiRoute.ts';
 
 
 const spec = swaggerJSDoc({
@@ -103,6 +104,7 @@ console.log(process.env.MONGO_URI);
             app.use('/api', ClaudeMemeRoute);
             app.use('/api', TeacherRequestRoute);
             app.use('/api', TeacherRoute);
+            app.use('/api', AiRoute);
             // Error handler must be after routes
             app.use((err: any, req: Request, res: Response, next: NextFunction) => {
                 console.error(err);

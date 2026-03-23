@@ -93,7 +93,7 @@ class ClassMaterialService {
 
     async updateClassMaterial(id: string, updateData: UpdateClassMaterialDTO) {
         // Reset properties if a material is updated
-        updateData.status = 'published';
+        // updateData.status = 'published';
         updateData.isFlagged = false;
         updateData.isFlaggable = true;
 

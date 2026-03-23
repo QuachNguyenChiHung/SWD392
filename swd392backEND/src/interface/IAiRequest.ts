@@ -5,4 +5,6 @@ export interface IAiRequest extends Document {
     prompt: string;
     type: string;
     date: Date;
+    input_tokens?: number;
+    output_tokens?: number;
 }

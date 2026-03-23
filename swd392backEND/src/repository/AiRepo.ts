@@ -6,11 +6,13 @@ const PAGE_SIZE = 20;
 
 class AiRepo {
     /** Persist a new AI request from the user */
-    async saveRequest(userId: string | Types.ObjectId | null, prompt: string, type: string) {
+    async saveRequest(userId: string | Types.ObjectId | null, prompt: string, type: string, inputTokens?: number, outputTokens?: number) {
         const doc = new AiRequest({
             user_id: userId ?? null,
             prompt,
             type,
+            input_tokens: inputTokens ?? 0,
+            output_tokens: outputTokens ?? 0,
         });
         return await doc.save();
     }
@@ -64,6 +66,41 @@ class AiRepo {
     /** Get the AiContent record(s) linked to a given request */
     async getContentByRequest(requestId: string) {
         return await AiContent.find({ ai_request_id: requestId }).lean();
+    }
+
+    /** Count total AI content records for a user (1 content = 1 request) */
+    async countContentByUser(userId: string | Types.ObjectId) {
+        return await AiContent.countDocuments({
+            ai_request_id: {
+                $in: await AiRequest.find({ user_id: userId }).distinct('_id')
+            }
+        });
+    }
+
+    /** Get total token usage for a user */
+    async getTokenUsageByUser(userId: string | Types.ObjectId) {
+        const mongoose = await import('mongoose');
+        const objectId = typeof userId === 'string' ? new mongoose.Types.ObjectId(userId) : userId;
+        
+        const result = await AiRequest.aggregate([
+            { $match: { user_id: objectId } },
+            {
+                $group: {
+                    _id: null,
+                    totalInputTokens: { $sum: '$input_tokens' },
+                    totalOutputTokens: { $sum: '$output_tokens' }
+                }
+            }
+        ]);
+
+        if (result.length === 0) {
+            return { totalInputTokens: 0, totalOutputTokens: 0 };
+        }
+
+        return {
+            totalInputTokens: result[0].totalInputTokens || 0,
+            totalOutputTokens: result[0].totalOutputTokens || 0
+        };
     }
 }
 

@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { runModel, runModelWithHistory } from "../ultis/claude.ts";
+import { runModel, runModelWithHistory, runModelFull, runModelWithHistoryFull } from "../ultis/claude.ts";
 import verifyRole from "../ultis/verifyRole.ts";
 import PptxGenJS from "pptxgenjs";
 import puppeteer from "puppeteer";
@@ -392,19 +392,45 @@ const renderSlide = (pptx: any, data: SlideData, slideNum: number, total: number
 
 route.post("/claude", verifyRole.verifyStudent, async (req, res, next) => {
     try {
-        const { prompt } = req.body;
+        const { prompt, history } = req.body;
         const userId = (req as any).user?.id ?? null;
         if (!prompt) return res.status(400).json({ message: "Prompt is required" });
-        const msg = await runModel(prompt);
+        
+        let response;
+        let msg;
+        let inputTokens;
+        let outputTokens;
 
-        const savedRequest = await AiRepo.saveRequest(userId, prompt, "chat").catch(() => null);
+        if (history && Array.isArray(history) && history.length > 0) {
+            // Use history-aware model
+            const messages = [...history, { content: prompt, sender: "user" }];
+            response = await runModelWithHistoryFull(messages);
+            msg = (response.content[0] as any).text;
+            inputTokens = response.usage.input_tokens;
+            outputTokens = response.usage.output_tokens;
+        } else {
+            // Single prompt without history
+            response = await runModelFull(prompt);
+            msg = (response.content[0] as any).text;
+            inputTokens = response.usage.input_tokens;
+            outputTokens = response.usage.output_tokens;
+        }
+
+        const savedRequest = await AiRepo.saveRequest(userId, prompt, "chat", inputTokens, outputTokens).catch(() => null);
         if (savedRequest) {
             AiRepo.saveContent(savedRequest._id as any, "chat", {
                 response: msg
             }, msg).catch(() => null);
         }
 
-        res.json({ message: msg });
+        res.json({ 
+            message: msg,
+            tokens: {
+                input: inputTokens,
+                output: outputTokens,
+                total: inputTokens + outputTokens
+            }
+        });
     } catch (error) {
         next(error);
     }
@@ -416,16 +442,58 @@ route.post("/teacher/ai-chad", verifyRole.verifyTeacher, async (req, res, next) 
         if (!prompt) return res.status(400).json({ message: "Prompt is required" });
 
         const userId = (req as any).user?.id ?? null;
-        const msg = await runModelWithHistory(prompt);
+        
+        // Check if prompt is an array (history) or string (single prompt)
+        let response;
+        let msg;
+        let inputTokens;
+        let outputTokens;
 
-        const savedRequest = await AiRepo.saveRequest(userId, prompt, "chat").catch(() => null);
-        if (savedRequest) {
-            AiRepo.saveContent(savedRequest._id as any, "chat", {
-                response: msg
-            }, msg).catch(() => null);
+        if (Array.isArray(prompt)) {
+            // Use history-aware model
+            response = await runModelWithHistoryFull(prompt);
+            msg = (response.content[0] as any).text;
+            inputTokens = response.usage.input_tokens;
+            outputTokens = response.usage.output_tokens;
+            
+            // Save the last user message as the prompt
+            const lastUserMsg = [...prompt].reverse().find(m => m.sender === "user");
+            const promptText = lastUserMsg?.content || "Chat with history";
+            
+            const savedRequest = await AiRepo.saveRequest(userId, promptText, "chat", inputTokens, outputTokens).catch(() => null);
+            if (savedRequest) {
+                AiRepo.saveContent(savedRequest._id as any, "chat", {
+                    response: msg
+                }, msg).catch(() => null);
+            }
+        } else {
+            // Single prompt without history (backward compatibility)
+            response = await runModelFull(prompt);
+            msg = (response.content[0] as any).text;
+            inputTokens = response.usage.input_tokens;
+            outputTokens = response.usage.output_tokens;
+            
+            const savedRequest = await AiRepo.saveRequest(userId, prompt, "chat", inputTokens, outputTokens).catch(() => null);
+            if (savedRequest) {
+                AiRepo.saveContent(savedRequest._id as any, "chat", {
+                    response: msg
+                }, msg).catch(() => null);
+            }
         }
 
-        res.json({ message: msg });
+        res.json({ 
+            message: msg,
+            tokens: {
+                input: inputTokens,
+                output: outputTokens,
+                total: inputTokens + outputTokens
+            }
+        });
+        
+        console.log('=== TEACHER CHAT RESPONSE ===');
+        console.log('Message length:', msg.length, 'characters');
+        console.log('Tokens:', { input: inputTokens, output: outputTokens, total: inputTokens + outputTokens });
+        console.log('=============================');
     } catch (error) {
         next(error);
     }
@@ -473,9 +541,14 @@ Constraints:
 - Content value: User request (IMPORTANT): generated content must fit user request:"${notes}".
 - Output JSON only, no surrounding text or explanation.`;
 
-        const aiResponse = await runModel(prompt);
+        const aiResponseFull = await runModelFull(prompt);
+        const aiResponse = (aiResponseFull.content[0] as any).text;
+        const inputTokens = aiResponseFull.usage?.input_tokens || 0;
+        const outputTokens = aiResponseFull.usage?.output_tokens || 0;
+        
         console.log("----- AI QUIZ RAW RESPONSE -----");
         console.log(aiResponse);
+        console.log(`Tokens: ${inputTokens} in / ${outputTokens} out`);
         console.log("--------------------------------");
 
         const parsed = extractJsonWrapper(aiResponse);
@@ -484,7 +557,7 @@ Constraints:
         }
 
         // Save request to DB (fire-and-forget, don't block the response)
-        const savedRequest = await AiRepo.saveRequest(userId, prompt, "quiz").catch(() => null);
+        const savedRequest = await AiRepo.saveRequest(userId, prompt, "quiz", inputTokens, outputTokens).catch(() => null);
         if (savedRequest) {
             AiRepo.saveContent(savedRequest._id as any, "quiz", {
                 title: parsed.content.title || topicTitle,
@@ -495,10 +568,23 @@ Constraints:
         }
 
         // Return dual response: the chat message + the raw JSON content as string (for frontend to parse)
-        return res.json({
+        const response = {
             message: parsed.chat_message || "Here is the quiz you requested.",
-            rawContent: JSON.stringify(parsed.content)
-        });
+            rawContent: JSON.stringify(parsed.content),
+            tokens: {
+                input: inputTokens,
+                output: outputTokens,
+                total: inputTokens + outputTokens
+            }
+        };
+        
+        console.log('=== QUIZ GENERATION RESPONSE ===');
+        console.log('Message:', response.message);
+        console.log('Question count:', parsed.content?.questions?.length || 0);
+        console.log('Tokens:', response.tokens);
+        console.log('================================');
+        
+        return res.json(response);
     } catch (error) {
         next(error);
     }
@@ -551,11 +637,15 @@ Rules:
   ]
 }`;
 
-        const aiResponse = await runModel(prompt);
+        const aiResponseFull = await runModelFull(prompt);
+        const aiResponse = (aiResponseFull.content[0] as any).text;
+        const inputTokens = aiResponseFull.usage?.input_tokens || 0;
+        const outputTokens = aiResponseFull.usage?.output_tokens || 0;
 
+        console.log(`Slide generation tokens: ${inputTokens} in / ${outputTokens} out`);
 
         // Save request to DB (fire-and-forget, don't block the response)
-        const savedRequest = await AiRepo.saveRequest(userId, notes, "slide").catch(() => null);
+        const savedRequest = await AiRepo.saveRequest(userId, notes, "slide", inputTokens, outputTokens).catch(() => null);
 
         const parsed = extractJsonWrapper(aiResponse);
         if (!parsed || !Array.isArray(parsed.content)) {
@@ -632,11 +722,24 @@ Rules:
 
         const buffer = await pptx.write({ outputType: "nodebuffer" });
 
-        // Return dual response: chat message + base64 file data
-        return res.json({
+        // Return dual response: chat message + base64 file data + tokens
+        const response = {
             message: chatMessage,
             fileBase64: buffer.toString('base64'),
-        });
+            tokens: {
+                input: inputTokens,
+                output: outputTokens,
+                total: inputTokens + outputTokens
+            }
+        };
+        
+        console.log('=== SLIDE GENERATION RESPONSE ===');
+        console.log('Message:', response.message);
+        console.log('File size:', buffer.length, 'bytes');
+        console.log('Tokens:', response.tokens);
+        console.log('================================');
+        
+        return res.json(response);
     } catch (error) {
         next(error);
     }
@@ -671,9 +774,14 @@ Design rules you MUST follow:
   "content": "<!DOCTYPE html><html>...</html>"
 }`;
 
-        const aiResponse = await runModel(prompt);
+        const aiResponseFull = await runModelFull(prompt);
+        const aiResponse = (aiResponseFull.content[0] as any).text;
+        const inputTokens = aiResponseFull.usage?.input_tokens || 0;
+        const outputTokens = aiResponseFull.usage?.output_tokens || 0;
+        
         console.log("----- AI PDF RAW RESPONSE -----");
         console.log(aiResponse);
+        console.log(`Tokens: ${inputTokens} in / ${outputTokens} out`);
         console.log("-------------------------------");
 
         const parsed = extractJsonWrapper(aiResponse);
@@ -685,7 +793,7 @@ Design rules you MUST follow:
         let html = stripMarkdownFences(parsed.content);
 
         // DB persistence
-        const savedRequest = await AiRepo.saveRequest(userId, notes, "pdf").catch(() => null);
+        const savedRequest = await AiRepo.saveRequest(userId, notes, "pdf", inputTokens, outputTokens).catch(() => null);
         if (savedRequest) {
             AiRepo.saveContent(savedRequest._id as any, "pdf", {
                 title: topicTitle,
@@ -714,11 +822,24 @@ Design rules you MUST follow:
         });
         await browser.close();
 
-        // Return dual response: chat message + base64 file data
-        return res.json({
+        // Return dual response: chat message + base64 file data + tokens
+        const response = {
             message: chatMessage,
             fileBase64: Buffer.from(pdfBuffer).toString('base64'),
-        });
+            tokens: {
+                input: inputTokens,
+                output: outputTokens,
+                total: inputTokens + outputTokens
+            }
+        };
+        
+        console.log('=== PDF GENERATION RESPONSE ===');
+        console.log('Message:', response.message);
+        console.log('File size:', pdfBuffer.length, 'bytes');
+        console.log('Tokens:', response.tokens);
+        console.log('================================');
+        
+        return res.json(response);
     } catch (error) {
         next(error);
     }

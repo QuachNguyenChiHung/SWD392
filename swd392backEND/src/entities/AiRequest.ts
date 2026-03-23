@@ -7,6 +7,8 @@ const AiRequestSchema: Schema = new Schema(
         prompt: { type: String, required: true },
         type: { type: String, required: true, maxlength: 100 },
         date: { type: Date, default: Date.now },
+        input_tokens: { type: Number, default: 0 },
+        output_tokens: { type: Number, default: 0 },
     },
     { timestamps: false }
 );
