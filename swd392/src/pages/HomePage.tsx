@@ -132,56 +132,125 @@ const HomePage = () => {
     >
       <AppBar
         position="fixed"
-        elevation={1}
-        color="primary"
+        elevation={0}
         sx={{
-          borderBottom: '1px solid rgba(255, 255, 255, 0.18)',
+          background: 'rgba(15, 23, 42, 0.88)',
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+          boxShadow: '0 4px 30px rgba(0, 0, 0, 0.15)',
         }}
       >
         <Container maxWidth="lg">
           <Toolbar disableGutters sx={{ minHeight: 64 }}>
-            <Stack direction="row" spacing={1.2} alignItems="center">
-              <Science />
-              <Typography sx={{ fontWeight: 700 }}>
+            {/* Logo */}
+            <Stack
+              direction="row"
+              spacing={1.2}
+              alignItems="center"
+              sx={{ cursor: 'pointer', '&:hover': { opacity: 0.85 }, transition: 'opacity 0.2s' }}
+              onClick={() => navigate('/')}
+            >
+              <Science sx={{ color: '#38bdf8', fontSize: 26 }} />
+              <Typography
+                sx={{
+                  fontWeight: 800,
+                  fontSize: '1.05rem',
+                  fontFamily: '"Space Grotesk", sans-serif',
+                  letterSpacing: '-0.02em',
+                  background: 'linear-gradient(135deg, #e0f2fe 0%, #38bdf8 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                }}
+              >
                 Hóa học THPT
               </Typography>
             </Stack>
 
-            <Stack direction="row" spacing={0.3} sx={{ ml: 3, display: { xs: 'none', md: 'flex' } }}>
-              <Button size="small" color="inherit" onClick={() => navigate('/')}>
-                Home
-              </Button>
-              <Button size="small" color="inherit" onClick={() => scrollToSection('problem-solution')}>
-                Vấn đề & giải pháp
-              </Button>
-              <Button size="small" color="inherit" onClick={() => scrollToSection('features')}>
-                Tính năng
-              </Button>
-            </Stack>
-
-            <Stack direction="row" spacing={1} sx={{ ml: 'auto' }}>
+            {/* Right side actions */}
+            <Stack direction="row" spacing={1.2} sx={{ ml: 'auto' }} alignItems="center">
               {!isAuthenticated ? (
                 <>
                   <Button
                     size="small"
                     variant="outlined"
-                    color="inherit"
                     onClick={() => navigate('/auth/login')}
-                    sx={{ borderColor: 'rgba(255,255,255,0.65)', '&:hover': { borderColor: '#fff' } }}
+                    sx={{
+                      color: '#fff',
+                      borderColor: 'rgba(255,255,255,0.25)',
+                      fontWeight: 600,
+                      textTransform: 'none',
+                      px: 2.2,
+                      borderRadius: 2,
+                      '&:hover': {
+                        borderColor: 'rgba(255,255,255,0.6)',
+                        bgcolor: 'rgba(255,255,255,0.06)',
+                      },
+                    }}
                   >
                     Đăng nhập
                   </Button>
-                  <Button size="small" variant="contained" color="secondary" onClick={() => navigate('/auth/register')}>
+                  <Button
+                    size="small"
+                    variant="contained"
+                    onClick={() => navigate('/auth/register')}
+                    sx={{
+                      fontWeight: 700,
+                      textTransform: 'none',
+                      px: 2.5,
+                      borderRadius: 2,
+                      background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                      boxShadow: '0 2px 12px rgba(16,185,129,0.35)',
+                      '&:hover': {
+                        background: 'linear-gradient(135deg, #34d399 0%, #10b981 100%)',
+                        boxShadow: '0 4px 20px rgba(16,185,129,0.45)',
+                      },
+                    }}
+                  >
                     Đăng ký
                   </Button>
                 </>
               ) : (
-                <Stack direction="row" spacing={1} alignItems="center">
-                  <Button size="small" variant="contained" color="secondary" onClick={() => navigate(getDashboardPathByRole(user?.role))}>
+                <Stack direction="row" spacing={1.2} alignItems="center">
+                  <Button
+                    size="small"
+                    variant="contained"
+                    onClick={() => navigate(getDashboardPathByRole(user?.role))}
+                    sx={{
+                      fontWeight: 700,
+                      textTransform: 'none',
+                      px: 2.5,
+                      borderRadius: 2,
+                      background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                      boxShadow: '0 2px 12px rgba(16,185,129,0.35)',
+                      '&:hover': {
+                        background: 'linear-gradient(135deg, #34d399 0%, #10b981 100%)',
+                        boxShadow: '0 4px 20px rgba(16,185,129,0.45)',
+                      },
+                    }}
+                  >
                     Vào dashboard
                   </Button>
-                  <IconButton onClick={handleMenuOpen} sx={{ p: 0.25 }}>
-                    <Avatar alt={user?.name} src={user?.avatar} sx={{ width: 34, height: 34 }}>
+                  <IconButton
+                    onClick={handleMenuOpen}
+                    sx={{
+                      p: 0.3,
+                      border: '2px solid rgba(255,255,255,0.15)',
+                      transition: 'border-color 0.2s',
+                      '&:hover': { borderColor: 'rgba(255,255,255,0.4)' },
+                    }}
+                  >
+                    <Avatar
+                      alt={user?.name}
+                      src={user?.avatar}
+                      sx={{
+                        width: 32,
+                        height: 32,
+                        fontSize: '0.85rem',
+                        fontWeight: 700,
+                        bgcolor: '#6366f1',
+                      }}
+                    >
                       {user?.name?.charAt(0).toUpperCase()}
                     </Avatar>
                   </IconButton>
@@ -189,24 +258,41 @@ const HomePage = () => {
                     anchorEl={anchorEl}
                     open={Boolean(anchorEl)}
                     onClose={handleMenuClose}
-                    anchorOrigin={{
-                      vertical: 'bottom',
-                      horizontal: 'right',
+                    anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                    transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+                    slotProps={{
+                      paper: {
+                        sx: {
+                          mt: 1,
+                          borderRadius: 2.5,
+                          border: '1px solid #e2e8f0',
+                          boxShadow: '0 10px 40px rgba(0,0,0,0.12)',
+                          minWidth: 200,
+                        },
+                      },
                     }}
                   >
-                    <MenuItem disabled>
-                      <Person sx={{ mr: 1 }} />
-                      {user?.name}
+                    <MenuItem disabled sx={{ opacity: '1 !important' }}>
+                      <Person sx={{ mr: 1, color: '#6366f1' }} />
+                      <Typography fontWeight={700} fontSize="0.9rem">{user?.name}</Typography>
                     </MenuItem>
-                    <MenuItem disabled>
-                      <Typography variant="body2" color="text.secondary">
+                    <MenuItem disabled sx={{ opacity: '0.7 !important', py: 0 }}>
+                      <Typography variant="caption" color="text.secondary" sx={{ pl: 4.5 }}>
                         {user?.email}
                       </Typography>
                     </MenuItem>
-                    <Divider />
-                    <MenuItem onClick={handleLogout}>
-                      <Logout sx={{ mr: 1 }} />
-                      Đăng xuất
+                    <Divider sx={{ my: 1 }} />
+                    <MenuItem
+                      onClick={handleLogout}
+                      sx={{
+                        color: '#dc2626',
+                        '&:hover': { bgcolor: '#fef2f2' },
+                        borderRadius: 1,
+                        mx: 0.5,
+                      }}
+                    >
+                      <Logout sx={{ mr: 1, fontSize: 18 }} />
+                      <Typography fontSize="0.85rem" fontWeight={600}>Đăng xuất</Typography>
                     </MenuItem>
                   </Menu>
                 </Stack>

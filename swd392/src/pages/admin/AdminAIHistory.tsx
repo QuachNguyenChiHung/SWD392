@@ -302,7 +302,7 @@ const AdminAIHistory = () => {
                           overflow: 'hidden',
                         }}
                       >
-                        {item.prompt || '(Không có prompt)'}
+                        {(item.messages?.find(m => m.responder === 'user')?.content) || '(Không có tin nhắn)'}
                       </Typography>
 
                       <Box>
@@ -344,10 +344,21 @@ const AdminAIHistory = () => {
 
               <Box>
                 <Typography variant="subtitle2" sx={{ mb: 1, color: '#12344d' }}>
-                  Prompt
+                  Lịch sử hội thoại
                 </Typography>
-                <Paper variant="outlined" sx={{ p: 1.5, whiteSpace: 'pre-wrap', maxHeight: 220, overflow: 'auto' }}>
-                  <Typography variant="body2">{selectedRequest.prompt || '(Không có prompt)'}</Typography>
+                <Paper variant="outlined" sx={{ p: 1.5, maxHeight: 300, overflow: 'auto' }}>
+                  <Stack spacing={1}>
+                    {selectedRequest.messages?.length ? selectedRequest.messages.map((msg, idx) => (
+                      <Box key={idx} sx={{ p: 1, borderRadius: 1, bgcolor: msg.responder === 'user' ? '#eaf3ff' : '#f0fdf4' }}>
+                        <Typography variant="caption" sx={{ fontWeight: 700, color: msg.responder === 'user' ? '#145ea1' : '#166534' }}>
+                          {msg.responder === 'user' ? 'Người dùng' : 'AI'} — {formatDateTime(msg.at)}
+                        </Typography>
+                        <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', mt: 0.5 }}>{msg.content}</Typography>
+                      </Box>
+                    )) : (
+                      <Typography variant="body2" color="text.secondary">(Không có tin nhắn)</Typography>
+                    )}
+                  </Stack>
                 </Paper>
               </Box>
 

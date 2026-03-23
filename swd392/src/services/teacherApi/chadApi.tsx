@@ -1,28 +1,13 @@
 
 import { apiService } from "../api";
 
-type ChatMessage = {
-    content: string;
-    sender: "user" | "assistant";
-};
-
 class ChadApi {
     async askClaude(prompt: string) {
         return await apiService.post('/claude', { prompt });
     }
 
-    async getChadResponse(messages: ChatMessage[]) {
-        const cleaned = messages.map(m => {
-            return {
-                content: m.content,
-                sender: m.sender
-            }
-        })
-        return await apiService.post('/teacher/ai-chad', { prompt: cleaned });
-    }
-
-    async createQuiz(topicTitle: string, topicDescription: string | undefined, count: number, mcCount: number, tfCount: number) {
-        return await apiService.post('/teacher/ai-create-quiz', { topicTitle, topicDescription, count, mcCount, tfCount });
+    async createQuiz(topicTitle: string, topicDescription: string | undefined, count: number, mcCount: number, tfCount: number, notes?: string) {
+        return await apiService.post('/teacher/ai-create-quiz', { topicTitle, topicDescription, count, mcCount, tfCount, notes });
     }
 
     async createSlide(topicTitle: string, topicDescription?: string, notes?: string): Promise<{ blob: Blob, message: string }> {

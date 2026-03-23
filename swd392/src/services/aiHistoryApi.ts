@@ -1,14 +1,35 @@
 import { apiService } from './api';
 
+export interface AiHistoryMessage {
+  responder: 'ai' | 'user';
+  content: string;
+  at: string;
+}
+
 export interface AiHistoryRequest {
   _id: string;
   user_id: string;
-  prompt: string;
+  AiSession_id?: string;
+  messages: AiHistoryMessage[];
   type?: string;
   date?: string;
   createdAt?: string;
   contents?: AiNestedContentRecord[];
   [key: string]: unknown;
+}
+
+export interface AiSessionResponse {
+  _id: string;
+  user_id: string;
+  ai_model: string;
+  total_input_tokens: number;
+  total_output_tokens: number;
+  estimated_cost_cents: number;
+  budget_cents: number;
+  last_activity: string;
+  created_at: string;
+  status: string;
+  requests: AiHistoryRequest[];
 }
 
 export interface AiNestedContentRecord {
@@ -105,6 +126,16 @@ const normalizeContentList = (payload: unknown): AiContentRecord[] => {
 };
 
 export const aiHistoryApi = {
+  async getTeacherLatestSession(): Promise<AiSessionResponse | null> {
+    const response: any = await apiService.get('/teacher/ai-session');
+    return response?.data ?? null;
+  },
+
+  async getStudentLatestSession(): Promise<AiSessionResponse | null> {
+    const response: any = await apiService.get('/student/ai-session');
+    return response?.data ?? null;
+  },
+
   async getTeacherHistory(): Promise<AiHistoryRequest[]> {
     const response = await apiService.get('/teacher/ai-history');
     return normalizeRequestList(response);

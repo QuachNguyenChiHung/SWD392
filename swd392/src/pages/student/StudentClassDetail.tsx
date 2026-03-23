@@ -596,7 +596,24 @@ export default function StudentClassDetail() {
                         }}
                     >
                         <Box sx={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-                            <StudentAIChat />
+                            <StudentAIChat courseContext={
+                                (() => {
+                                    const parts: string[] = [];
+                                    if (courseName) parts.push(`Course: ${courseName}`);
+                                    if (cls?.class_name) parts.push(`Class: ${cls.class_name}`);
+                                    if (gradeLevel) parts.push(`Grade level: ${gradeLevel}`);
+                                    if (topics.length > 0) {
+                                        parts.push(`Topics:\n${topics.map((t, i) => {
+                                            const topicMats = allMaterials.filter(m => m.topic_id === t._id);
+                                            const matList = topicMats.length > 0
+                                                ? topicMats.map(m => `  - ${m.title} (${m.type})`).join('\n')
+                                                : '  (no materials)';
+                                            return `${i + 1}. ${t.title}${t.description ? ': ' + t.description : ''}\n${matList}`;
+                                        }).join('\n')}`);
+                                    }
+                                    return parts.join('\n') || undefined;
+                                })()
+                            } />
                         </Box>
                     </Paper>
                 )}

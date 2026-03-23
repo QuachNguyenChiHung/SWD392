@@ -5,6 +5,7 @@ import {
 } from '@mui/material';
 import { Send, SmartToy, Person, AutoAwesome } from '@mui/icons-material';
 import { apiService } from '../../services/api';
+import ReactMarkdown from 'react-markdown';
 
 interface Message {
   id: string;
@@ -20,7 +21,11 @@ const SUGGESTED_PROMPTS = [
   'Giải thích bảng tuần hoàn',
 ];
 
-export default function StudentAIChat() {
+interface StudentAIChatProps {
+  courseContext?: string;
+}
+
+export default function StudentAIChat({ courseContext }: StudentAIChatProps) {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '0',
@@ -52,7 +57,7 @@ export default function StudentAIChat() {
     setLoading(true);
 
     try {
-      const res: any = await apiService.post('/claude', { prompt: text.trim() });
+      const res: any = await apiService.post('/claude', { prompt: text.trim(), courseContext });
       const assistantMsg: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
@@ -118,17 +123,38 @@ export default function StudentAIChat() {
                       borderBottomLeftRadius: msg.role === 'assistant' ? 4 : 12,
                     }}
                   >
-                    <Typography
-                      variant="body2"
-                      sx={{
-                        lineHeight: 1.5,
-                        fontSize: '0.8rem',
-                        whiteSpace: 'pre-wrap',
+                    {msg.role === 'assistant' ? (
+                      <Box sx={{
+                        '& p': { m: 0, mb: 0.5, fontSize: '0.8rem', lineHeight: 1.5 },
+                        '& p:last-child': { mb: 0 },
+                        '& ul, & ol': { m: 0, pl: 2, mb: 0.5, fontSize: '0.8rem' },
+                        '& li': { mb: 0.25 },
+                        '& code': { bgcolor: '#e2e8f0', px: 0.5, borderRadius: 0.5, fontSize: '0.75rem', fontFamily: 'monospace' },
+                        '& pre': { bgcolor: '#1e293b', color: '#e2e8f0', p: 1, borderRadius: 1, overflow: 'auto', mb: 0.5, fontSize: '0.75rem' },
+                        '& pre code': { bgcolor: 'transparent', px: 0, color: 'inherit' },
+                        '& strong': { fontWeight: 700 },
+                        '& h1, & h2, & h3, & h4': { fontSize: '0.85rem', fontWeight: 700, mt: 0.5, mb: 0.25 },
+                        '& blockquote': { borderLeft: '3px solid #6366f1', pl: 1, ml: 0, color: '#64748b', fontStyle: 'italic' },
+                        '& table': { borderCollapse: 'collapse', width: '100%', fontSize: '0.75rem', mb: 0.5 },
+                        '& th, & td': { border: '1px solid #e2e8f0', px: 1, py: 0.25 },
+                        '& th': { bgcolor: '#f1f5f9', fontWeight: 700 },
                         wordBreak: 'break-word',
-                      }}
-                    >
-                      {msg.content}
-                    </Typography>
+                      }}>
+                        <ReactMarkdown>{msg.content}</ReactMarkdown>
+                      </Box>
+                    ) : (
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          lineHeight: 1.5,
+                          fontSize: '0.8rem',
+                          whiteSpace: 'pre-wrap',
+                          wordBreak: 'break-word',
+                        }}
+                      >
+                        {msg.content}
+                      </Typography>
+                    )}
                   </Paper>
                   <Typography variant="caption" color="text.disabled" sx={{ display: 'block', mt: 0.25, fontSize: '0.65rem', textAlign: msg.role === 'user' ? 'right' : 'left' }}>
                     {formatTime(msg.timestamp)}

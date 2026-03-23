@@ -112,12 +112,12 @@ const StudentDashboard = () => {
     enrollments.find(e => getEnrollClassId(e) === classId);
 
   const calculateAverageScore = (): string => {
-    const withScore = quizAttempts.filter(a => a.score?.score != null);
+    const withScore = quizAttempts.filter(a => a.score?.percentage != null);
     if (withScore.length === 0) return 'N/A';
     const avg = Math.round(
-      withScore.reduce((sum, a) => sum + (a.score?.score || 0), 0) / withScore.length
+      withScore.reduce((sum, a) => sum + (a.score?.percentage || 0), 0) / withScore.length
     );
-    return avg + ' điểm';
+    return avg + '%';
   };
 
   const totalPages = Math.ceil(classes.length / CLASSES_PER_PAGE);
@@ -272,15 +272,15 @@ const StudentDashboard = () => {
                   ) : quizAttempts.length > 0 ? (
                     <Stack spacing={1.5}>
                       {quizAttempts.slice(0, 5).map((attempt) => {
-                        const score = attempt.score?.score;
-                        const hasScore = score != null;
+                        const pct = attempt.score?.percentage;
+                        const hasScore = pct != null;
                         const scoreColor = !hasScore ? '#94a3b8'
-                          : score >= 70 ? '#059669'
-                            : score >= 50 ? '#b45309'
+                          : pct >= 70 ? '#059669'
+                            : pct >= 50 ? '#b45309'
                               : '#dc2626';
                         const scoreBg = !hasScore ? '#f1f5f9'
-                          : score >= 70 ? '#d1fae5'
-                            : score >= 50 ? '#fef3c7'
+                          : pct >= 70 ? '#d1fae5'
+                            : pct >= 50 ? '#fef3c7'
                               : '#fee2e2';
 
                         return (
@@ -298,7 +298,7 @@ const StudentDashboard = () => {
                               </Typography>
                             </Box>
                             <Chip
-                              label={hasScore ? `${score} điểm` : 'Chưa có điểm'}
+                              label={hasScore ? `${pct}%` : 'Chưa có điểm'}
                               size="small"
                               sx={{ bgcolor: scoreBg, color: scoreColor, fontWeight: 'bold' }}
                             />

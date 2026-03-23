@@ -377,6 +377,7 @@ export default function AiContentGenerator() {
                         totalQuestions,
                         multipleChoiceQuestions,
                         trueFalseQuestions,
+                        promptForPreview,
                     );
                     const parsed = result?.rawContent ? JSON.parse(result.rawContent) : {};
                     const questionsRaw = Array.isArray(parsed?.questions) ? parsed.questions : [];
@@ -752,7 +753,7 @@ export default function AiContentGenerator() {
                                                 <Typography variant="body2" sx={{ whiteSpace: "pre-wrap", mt: 0.5 }}>
                                                     {m.content}
                                                 </Typography>
-                                                
+
                                                 {/* Action Buttons */}
                                                 {m.sender === "user" && (
                                                     <Stack direction="row" justifyContent="flex-end" sx={{ mt: 1 }}>
@@ -779,9 +780,9 @@ export default function AiContentGenerator() {
                                                 )}
                                             </Box>
                                             {m.sender === "user" && (
-                                                <Avatar 
-                                                    alt={user?.name || "You"} 
-                                                    src={user?.avatar} 
+                                                <Avatar
+                                                    alt={user?.name || "You"}
+                                                    src={user?.avatar}
                                                     sx={{ bgcolor: COLORS.textDark, width: 28, height: 28 }}
                                                 >
                                                     <Typography sx={{ fontSize: "0.65rem", fontWeight: 700, color: "#fff" }}>
