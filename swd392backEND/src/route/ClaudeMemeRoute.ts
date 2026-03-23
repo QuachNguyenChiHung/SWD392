@@ -468,7 +468,8 @@ Constraints:
         if (savedRequest) {
             AiRepo.saveContent(savedRequest._id as any, "quiz", {
                 title: parsed.content.title || topicTitle,
-                questionCount: parsed.content.questions?.length || 0
+                questionCount: parsed.content.questions?.length || 0,
+                content: parsed.content
             }, aiResponse).catch(() => null);
         }
 
@@ -551,6 +552,7 @@ Rules:
                 title: topicTitle,
                 slideCount: slides.length,
                 templates: slides.map((s: any) => s.templateType),
+                content: slides
             }, aiResponse).catch(() => null);
         }
 
@@ -669,6 +671,7 @@ Design rules you MUST follow:
             AiRepo.saveContent(savedRequest._id as any, "pdf", {
                 title: topicTitle,
                 htmlLength: html.length,
+                content: html
             }, aiResponse).catch(() => null);
         }
 
