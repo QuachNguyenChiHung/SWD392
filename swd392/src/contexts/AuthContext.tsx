@@ -5,6 +5,7 @@ import { authService } from '../services/auth';
 
 interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<void>;
+  googleLogin: (credential: string) => Promise<void>;
   logout: () => Promise<void>;
   register: (email: string, password: string, name: string) => Promise<void>;
   updateUser: (userData: Partial<User>) => Promise<void>;
@@ -81,6 +82,21 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
+  const googleLogin = async (credential: string) => {
+    try {
+      const response = await authService.googleLogin(credential);
+
+      setAuthState({
+        user: response.user!,
+        isAuthenticated: true,
+        isLoading: false,
+      });
+    } catch (error) {
+      console.error('Google login failed:', error);
+      throw error;
+    }
+  };
+
   const logout = async () => {
     try {
       await authService.logout();
@@ -131,6 +147,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       value={{
         ...authState,
         login,
+        googleLogin,
         logout,
         register,
         updateUser,

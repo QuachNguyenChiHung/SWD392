@@ -6,10 +6,12 @@ import {
   Typography,
   Link,
   Alert,
+  Divider,
 } from '@mui/material';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { UserRole } from '../../types';
+import { GoogleLogin } from '@react-oauth/google';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -17,7 +19,15 @@ const LoginPage = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, googleLogin } = useAuth();
+
+  const roleRoutes: Record<string, string> = {
+    [UserRole.STUDENT]: '/student/dashboard',
+    [UserRole.TEACHER]: '/teacher/dashboard',
+    [UserRole.MODERATOR]: '/moderator/dashboard',
+    [UserRole.ADMIN]: '/admin/dashboard',
+    [UserRole.GUEST]: '/dashboard',
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,19 +39,24 @@ const LoginPage = () => {
 
       // Get the logged in user's role from the response
       const user = JSON.parse(localStorage.getItem('user') || '{}');
-
-      // Navigate based on user role determined by backend
-      const roleRoutes: Record<string, string> = {
-        [UserRole.STUDENT]: '/student/dashboard',
-        [UserRole.TEACHER]: '/teacher/dashboard',
-        [UserRole.MODERATOR]: '/moderator/dashboard',
-        [UserRole.ADMIN]: '/admin/dashboard',
-        [UserRole.GUEST]: '/dashboard',
-      };
-
       navigate(roleRoutes[user.role] || '/dashboard');
     } catch (err: any) {
       setError(err.message || 'Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleSuccess = async (credentialResponse: any) => {
+    setError('');
+    setLoading(true);
+    try {
+      await googleLogin(credentialResponse.credential);
+
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      navigate(roleRoutes[user.role] || '/dashboard');
+    } catch (err: any) {
+      setError(err.message || 'Đăng nhập bằng Google thất bại.');
     } finally {
       setLoading(false);
     }
@@ -100,6 +115,20 @@ const LoginPage = () => {
       >
         {loading ? 'Đang đăng nhập...' : 'Đăng nhập'}
       </Button>
+
+      <Divider sx={{ my: 2 }}>hoặc</Divider>
+
+      <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
+        <GoogleLogin
+          onSuccess={handleGoogleSuccess}
+          onError={() => setError('Đăng nhập bằng Google thất bại.')}
+          size="large"
+          width="100%"
+          text="signin_with"
+          shape="rectangular"
+        />
+      </Box>
+
       <Box textAlign="center">
         <Link component={RouterLink} to="/auth/register" variant="body2">
           Chưa có tài khoản? Đăng ký ngay
