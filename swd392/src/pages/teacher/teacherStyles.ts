@@ -10,14 +10,14 @@ import type { SxProps, Theme } from "@mui/material";
 // ── Color Tokens ────────────────────────────────────────────────────────────────
 
 export const COLORS = {
-  bg: "#F7F7F8",
+  bg: "#F6FBFF",
   card: "#FFFFFF",
-  border: "#E0E0E0",
-  borderLight: "#EFEFEF",
-  textDark: "#1A1A2E",
-  textSecondary: "#6B7280",
-  accent: "#667eea",
-  accentLight: "#EEF0FB",
+  border: "#D6E7F4",
+  borderLight: "#E6F0F8",
+  textDark: "#12344D",
+  textSecondary: "#31536B",
+  accent: "#1B6CB5",
+  accentLight: "#EAF3FF",
   success: "#22C55E",
   successBg: "#F0FDF4",
   warning: "#F59E0B",
@@ -25,12 +25,12 @@ export const COLORS = {
   error: "#EF4444",
   errorBg: "#FEF2F2",
   infoBg: "#EFF6FF",
-  info: "#3B82F6",
+  info: "#1B6CB5",
 } as const;
 
 // ── Radius ──────────────────────────────────────────────────────────────────────
 
-export const RADIUS = "2px";
+export const RADIUS = "12px";
 
 // ── Page Layout ─────────────────────────────────────────────────────────────────
 

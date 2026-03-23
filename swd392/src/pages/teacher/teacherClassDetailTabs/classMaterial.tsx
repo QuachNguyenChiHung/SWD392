@@ -13,12 +13,10 @@ import { useNavigate } from "react-router-dom";
 import CreateClassMaterialModal from "../../../components/CreateClassMaterialModal";
 import classMaterialApi from "../../../services/teacherApi/classMaterialApi";
 import {
-  sectionTitle,
   flatCard,
   flatButtonContained,
   flatButtonOutlined,
   COLORS,
-  RADIUS,
 } from "../teacherStyles";
 
 const getMaterialIcon = (type: ClassMaterialType) => {
@@ -192,7 +190,7 @@ export default function ClassMaterialTab({ topics, classId }: ClassMaterialProps
             </Stack>
           </Stack>
 
-          <Stack spacing={0}>
+          <Stack spacing={1.2}>
             {materialsByTopic[getTopicId(topic)]?.map((material) => (
               <Box
                 key={material._id}
@@ -202,10 +200,15 @@ export default function ClassMaterialTab({ topics, classId }: ClassMaterialProps
                   alignItems: "center",
                   gap: 2,
                   py: 1.25,
-                  borderBottom: `1px solid ${COLORS.borderLight}`,
-                  "&:last-child": { borderBottom: "none" },
-                  "&:hover": { bgcolor: COLORS.accentLight },
-                  transition: "background-color 0.1s ease",
+                  px: 1.5,
+                  borderRadius: 2,
+                  border: `1px solid ${COLORS.border}`,
+                  backgroundColor: COLORS.accentLight,
+                  "&:hover": {
+                    borderColor: COLORS.accent,
+                    backgroundColor: "#e3f0ff",
+                  },
+                  transition: "background-color 0.15s ease, border-color 0.15s ease",
                 }}
               >
                 <Stack

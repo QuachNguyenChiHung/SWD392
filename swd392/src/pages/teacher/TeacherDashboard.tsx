@@ -24,18 +24,15 @@ import type { FileMaterial } from "../../components/dashboard/UploadedFileItem";
 import { apiService } from "../../services/api";
 import classMaterialApi from "../../services/teacherApi/classMaterialApi";
 import {
-  pageTitle,
-  pageSubtitle,
-  sectionLabel,
   sectionTitle,
   flatCard,
   flatButtonContained,
-  flatButtonOutlined,
   tableContainer,
   tableHeadRow,
   loadingContainer,
   COLORS,
 } from "./teacherStyles";
+import StudentPageShell from "../../components/student/StudentPageShell";
 
 type ClassProgress = {
   name: string;
@@ -82,18 +79,11 @@ const TeacherDashboard = () => {
   }
 
   return (
-    <Box>
-      {/* ── Page Header ── */}
-      <Box sx={{ mb: 4 }}>
-        <Typography sx={sectionLabel}>Dashboard</Typography>
-        <Typography sx={pageTitle}>
-          Dashboard Giáo viên
-        </Typography>
-        <Typography sx={pageSubtitle}>
-          Quản lý lớp học và tạo nội dung học tập
-        </Typography>
-      </Box>
-
+    <StudentPageShell
+      title="Dashboard Giáo viên"
+      subtitle="Quản lý lớp học, bài kiểm tra và học liệu trong cùng một giao diện thống nhất"
+      chipLabel="Khu vực giáo viên"
+    >
       <Stack spacing={3}>
         <Grid container spacing={3}>
           <Grid size={{ xs: 12, md: 8 }}>
@@ -268,7 +258,7 @@ const TeacherDashboard = () => {
           </Grid>
         </Grid>
       </Stack>
-    </Box>
+    </StudentPageShell>
   );
 };
 

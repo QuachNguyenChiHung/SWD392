@@ -15,6 +15,7 @@ import {
 import { Flag, PersonOff, Visibility } from "@mui/icons-material";
 import { getDashboardSummary } from "../../services/moderatorService.ts";
 import MaterialViewDialog from "../../components/MaterialViewDialog.tsx";
+import StudentPageShell from "../../components/student/StudentPageShell";
 
 const ModeratorDashboard: React.FC = () => {
   const [summary, setSummary] = useState<any>(null);
@@ -39,37 +40,27 @@ const ModeratorDashboard: React.FC = () => {
   }, []);
 
   return (
-    <Box>
-      <Stack
-        direction="row"
-        justifyContent="space-between"
-        alignItems="center"
-        mb={2}
-      >
-        <Box>
-          <Typography variant="h4" fontWeight="bold" gutterBottom>
-            Bảng điều khiển Moderator
-          </Typography>
-          <Typography variant="body1" color="text.secondary">
-            Quản lý kiểm duyệt nội dung và người dùng
-          </Typography>
-        </Box>
+    <StudentPageShell
+      title="Dashboard kiểm duyệt"
+      subtitle="Quản lý nội dung bị gắn cờ, báo cáo vi phạm và trạng thái người dùng"
+      chipLabel="Khu vực kiểm duyệt"
+      actions={(
         <Button
           variant="contained"
           onClick={fetchStats}
           disabled={loading}
           sx={{
-            borderRadius: "8px",
-            bgcolor: "#667eea",
-            "&:hover": { bgcolor: "#5a6fd6" },
-            fontFamily: "'Nunito', sans-serif",
+            borderRadius: 2,
+            bgcolor: "#1b6cb5",
+            "&:hover": { bgcolor: "#155790" },
             fontWeight: 700,
             boxShadow: "none",
           }}
         >
-          LÀM MỚI
+          Làm mới
         </Button>
-      </Stack>
+      )}
+    >
 
       {/* System Overview Stats */}
       {summary && (
@@ -78,7 +69,7 @@ const ModeratorDashboard: React.FC = () => {
           spacing={2}
           sx={{ mb: 4, overflowX: "auto", pb: 1 }}
         >
-          <Paper sx={{ p: 2, textAlign: "center", minWidth: 120 }}>
+          <Paper sx={{ p: 2, textAlign: "center", minWidth: 120, borderRadius: 3, border: "1px solid #d6e7f4", boxShadow: "none" }}>
             <Typography variant="h6" fontWeight="bold" color="primary">
               {summary.totalStudents}
             </Typography>
@@ -86,7 +77,7 @@ const ModeratorDashboard: React.FC = () => {
               Học sinh
             </Typography>
           </Paper>
-          <Paper sx={{ p: 2, textAlign: "center", minWidth: 120 }}>
+          <Paper sx={{ p: 2, textAlign: "center", minWidth: 120, borderRadius: 3, border: "1px solid #d6e7f4", boxShadow: "none" }}>
             <Typography variant="h6" fontWeight="bold" color="primary">
               {summary.totalTeachers}
             </Typography>
@@ -94,7 +85,7 @@ const ModeratorDashboard: React.FC = () => {
               Giáo viên
             </Typography>
           </Paper>
-          <Paper sx={{ p: 2, textAlign: "center", minWidth: 120 }}>
+          <Paper sx={{ p: 2, textAlign: "center", minWidth: 120, borderRadius: 3, border: "1px solid #d6e7f4", boxShadow: "none" }}>
             <Typography variant="h6" fontWeight="bold" color="primary">
               {summary.totalClasses}
             </Typography>
@@ -102,7 +93,7 @@ const ModeratorDashboard: React.FC = () => {
               Lớp học
             </Typography>
           </Paper>
-          <Paper sx={{ p: 2, textAlign: "center", minWidth: 120 }}>
+          <Paper sx={{ p: 2, textAlign: "center", minWidth: 120, borderRadius: 3, border: "1px solid #d6e7f4", boxShadow: "none" }}>
             <Typography variant="h6" fontWeight="bold" color="primary">
               {summary.totalTopics}
             </Typography>
@@ -110,7 +101,7 @@ const ModeratorDashboard: React.FC = () => {
               Chủ đề
             </Typography>
           </Paper>
-          <Paper sx={{ p: 2, textAlign: "center", minWidth: 120 }}>
+          <Paper sx={{ p: 2, textAlign: "center", minWidth: 120, borderRadius: 3, border: "1px solid #d6e7f4", boxShadow: "none" }}>
             <Typography variant="h6" fontWeight="bold" color="primary">
               {summary.totalMaterials}
             </Typography>
@@ -134,7 +125,7 @@ const ModeratorDashboard: React.FC = () => {
         >
           <Box sx={{ flex: "1 1 200px", minWidth: 200 }}>
             <Paper
-              elevation={2}
+              elevation={0}
               sx={{
                 p: 3,
                 height: "100%",
@@ -142,8 +133,9 @@ const ModeratorDashboard: React.FC = () => {
                 flexDirection: "column",
                 alignItems: "center",
                 justifyContent: "center",
-                bgcolor: "background.paper",
-                borderRadius: 2,
+                bgcolor: "#fff",
+                borderRadius: 3,
+                border: "1px solid #d6e7f4",
                 borderTop: "4px solid",
                 borderColor: "warning.main",
               }}
@@ -184,7 +176,7 @@ const ModeratorDashboard: React.FC = () => {
           </Box>
           <Box sx={{ flex: "1 1 200px", minWidth: 200 }}>
             <Paper
-              elevation={2}
+              elevation={0}
               sx={{
                 p: 3,
                 height: "100%",
@@ -192,8 +184,9 @@ const ModeratorDashboard: React.FC = () => {
                 flexDirection: "column",
                 alignItems: "center",
                 justifyContent: "center",
-                bgcolor: "background.paper",
-                borderRadius: 2,
+                bgcolor: "#fff",
+                borderRadius: 3,
+                border: "1px solid #d6e7f4",
                 borderTop: "4px solid",
                 borderColor: "error.main",
               }}
@@ -235,7 +228,7 @@ const ModeratorDashboard: React.FC = () => {
         </Stack>
       )}
 
-      <Paper sx={{ p: 3, mt: 2 }}>
+      <Paper sx={{ p: 3, mt: 2, borderRadius: 3, border: "1px solid #d6e7f4", boxShadow: "none" }}>
         <Typography variant="h6" gutterBottom>
           Báo cáo vi phạm gần đây
         </Typography>
@@ -286,7 +279,7 @@ const ModeratorDashboard: React.FC = () => {
           material={selectedMaterial}
         />
       )}
-    </Box>
+    </StudentPageShell>
   );
 };
 
