@@ -20,6 +20,11 @@ const registerSchema = z.object({
     .default("student"),
 });
 
+const googleLoginSchema = z.object({
+  credential: z.string(),
+});
+
 export type loginDTO = z.infer<typeof loginSchema>;
 export type registerDTO = z.infer<typeof registerSchema>;
-export { loginSchema, registerSchema };
+export type googleLoginDTO = z.infer<typeof googleLoginSchema>;
+export { loginSchema, registerSchema, googleLoginSchema };

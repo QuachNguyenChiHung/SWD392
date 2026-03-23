@@ -7,6 +7,7 @@ import AdminRepo from "../repository/AdminRepo.ts";
 import jwt from "jsonwebtoken";
 import type { IUser } from "../interface/IUser.ts";
 import bcrypt from "bcrypt";
+import { OAuth2Client } from "google-auth-library";
 
 const SALT_ROUNDS = 12;
 
@@ -82,11 +83,51 @@ class UserService {
     const user = await UserRepo.findByMail(email);
     // only log whether user exists (avoid printing password)
     console.log("User found for login exists:", !!user);
-    if (user && (await bcrypt.compare(userLogin.password, user.password))) {
+    if (!user) return null;
+    // Guard: if user has no password, they signed up via Google
+    if (!user.password) {
+      throw new Error("Tài khoản này sử dụng đăng nhập Google. Vui lòng đăng nhập bằng Google.");
+    }
+    if (await bcrypt.compare(userLogin.password, user.password)) {
       const { password, ...cleanedUser } = user.toObject();
       return cleanedUser;
     }
     return null;
+  }
+
+  async googleLogin(credential: string) {
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    if (!clientId) {
+      throw new Error("GOOGLE_CLIENT_ID is not configured");
+    }
+    const client = new OAuth2Client(clientId);
+    const ticket = await client.verifyIdToken({
+      idToken: credential,
+      audience: clientId,
+    });
+    const payload = ticket.getPayload();
+    if (!payload || !payload.email) {
+      throw new Error("Invalid Google token");
+    }
+
+    const email = payload.email!.trim().toLowerCase();
+    const name = String(payload.name ?? email.split("@")[0]);
+
+    // Try to find existing user by email
+    let user = await UserRepo.findByMail(email);
+
+    if (!user) {
+      // Create new user without password
+      user = await UserRepo.createGoogleUser(email, name);
+    }
+
+    // Check if user is banned/deleted
+    if (user.status !== "active") {
+      throw new Error("Tài khoản đã bị khóa hoặc xóa.");
+    }
+
+    const { password, ...cleanedUser } = user.toObject();
+    return cleanedUser;
   }
 
   async toggleStatus(userId: string) {
