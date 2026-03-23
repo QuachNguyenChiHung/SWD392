@@ -223,7 +223,30 @@ export default function ClassTopicsTab({
                                             <Button size="small" variant="contained" onClick={() => onPreviewMaterial(mat)} startIcon={<Eye />} sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600, bgcolor: color, color: '#fff', '&:hover': { bgcolor: `${color}dd` }, boxShadow: 'none' }}>Xem</Button>
                                           )}
                                           {mat.file_path && (
-                                            <Button size="small" variant="outlined" component="a" href={mat.file_path} download target="_blank" startIcon={<FileDownload />} sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600, borderColor: `${color}80`, color: color, '&:hover': { borderColor: color, bgcolor: `${color}10` } }}>Tải</Button>
+                                            <Button 
+                                              size="small" 
+                                              variant="outlined" 
+                                              startIcon={<FileDownload />} 
+                                              onClick={async () => {
+                                                try {
+                                                  const response = await fetch(mat.file_path!);
+                                                  const blob = await response.blob();
+                                                  const url = URL.createObjectURL(blob);
+                                                  const link = document.createElement('a');
+                                                  link.href = url;
+                                                  link.download = mat.title || 'file';
+                                                  document.body.appendChild(link);
+                                                  link.click();
+                                                  document.body.removeChild(link);
+                                                  URL.revokeObjectURL(url);
+                                                } catch {
+                                                  // Fallback: mở link bình thường
+                                                  window.open(mat.file_path, '_blank');
+                                                }
+                                              }}
+                                              sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600, borderColor: `${color}80`, color: color, '&:hover': { borderColor: color, bgcolor: `${color}10` } }}>
+                                              Tải
+                                            </Button>
                                           )}
                                           {onFlagMaterial && mat.status === 'published' && mat.isFlaggable !== false && !mat.isFlagged && (
                                             <Button size="small" variant="outlined" onClick={() => onFlagMaterial(mat)} startIcon={<Flag />} sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600, borderColor: '#ef444480', color: '#ef4444', '&:hover': { borderColor: '#ef4444', bgcolor: '#fef2f2' } }}>Báo cáo</Button>
