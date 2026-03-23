@@ -1,14 +1,11 @@
 import type { NextFunction, Request, Response } from "express";
 import UserService from "../services/UserService.ts";
 import TeacherService from "../services/TeacherService.ts";
-import zod from "zod";
-import { tr } from "zod/locales";
 import { loginSchema, registerSchema, googleLoginSchema } from "../dto/AuthDTO.ts";
 import { uploadFile } from "../ultis/cloudinary.ts";
 import {
   UserGetFromTokenSchema,
   UserUpdateSchema,
-  type UserGetFromTokenDTO,
 } from "../dto/UserDTO.ts";
 
 class UserController {
@@ -308,7 +305,7 @@ class UserController {
       next(error);
     }
   }
-  async removeToken(req: Request, res: Response, next: NextFunction) {
+  async removeToken(_req: Request, res: Response, next: NextFunction) {
     try {
       res.clearCookie("Authorization");
       //the token still valid until it expires, but client cannot send it anymore

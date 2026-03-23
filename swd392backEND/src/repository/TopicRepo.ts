@@ -1,6 +1,5 @@
 import type { TopicCreateDTO, TopicUpdateDTO } from "../dto/TopicDTO.ts";
 import { Topic } from "../entities/Topic.ts";
-import type { ITopic } from "../interface/ITopic.ts";
 import type { ClientSession } from "mongoose";
 
 class TopicRepo {

@@ -1,5 +1,4 @@
 import z from "zod";
-import { Types } from "mongoose";
 
 const CreateEnrollSchema = z.object({
     class_id: z.string(),

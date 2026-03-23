@@ -1,4 +1,4 @@
-import { Document, Types } from 'mongoose';
+import {Document} from 'mongoose';
 
 export interface IFile extends Document {
     file_name: string;

@@ -1,5 +1,5 @@
 import ClassMaterialRepo from "../repository/ClassMaterialRepo.ts";
-import type { CreateClassMaterialDTO, UpdateClassMaterialDTO } from "../dto/ClassMaterialDTO.ts";
+import type {UpdateClassMaterialDTO} from "../dto/ClassMaterialDTO.ts";
 import type { IClassMaterial } from "../interface/IClassMaterial.ts";
 import ProgressClassMaterialService from "./ProgressClassMaterialService.ts";
 

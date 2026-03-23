@@ -1,6 +1,5 @@
 import mongoose from "mongoose";
 import QuizRepo from "../repository/QuizRepo.ts";
-import QuestionRepo from "../repository/QuestionRepo.ts";
 import ClassRepo from "../repository/ClassRepo.ts";
 import type { CreateQuizDTO, UpdateQuizDTO, CreateQuizAttemptDTO } from "../dto/QuizDTO.ts";
 import TopicService from "./TopicService.ts";
@@ -100,9 +99,6 @@ class QuizService {
         //     end_date: z.coerce.date().optional(),
         //     status: z.boolean().optional(),
         // });
-        const title = topic.title;
-        const desc = topic.description;
-        let prompt = '';
 
     }
     async getQuizAttemptsByUserId(userId: string, page: number = 1) {

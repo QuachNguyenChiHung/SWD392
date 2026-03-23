@@ -1,6 +1,6 @@
 import TopicRepo from "../repository/TopicRepo.ts";
 import CourseRepo from "../repository/CourseRepo.ts";
-import type { TopicCreateDTO, TopicUpdateDTO, TopicSearchDTO } from "../dto/TopicDTO.ts";
+import type {TopicCreateDTO, TopicUpdateDTO} from "../dto/TopicDTO.ts";
 import mongoose from "mongoose";
 import { ClassMaterial } from "../entities/ClassMaterial.ts";
 import { ProgressClassMaterial } from "../entities/ProgressClassMaterial.ts";

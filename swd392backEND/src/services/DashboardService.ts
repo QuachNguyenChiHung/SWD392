@@ -102,7 +102,6 @@ class DashboardService {
             teacher_id: teacherRecord._id,
             status: { $ne: "deleted" }
         }).populate('course_id');
-        const classIds = teacherClasses.map(c => c._id);
 
         const classProgress = await Promise.all(
             teacherClasses.map(async (cls) => {

@@ -59,7 +59,7 @@ class ClassMaterialRepo {
             status: { $nin: ['draft', 'deleted'] }
         });
     }
-    async updateOrderNumbers(classId: string, materialIds: string[]) {
+    async updateOrderNumbers(_classId: string, materialIds: string[]) {
         const updatePromises = materialIds.map((id, index) =>
             ClassMaterial.findByIdAndUpdate(id, { order_num: index + 1 })
         );

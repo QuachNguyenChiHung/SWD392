@@ -1,4 +1,4 @@
-import { Document, Types } from 'mongoose';
+import {Document} from 'mongoose';
 
 export interface ISlide extends Document {
     slide_name: string;

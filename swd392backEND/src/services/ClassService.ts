@@ -4,17 +4,7 @@ import generateRandomString from "../ultis/misc.ts";
 import mongoose from "mongoose";
 import { ClassMaterial } from "../entities/ClassMaterial.ts";
 import { Enroll } from "../entities/Enroll.ts";
-import { Feedback } from "../entities/Feedback.ts";
-import { File } from "../entities/File.ts";
 import { ProgressClassMaterial } from "../entities/ProgressClassMaterial.ts";
-import { Question } from "../entities/Question.ts";
-import { Quiz } from "../entities/Quiz.ts";
-import { QuizAttempt } from "../entities/QuizAttempt.ts";
-import { Render2D } from "../entities/Render2D.ts";
-import { Result } from "../entities/Result.ts";
-import { Slide } from "../entities/Slide.ts";
-import { AiContent } from "../entities/AiContent.ts";
-import { AiRequest } from "../entities/AiRequest.ts";
 import ContentDeletionHelper from "../ultis/ContentDeletionHelper.ts";
 
 class ClassService {

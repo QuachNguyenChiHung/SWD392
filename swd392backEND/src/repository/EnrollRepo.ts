@@ -1,5 +1,4 @@
 import { Enroll } from "../entities/Enroll.ts";
-import type { IEnroll } from "../interface/IEnroll.ts";
 import type { CreateEnrollDTO } from "../dto/EnrollDTO.ts";
 
 class EnrollRepo {

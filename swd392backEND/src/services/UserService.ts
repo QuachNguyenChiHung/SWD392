@@ -1,4 +1,3 @@
-import { de } from "zod/locales";
 import type { loginDTO, registerDTO } from "../dto/AuthDTO.ts";
 import type { UserUpdateDTO } from "../dto/UserDTO.ts";
 import UserRepo from "../repository/UserRepo.ts";

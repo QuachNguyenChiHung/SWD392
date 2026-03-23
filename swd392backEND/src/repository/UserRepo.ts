@@ -1,8 +1,6 @@
-import { Schema } from "mongoose";
 import { User } from "../entities/User.ts";
 import { Teacher } from "../entities/Teacher.ts";
 import { Admin } from "../entities/Admin.ts";
-import type { IUser } from "../interface/IUser.ts";
 import type { registerDTO } from "../dto/AuthDTO.ts";
 import type { UserUpdateDTO } from "../dto/UserDTO.ts";
 

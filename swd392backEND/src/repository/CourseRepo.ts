@@ -1,5 +1,4 @@
 import { Course } from "../entities/Course.ts";
-import type { ICourse } from "../interface/ICourse.ts";
 import type { CourseCreateDTO, CourseUpdateDTO } from "../dto/CourseDTO.ts";
 
 class CourseRepo {

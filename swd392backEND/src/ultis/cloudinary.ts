@@ -13,7 +13,7 @@ cloudinary.v2.config({
 const Cloudinary = cloudinary.v2;
 const imageMulterUpload = multer({
   storage: multer.memoryStorage(),
-  fileFilter: (req, file, cb: multer.FileFilterCallback) => {
+  fileFilter: (_req, file, cb: multer.FileFilterCallback) => {
     if (file.mimetype.startsWith("image/")) {
       cb(null, true);
     } else {

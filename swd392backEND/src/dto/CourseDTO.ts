@@ -22,14 +22,6 @@ const CourseResponseSchema = z.object({
     status: z.string(),
 });
 
-
-const CourseSearchSchema = z.object({
-    keyword: z.string().optional(),
-    grade_level: z.number().int().min(1).max(12).optional(),
-    status: z.enum(["active", "inactive"]).optional(),
-    page: z.number().int().min(1).optional(),
-});
-
 export type CourseCreateDTO = z.infer<typeof CreateCourseSchema>;
 export type CourseUpdateDTO = z.infer<typeof CourseUpdateSchema>;
 export type CourseResponseDTO = z.infer<typeof CourseResponseSchema>;

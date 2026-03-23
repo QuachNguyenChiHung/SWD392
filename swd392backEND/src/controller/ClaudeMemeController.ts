@@ -1,25 +1,10 @@
 import type { NextFunction, Request, Response } from "express";
-import { runModel, runModelWithHistory } from "../ultis/claude.ts";
+import {runModelWithHistory} from "../ultis/claude.ts";
 import PptxGenJS from "pptxgenjs";
 import puppeteer from "puppeteer";
 import AiRepo from "../repository/AiRepo.ts";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
-
-const extractJsonArray = (raw: string) => {
-    const cleaned = raw.replace(/```json/gi, "").replace(/```/g, "").trim();
-    try {
-        return JSON.parse(cleaned);
-    } catch {
-        const match = cleaned.match(/\[[\s\S]*\]/);
-        if (!match) return null;
-        try {
-            return JSON.parse(match[0]);
-        } catch {
-            return null;
-        }
-    }
-};
 
 const extractJsonWrapper = (raw: string) => {
     let cleaned = raw.replace(/```json/gi, "").replace(/```/g, "").trim();

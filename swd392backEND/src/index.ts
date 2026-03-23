@@ -5,7 +5,6 @@ import express, { type NextFunction, type Request, type Response } from 'express
 import cors from 'cors';
 import mongoose from 'mongoose';
 
-import multer from 'multer';//cannot use req.file without this import(Hung),dont know why
 import CloudinaryUploadDemoRoute from './route/CloudinaryUploadDemoRoute.ts';
 import cookieParser from 'cookie-parser';
 import swaggerUi from 'swagger-ui-express';
@@ -85,7 +84,9 @@ console.log(process.env.MONGO_URI);
                     process.exit(1);
                 }
             }
-
+app.get('/',(req,res)=>{
+    res.send("Hello");
+});
             app.use('/cloudinary-demo', CloudinaryUploadDemoRoute);
             app.use('/api', UserRoute);
             app.use('/api', CourseRoute);
@@ -104,7 +105,7 @@ console.log(process.env.MONGO_URI);
             app.use('/api', TeacherRequestRoute);
             app.use('/api', TeacherRoute);
             // Error handler must be after routes
-            app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+            app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
                 console.error(err);
                 try {
                     res.status(500).json({ message: JSON.parse(err.message.message || err.message || { "message": 'Something broke!' }) });
