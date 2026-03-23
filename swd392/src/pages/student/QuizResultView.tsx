@@ -39,15 +39,17 @@ interface Score {
 const QuizResultView = () => {
   const { id } = useParams<{ id: string }>(); // material ID
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const classId = searchParams.get('classId');
 
   const [attempt, setAttempt] = useState<AttemptInfo | null>(null);
   const [results, setResults] = useState<QuizResult[]>([]);
   const [score, setScore] = useState<Score | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [quizId, setQuizId] = useState<string | null>(null);
   const [maxAttempts, setMaxAttempts] = useState<number>(999);
   const [attemptCount, setAttemptCount] = useState<number>(0);
-  const [searchParams] = useSearchParams();
   const timestamp = searchParams.get('t');
 
   useEffect(() => {
@@ -63,12 +65,13 @@ const QuizResultView = () => {
           setError('Bài kiểm tra chưa có nội dung');
           return;
         }
+        setQuizId(qId);
 
         // Fetch quiz info for max_attempt_number
         try {
           const quizInfo: any = await apiService.get(`/quizzes/${qId}`);
           setMaxAttempts(quizInfo?.max_attempt_number ?? 999);
-        } catch { }
+        } catch {}
 
         // 2. Get my attempts, find latest for this quiz
         const myAttempts: any[] = await apiService.get('/my-quiz-attempts');
@@ -146,7 +149,7 @@ const QuizResultView = () => {
   if (error) {
     return (
       <Box sx={{ p: 4 }}>
-        <Button startIcon={<ArrowBack />} onClick={() => navigate('/student/quizzes')} sx={{ mb: 3 }}>
+        <Button startIcon={<ArrowBack />} onClick={() => navigate(classId ? `/student/class/${classId}` : -1)} sx={{ mb: 3 }}>
           Quay lại
         </Button>
         <Alert severity="error">{error}</Alert>
@@ -170,7 +173,7 @@ const QuizResultView = () => {
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ width: { xs: '100%', md: 'auto' } }}>
           <Button
             startIcon={<ArrowBack />}
-            onClick={() => navigate('/student/quizzes')}
+            onClick={() => navigate(classId ? `/student/class/${classId}` : -1)}
             sx={{ textTransform: 'none', fontWeight: 700, color: '#12344d' }}
           >
             Quay lại
@@ -212,7 +215,7 @@ const QuizResultView = () => {
               </Typography>
             </Paper>
 
-            <Paper elevation={0} sx={{ p: 2.5, borderRadius: 3, border: '1px solid #d6e7f4' }}>
+            <Paper sx={{ p: 2.5, borderRadius: 3 }}>
               <Typography variant="subtitle2" fontWeight="bold" mb={2}>
                 <BarChart sx={{ fontSize: 16, mr: 0.5, verticalAlign: 'middle' }} />
                 Thống kê
@@ -267,7 +270,7 @@ const QuizResultView = () => {
 
         {/* Question Results */}
         <Grid size={{ xs: 12, md: 8 }}>
-          <Paper elevation={0} sx={{ p: 3, borderRadius: 3, border: '1px solid #d6e7f4' }}>
+          <Paper sx={{ p: 3, borderRadius: 3 }}>
             <Stack direction="row" spacing={1} alignItems="center" mb={3}>
               <Quiz sx={{ color: '#6366f1' }} />
               <Typography variant="h6" fontWeight="bold">Chi tiết câu hỏi</Typography>

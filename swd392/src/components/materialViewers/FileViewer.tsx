@@ -84,8 +84,22 @@ export default function FileViewer({ content }: FileViewerProps) {
             <Button
                 variant="contained"
                 startIcon={<Download />}
-                href={content.file_path}
-                download={content.file_name}
+                onClick={async () => {
+                    try {
+                        const response = await fetch(content.file_path);
+                        const blob = await response.blob();
+                        const url = URL.createObjectURL(blob);
+                        const link = document.createElement('a');
+                        link.href = url;
+                        link.download = content.file_name;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        URL.revokeObjectURL(url);
+                    } catch {
+                        window.open(content.file_path, '_blank');
+                    }
+                }}
                 sx={{
                     ...flatButtonContained,
                     mt: 3,
