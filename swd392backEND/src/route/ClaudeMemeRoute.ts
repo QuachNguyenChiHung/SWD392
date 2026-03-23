@@ -1,11 +1,13 @@
-import { raw, Router } from "express";
+import { Router } from "express";
 import { runModel, runModelWithHistory } from "../ultis/claude.ts";
-import { verify } from "crypto";
 import verifyRole from "../ultis/verifyRole.ts";
 import PptxGenJS from "pptxgenjs";
 import puppeteer from "puppeteer";
+import AiRepo from "../repository/AiRepo.ts";
 
 const route = Router();
+
+// ─── Helpers ────────────────────────────────────────────────────────────────
 
 const extractJsonArray = (raw: string) => {
     const cleaned = raw.replace(/```json/gi, "").replace(/```/g, "").trim();
@@ -22,533 +24,387 @@ const extractJsonArray = (raw: string) => {
     }
 };
 
-const stripMarkdownFences = (value: string) => value.replace(/```html/gi, "").replace(/```/g, "").trim();
+const extractJsonWrapper = (raw: string) => {
+    let cleaned = raw.replace(/```json/gi, "").replace(/```/g, "").trim();
 
-const escapeHtml = (value: string) =>
-    value
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#39;");
-
-const buildFreeImageSvg = (title: string) => {
-    const safeTitle = escapeHtml(title);
-    const svg = `
-        <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675" fill="none">
-            <defs>
-                <linearGradient id="g1" x1="80" y1="80" x2="1120" y2="595" gradientUnits="userSpaceOnUse">
-                    <stop offset="0" stop-color="#1E3A8A"/>
-                    <stop offset="0.5" stop-color="#2563EB"/>
-                    <stop offset="1" stop-color="#60A5FA"/>
-                </linearGradient>
-                <linearGradient id="g2" x1="0" y1="0" x2="1" y2="1">
-                    <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.94"/>
-                    <stop offset="1" stop-color="#EAF2FF" stop-opacity="0.82"/>
-                </linearGradient>
-                <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-                    <feDropShadow dx="0" dy="18" stdDeviation="24" flood-color="#0F172A" flood-opacity="0.18"/>
-                </filter>
-            </defs>
-            <rect width="1200" height="675" rx="48" fill="url(#g1)"/>
-            <circle cx="1020" cy="118" r="156" fill="#FFFFFF" fill-opacity="0.12"/>
-            <circle cx="170" cy="560" r="160" fill="#FFFFFF" fill-opacity="0.1"/>
-            <path d="M120 520C240 430 346 410 470 458C590 506 706 594 840 564C946 539 1022 440 1100 350V675H120V520Z" fill="#FFFFFF" fill-opacity="0.12"/>
-            <rect x="88" y="86" width="524" height="430" rx="36" fill="url(#g2)" filter="url(#shadow)"/>
-            <rect x="124" y="124" width="180" height="18" rx="9" fill="#1E3A8A" fill-opacity="0.26"/>
-            <rect x="124" y="160" width="280" height="24" rx="12" fill="#1E3A8A" fill-opacity="0.88"/>
-            <rect x="124" y="204" width="344" height="16" rx="8" fill="#334155" fill-opacity="0.22"/>
-            <rect x="124" y="234" width="300" height="16" rx="8" fill="#334155" fill-opacity="0.18"/>
-            <rect x="124" y="270" width="420" height="182" rx="24" fill="#DCEAFE"/>
-            <path d="M150 414L236 348L304 384L382 304L456 336L508 286" stroke="#2563EB" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
-            <circle cx="236" cy="348" r="16" fill="#1E3A8A"/>
-            <circle cx="304" cy="384" r="16" fill="#1E3A8A"/>
-            <circle cx="382" cy="304" r="16" fill="#1E3A8A"/>
-            <circle cx="456" cy="336" r="16" fill="#1E3A8A"/>
-            <circle cx="508" cy="286" r="16" fill="#1E3A8A"/>
-            <rect x="676" y="136" width="392" height="72" rx="24" fill="#FFFFFF" fill-opacity="0.16"/>
-            <rect x="676" y="228" width="332" height="22" rx="11" fill="#FFFFFF" fill-opacity="0.92"/>
-            <rect x="676" y="264" width="272" height="18" rx="9" fill="#FFFFFF" fill-opacity="0.68"/>
-            <rect x="676" y="312" width="168" height="56" rx="18" fill="#FFFFFF" fill-opacity="0.14"/>
-            <rect x="864" y="312" width="204" height="56" rx="18" fill="#FFFFFF" fill-opacity="0.14"/>
-            <rect x="676" y="390" width="392" height="160" rx="30" fill="#0F172A" fill-opacity="0.16"/>
-            <text x="706" y="184" fill="#FFFFFF" fill-opacity="0.92" font-size="34" font-family="Segoe UI, Arial, sans-serif" font-weight="700">${safeTitle}</text>
-            <text x="706" y="437" fill="#FFFFFF" fill-opacity="0.88" font-size="20" font-family="Segoe UI, Arial, sans-serif">AI-generated educational material</text>
-            <text x="706" y="466" fill="#FFFFFF" fill-opacity="0.72" font-size="16" font-family="Segoe UI, Arial, sans-serif">Clean, branded, copyright-free visual asset</text>
-        </svg>
-    `;
-
-    return `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`;
-};
-
-const buildPolishedPdfHtml = (title: string, description: string | undefined, rawHtml: string) => {
-    const cleanedHtml = stripMarkdownFences(rawHtml);
-    const illustration = buildFreeImageSvg(title);
-    const content = cleanedHtml.toLowerCase().includes("<html")
-        ? cleanedHtml
-        : `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>${cleanedHtml}</body></html>`;
-
-    const baseStyles = `
-        <style>
-            :root {
-                color-scheme: light;
-                --bg: #f5f7fb;
-                --panel: rgba(255, 255, 255, 0.88);
-                --panel-strong: #ffffff;
-                --text: #182235;
-                --muted: #5d6b82;
-                --accent: #1e3a8a;
-                --accent-2: #2563eb;
-                --line: rgba(30, 58, 138, 0.12);
-                --shadow: 0 22px 60px rgba(15, 23, 42, 0.14);
-                --radius-xl: 28px;
-                --radius-lg: 20px;
-                --radius-md: 16px;
-            }
-
-            * {
-                box-sizing: border-box;
-            }
-
-            html, body {
-                margin: 0;
-                padding: 0;
-                background:
-                    radial-gradient(circle at top left, rgba(37, 99, 235, 0.12), transparent 36%),
-                    radial-gradient(circle at top right, rgba(30, 58, 138, 0.10), transparent 28%),
-                    linear-gradient(180deg, #f8fbff 0%, #eef4ff 100%);
-                color: var(--text);
-                font-family: Inter, "Segoe UI", Arial, sans-serif;
-            }
-
-            body {
-                padding: 28px;
-            }
-
-            .page-shell {
-                max-width: 960px;
-                margin: 0 auto;
-            }
-
-            .hero {
-                background: linear-gradient(135deg, rgba(30, 58, 138, 0.98), rgba(37, 99, 235, 0.94));
-                color: #ffffff;
-                border-radius: var(--radius-xl);
-                padding: 28px 30px;
-                box-shadow: var(--shadow);
-                position: relative;
-                overflow: hidden;
-            }
-
-            .hero::after {
-                content: "";
-                position: absolute;
-                inset: auto -10% -45% auto;
-                width: 240px;
-                height: 240px;
-                border-radius: 50%;
-                background: rgba(255, 255, 255, 0.12);
-                filter: blur(6px);
-            }
-
-            .eyebrow {
-                text-transform: uppercase;
-                letter-spacing: 0.18em;
-                font-size: 12px;
-                opacity: 0.82;
-                margin: 0 0 10px;
-            }
-
-            h1, h2, h3 {
-                margin: 0 0 0.6em;
-                line-height: 1.15;
-            }
-
-            h1 {
-                font-size: 34px;
-                letter-spacing: -0.03em;
-            }
-
-            h2 {
-                font-size: 24px;
-                margin-top: 2.1rem;
-            }
-
-            h3 {
-                font-size: 19px;
-                margin-top: 1.5rem;
-            }
-
-            p, li {
-                font-size: 15.5px;
-                line-height: 1.75;
-                color: var(--text);
-            }
-
-            .summary {
-                margin-top: 18px;
-                padding: 18px 20px;
-                border-radius: var(--radius-lg);
-                background: var(--panel);
-                border: 1px solid rgba(255, 255, 255, 0.28);
-                backdrop-filter: blur(16px);
-                box-shadow: var(--shadow);
-            }
-
-            .content {
-                margin-top: 22px;
-                background: var(--panel-strong);
-                border: 1px solid rgba(30, 58, 138, 0.08);
-                border-radius: var(--radius-xl);
-                padding: 28px 30px;
-                box-shadow: 0 16px 42px rgba(15, 23, 42, 0.08);
-            }
-
-            blockquote {
-                margin: 1.25rem 0;
-                padding: 1rem 1.15rem;
-                border-left: 5px solid var(--accent-2);
-                background: #eff6ff;
-                color: #1e293b;
-                border-radius: 0 14px 14px 0;
-            }
-
-            code {
-                background: #eaf0ff;
-                color: #12306f;
-                padding: 0.15rem 0.4rem;
-                border-radius: 8px;
-                font-size: 0.95em;
-            }
-
-            pre {
-                background: #0f172a;
-                color: #e2e8f0;
-                padding: 1rem 1.1rem;
-                border-radius: 18px;
-                overflow-x: auto;
-                box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
-            }
-
-            pre code {
-                background: transparent;
-                color: inherit;
-                padding: 0;
-            }
-
-            table {
-                width: 100%;
-                border-collapse: collapse;
-                margin: 1.2rem 0;
-                overflow: hidden;
-                border-radius: 18px;
-                box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
-            }
-
-            th, td {
-                padding: 12px 14px;
-                border-bottom: 1px solid var(--line);
-                text-align: left;
-                vertical-align: top;
-            }
-
-            th {
-                background: #dbeafe;
-                color: #12306f;
-                font-weight: 700;
-            }
-
-            ul, ol {
-                padding-left: 1.35rem;
-            }
-
-            img {
-                max-width: 100%;
-                height: auto;
-                border-radius: 18px;
-                box-shadow: 0 16px 36px rgba(15, 23, 42, 0.12);
-                margin: 1rem 0;
-            }
-
-            hr {
-                border: 0;
-                height: 1px;
-                background: linear-gradient(90deg, transparent, rgba(30, 58, 138, 0.24), transparent);
-                margin: 1.6rem 0;
-            }
-
-            .footer {
-                margin-top: 18px;
-                color: var(--muted);
-                font-size: 12.5px;
-                letter-spacing: 0.02em;
-                text-align: right;
-            }
-
-            .hero-grid {
-                display: grid;
-                grid-template-columns: 1.2fr 0.9fr;
-                gap: 20px;
-                align-items: center;
-                position: relative;
-                z-index: 1;
-            }
-
-            .hero-art {
-                width: 100%;
-                max-width: 320px;
-                justify-self: end;
-                filter: drop-shadow(0 22px 30px rgba(15, 23, 42, 0.22));
-            }
-
-            .hero-badges {
-                display: flex;
-                gap: 10px;
-                flex-wrap: wrap;
-                margin-top: 14px;
-            }
-
-            .hero-badge {
-                background: rgba(255, 255, 255, 0.16);
-                border: 1px solid rgba(255, 255, 255, 0.22);
-                padding: 8px 12px;
-                border-radius: 999px;
-                font-size: 12px;
-                letter-spacing: 0.02em;
-            }
-
-            @media print {
-                body {
-                    padding: 0;
-                    background: #ffffff;
-                }
-
-                .hero, .summary, .content {
-                    box-shadow: none;
-                }
-
-                .page-shell {
-                    max-width: none;
-                    margin: 0;
-                }
-            }
-        </style>
-    `;
-
-    if (content.toLowerCase().includes("</head>")) {
-        return content.replace("</head>", `${baseStyles}</head>`);
+    // Attempt to recover if the JSON was truncated mid-string
+    if (!cleaned.endsWith("}") && !cleaned.endsWith("]")) {
+        // Just slap some quotes and braces on it to see if it parses
+        cleaned += '"}';
     }
 
-    if (content.toLowerCase().includes("<head>")) {
-        return content.replace("<head>", `<head>${baseStyles}`);
+    try {
+        return JSON.parse(cleaned);
+    } catch {
+        const match = cleaned.match(/\{[\s\S]*\}/);
+        if (!match) return null;
+        try {
+            return JSON.parse(match[0]);
+        } catch {
+            return null;
+        }
     }
-
-    return `<!DOCTYPE html><html><head><meta charset="utf-8">${baseStyles}<meta name="viewport" content="width=device-width, initial-scale=1"></head><body>${content}</body></html>`;
 };
 
-const buildPdfHtmlShell = (title: string, description: string | undefined, rawHtml: string) => {
-    const contentHtml = stripMarkdownFences(rawHtml);
-    const illustration = buildFreeImageSvg(title);
-    const renderedContent = contentHtml.toLowerCase().includes("<html")
-        ? contentHtml
-        : `<section class="content">${contentHtml}</section>`;
+const stripMarkdownFences = (value: string) =>
+    value.replace(/```html/gi, "").replace(/```/g, "").trim();
 
-    const safeDescription = description?.trim() || "A polished AI-generated handout.";
+// ─── PPTX slide templates ─────────────────────────────────────────────────
 
-    return buildPolishedPdfHtml(
-        title,
-        description,
-        `<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>${title}</title>
-</head>
-<body>
-    <div class="page-shell">
-        <header class="hero">
-            <p class="eyebrow">AI Generated Document</p>
-            <div class="hero-grid">
-                <div>
-                    <h1>${escapeHtml(title)}</h1>
-                    <p style="margin: 0; max-width: 760px; font-size: 16px; line-height: 1.7; opacity: 0.92;">${escapeHtml(safeDescription)}</p>
-                    <div class="hero-badges">
-                        <span class="hero-badge">Polished layout</span>
-                        <span class="hero-badge">Free illustration</span>
-                        <span class="hero-badge">Print-friendly</span>
-                    </div>
-                </div>
-                <img class="hero-art" src="${illustration}" alt="Decorative AI illustration" />
-            </div>
-        </header>
-        <section class="summary">
-            <strong style="display:block; margin-bottom: 8px; color: var(--accent);">Overview</strong>
-            <div style="color: var(--muted); line-height: 1.8;">This document was formatted for readability with improved spacing, typography, and print styling.</div>
-        </section>
-        ${renderedContent}
-        <div class="footer">Generated by the teacher AI content tool</div>
-    </div>
-</body>
-</html>`
-    );
+type SlideData = {
+    title: string;
+    body: string;
+    notes?: string;
+    templateType?: "title" | "bullets" | "two_column" | "image_focus" | "minimal" | "table";
+    secondaryBody?: string; // used by two_column
+    imageUrl?: string;      // used to embed real images
+    tableData?: string[][]; // used by table
 };
 
-const addBeautifiedSlide = (pptx: any, slideData: any, slideNumber: number, totalSlides: number, title: string) => {
+/**
+ * title — large centred title card (used for chapter headings / cover slides)
+ */
+const renderTitleSlide = (pptx: any, data: SlideData, slideNum: number, total: number) => {
     const slide = pptx.addSlide();
-    slide.background = { color: "F5F8FF" };
-    const illustration = buildFreeImageSvg(`${title} - ${slideData?.title || `Slide ${slideNumber}`}`);
+    slide.background = { color: "1E3A8A" };
 
-    slide.addShape(pptx.ShapeType.rect, {
-        x: 0,
-        y: 0,
-        w: 13.333,
-        h: 0.34,
-        line: { color: "1E3A8A", transparency: 100 },
-        fill: { color: "1E3A8A" },
-    });
-
-    slide.addShape(pptx.ShapeType.rect, {
-        x: 0.45,
-        y: 0.55,
-        w: 12.4,
-        h: 0.22,
+    // decorative circle
+    slide.addShape(pptx.ShapeType.ellipse, {
+        x: 9.5, y: -0.8, w: 5.5, h: 5.5,
+        fill: { color: "2563EB", transparency: 75 },
         line: { color: "2563EB", transparency: 100 },
-        fill: { color: "2563EB" },
     });
 
-    slide.addText(title, {
-        x: 0.6,
-        y: 0.82,
-        w: 8.9,
-        h: 0.6,
+    slide.addText(data.title, {
+        x: 1, y: 1.6, w: 11.3, h: 2.2,
         fontFace: "Aptos Display",
-        fontSize: 12,
+        fontSize: 44,
         bold: true,
-        color: "1E3A8A",
-        margin: 0,
-    });
-
-    slide.addText(String(slideData?.title || `Slide ${slideNumber}`), {
-        x: 0.6,
-        y: 1.2,
-        w: 11.5,
-        h: 0.9,
-        fontFace: "Aptos Display",
-        fontSize: 28,
-        bold: true,
-        color: "111827",
-        margin: 0,
+        color: "FFFFFF",
+        align: "center",
+        valign: "middle",
         fit: "shrink",
     });
 
-    slide.addShape(pptx.ShapeType.roundRect, {
-        x: 0.6,
-        y: 2.15,
-        w: 8.15,
-        h: 4.45,
-        rectRadius: 0.16,
-        line: { color: "D8E2F3", pt: 1 },
-        fill: { color: "FFFFFF", transparency: 0 },
-        shadow: { type: "outer", color: "94A3B8", angle: 45, blur: 2, distance: 2, opacity: 0.18 },
-    });
-
-    slide.addText(String(slideData?.body || ""), {
-        x: 0.95,
-        y: 2.45,
-        w: 7.55,
-        h: 3.85,
-        fontFace: "Aptos",
-        fontSize: 18,
-        color: "334155",
-        breakLine: true,
-        valign: "top",
-        margin: 0,
-        fit: "shrink",
-        paraSpaceAfterPt: 10,
-    });
-
-    slide.addText(`${slideNumber}/${totalSlides}`, {
-        x: 11.95,
-        y: 6.85,
-        w: 0.9,
-        h: 0.22,
-        fontFace: "Aptos",
-        fontSize: 10,
-        color: "64748B",
-        align: "right",
-        margin: 0,
-    });
-
-    slide.addShape(pptx.ShapeType.roundRect, {
-        x: 9.05,
-        y: 2.15,
-        w: 3.65,
-        h: 4.45,
-        rectRadius: 0.14,
-        line: { color: "D8E2F3", pt: 1 },
-        fill: { color: "FFFFFF", transparency: 0 },
-        shadow: { type: "outer", color: "94A3B8", angle: 45, blur: 2, distance: 2, opacity: 0.14 },
-    });
-
-    slide.addImage({
-        data: illustration,
-        x: 9.25,
-        y: 2.35,
-        w: 3.25,
-        h: 1.82,
-    });
-
-    slide.addText("Free visual asset", {
-        x: 9.25,
-        y: 4.32,
-        w: 3.2,
-        h: 0.28,
-        fontFace: "Aptos",
-        fontSize: 10,
-        bold: true,
-        color: "1E3A8A",
-        align: "center",
-        margin: 0,
-    });
-
-    slide.addText("Reusable copyright-free SVG", {
-        x: 9.2,
-        y: 4.62,
-        w: 3.3,
-        h: 0.22,
-        fontFace: "Aptos",
-        fontSize: 9,
-        color: "64748B",
-        align: "center",
-        margin: 0,
-    });
-
-    if (slideData?.notes) {
-        slide.addNotes(String(slideData.notes));
+    if (data.body) {
+        slide.addText(data.body, {
+            x: 2, y: 4.0, w: 9.3, h: 1.0,
+            fontFace: "Aptos",
+            fontSize: 20,
+            color: "BFDBFE",
+            align: "center",
+            valign: "middle",
+            fit: "shrink",
+        });
     }
 
+    slide.addText(`${slideNum}/${total}`, {
+        x: 11.95, y: 6.85, w: 0.9, h: 0.22,
+        fontFace: "Aptos", fontSize: 10, color: "93C5FD",
+        align: "right", margin: 0,
+    });
+
+    if (data.notes) slide.addNotes(data.notes);
     return slide;
 };
+
+/**
+ * bullets — left panel header + right panel bullet list (most common content slide)
+ */
+const renderBulletsSlide = (pptx: any, data: SlideData, slideNum: number, total: number) => {
+    const slide = pptx.addSlide();
+    slide.background = { color: "F5F8FF" };
+
+    // top accent bar
+    slide.addShape(pptx.ShapeType.rect, {
+        x: 0, y: 0, w: 13.333, h: 0.3,
+        fill: { color: "1E3A8A" },
+        line: { color: "1E3A8A", transparency: 100 },
+    });
+
+    // title
+    slide.addText(data.title, {
+        x: 0.6, y: 0.5, w: 12.1, h: 0.9,
+        fontFace: "Aptos Display", fontSize: 28, bold: true,
+        color: "111827", fit: "shrink",
+    });
+
+    // content card
+    slide.addShape(pptx.ShapeType.roundRect, {
+        x: 0.6, y: 1.6, w: 12.1, h: 5.0,
+        rectRadius: 0.14,
+        line: { color: "DBEAFE", pt: 1 },
+        fill: { color: "FFFFFF" },
+        shadow: { type: "outer", color: "CBD5E1", angle: 45, blur: 3, distance: 2, opacity: 0.2 },
+    });
+
+    slide.addText(data.body, {
+        x: 0.95, y: 1.9, w: 11.5, h: 4.4,
+        fontFace: "Aptos", fontSize: 18,
+        color: "1E293B",
+        bullet: { type: "bullet", code: "25A0", color: "2563EB", size: 60 },
+        breakLine: true, valign: "top", margin: 0,
+        paraSpaceAfterPt: 12, fit: "shrink",
+    });
+
+    slide.addText(`${slideNum}/${total}`, {
+        x: 11.95, y: 6.85, w: 0.9, h: 0.22,
+        fontFace: "Aptos", fontSize: 10, color: "94A3B8",
+        align: "right", margin: 0,
+    });
+
+    if (data.notes) slide.addNotes(data.notes);
+    return slide;
+};
+
+/**
+ * two_column — title on top, two side-by-side content panels below
+ */
+const renderTwoColumnSlide = (pptx: any, data: SlideData, slideNum: number, total: number) => {
+    const slide = pptx.addSlide();
+    slide.background = { color: "F5F8FF" };
+
+    slide.addShape(pptx.ShapeType.rect, {
+        x: 0, y: 0, w: 13.333, h: 0.3,
+        fill: { color: "2563EB" },
+        line: { color: "2563EB", transparency: 100 },
+    });
+
+    slide.addText(data.title, {
+        x: 0.6, y: 0.45, w: 12.1, h: 0.9,
+        fontFace: "Aptos Display", fontSize: 26, bold: true,
+        color: "111827", fit: "shrink",
+    });
+
+    // left column
+    slide.addShape(pptx.ShapeType.roundRect, {
+        x: 0.5, y: 1.55, w: 6.0, h: 5.1,
+        rectRadius: 0.14,
+        fill: { color: "EFF6FF" },
+        line: { color: "BFDBFE", pt: 1 },
+    });
+    slide.addText(data.body, {
+        x: 0.8, y: 1.8, w: 5.5, h: 4.6,
+        fontFace: "Aptos", fontSize: 17, color: "1E293B",
+        breakLine: true, valign: "top", margin: 0,
+        paraSpaceAfterPt: 10, fit: "shrink",
+    });
+
+    // right column
+    const rightBody = data.secondaryBody || "";
+    slide.addShape(pptx.ShapeType.roundRect, {
+        x: 6.85, y: 1.55, w: 6.0, h: 5.1,
+        rectRadius: 0.14,
+        fill: { color: "F0FDF4" },
+        line: { color: "BBF7D0", pt: 1 },
+    });
+    slide.addText(rightBody, {
+        x: 7.15, y: 1.8, w: 5.5, h: 4.6,
+        fontFace: "Aptos", fontSize: 17, color: "14532D",
+        breakLine: true, valign: "top", margin: 0,
+        paraSpaceAfterPt: 10, fit: "shrink",
+    });
+
+    slide.addText(`${slideNum}/${total}`, {
+        x: 11.95, y: 6.85, w: 0.9, h: 0.22,
+        fontFace: "Aptos", fontSize: 10, color: "94A3B8",
+        align: "right", margin: 0,
+    });
+
+    if (data.notes) slide.addNotes(data.notes);
+    return slide;
+};
+
+/**
+ * image_focus — large placeholder image zone on the left, short text right
+ */
+const renderImageFocusSlide = (pptx: any, data: SlideData, slideNum: number, total: number) => {
+    const slide = pptx.addSlide();
+    slide.background = { color: "0F172A" };
+
+    if (data.imageUrl) {
+        // Real image embedding via Data URI
+        // data.imageUrl is repurposed here to hold the data:image base64 string
+        slide.addImage({
+            x: 0.4, y: 0.4, w: 7.5, h: 6.3,
+            data: data.imageUrl,
+            sizing: { type: "crop", w: 7.5, h: 6.3 },
+            rounding: true
+        });
+    } else {
+        // large colourful image-zone placeholder fallback
+        slide.addShape(pptx.ShapeType.roundRect, {
+            x: 0.4, y: 0.4, w: 7.5, h: 6.3,
+            rectRadius: 0.2,
+            fill: { type: "gradient", stops: [{ color: "1D4ED8", position: 0 }, { color: "7C3AED", position: 100 }] },
+            line: { color: "6D28D9", pt: 1.5 },
+            shadow: { type: "outer", color: "000000", angle: 45, blur: 8, distance: 4, opacity: 0.4 },
+        });
+
+        // icon label
+        slide.addText("[ Image / Diagram Area ]", {
+            x: 0.6, y: 3.1, w: 7.1, h: 0.5,
+            fontFace: "Aptos", fontSize: 13, color: "C4B5FD",
+            align: "center", italic: true,
+        });
+    }
+
+    // right-side content
+    slide.addText(data.title, {
+        x: 8.3, y: 0.5, w: 4.7, h: 1.4,
+        fontFace: "Aptos Display", fontSize: 26, bold: true,
+        color: "FFFFFF", valign: "top", fit: "shrink",
+    });
+
+    slide.addShape(pptx.ShapeType.rect, {
+        x: 8.3, y: 2.0, w: 0.5, h: 0.06,
+        fill: { color: "7C3AED" },
+        line: { color: "7C3AED", transparency: 100 },
+    });
+
+    slide.addText(data.body, {
+        x: 8.3, y: 2.2, w: 4.65, h: 4.4,
+        fontFace: "Aptos", fontSize: 17,
+        color: "E2E8F0", breakLine: true,
+        valign: "top", margin: 0,
+        paraSpaceAfterPt: 10, fit: "shrink",
+    });
+
+    slide.addText(`${slideNum}/${total}`, {
+        x: 11.95, y: 6.85, w: 0.9, h: 0.22,
+        fontFace: "Aptos", fontSize: 10, color: "475569",
+        align: "right", margin: 0,
+    });
+
+    if (data.notes) slide.addNotes(data.notes);
+    return slide;
+};
+
+/**
+ * table — title on top + a data table filling the slide body
+ */
+const renderTableSlide = (pptx: any, data: SlideData, slideNum: number, total: number) => {
+    const slide = pptx.addSlide();
+    slide.background = { color: "F8FAFC" };
+
+    // top accent bar
+    slide.addShape(pptx.ShapeType.rect, {
+        x: 0, y: 0, w: 13.333, h: 0.3,
+        fill: { color: "0F766E" },
+        line: { color: "0F766E", transparency: 100 },
+    });
+
+    // title
+    slide.addText(data.title, {
+        x: 0.6, y: 0.5, w: 12.1, h: 0.9,
+        fontFace: "Aptos Display", fontSize: 28, bold: true,
+        color: "0F172A", fit: "shrink",
+    });
+
+    // generate table
+    if (data.tableData && data.tableData.length > 0) {
+        const firstRow = data.tableData[0];
+        if (firstRow) {
+            const headerRow = firstRow.map((cell: string) => ({
+                text: cell,
+                options: { fill: "D4D4D8", color: "18181B", bold: true, align: "center", valign: "middle", fontFace: "Aptos", fontSize: 16 }
+            }));
+            const bodyRows = data.tableData.slice(1).map(row =>
+                row.map((cell: string) => ({
+                    text: cell,
+                    options: { color: "27272A", valign: "middle", fontFace: "Aptos", fontSize: 14 }
+                }))
+            );
+
+            slide.addTable([headerRow, ...bodyRows], {
+                x: 0.6, y: 1.6, w: 12.1, h: 4.8,
+                border: { pt: 1, color: "E4E4E7" },
+                fill: "FFFFFF",
+                rowH: 0.5,
+                valign: "middle"
+            });
+        }
+    }
+
+    slide.addText(`${slideNum}/${total}`, {
+        x: 11.95, y: 6.85, w: 0.9, h: 0.22,
+        fontFace: "Aptos", fontSize: 10, color: "94A3B8",
+        align: "right", margin: 0,
+    });
+
+    if (data.notes) slide.addNotes(data.notes);
+    return slide;
+};
+
+/**
+ * minimal — single large quote / key statement centred on slide
+ */
+const renderMinimalSlide = (pptx: any, data: SlideData, slideNum: number, total: number) => {
+    const slide = pptx.addSlide();
+    slide.background = { color: "FFFFFF" };
+
+    // subtle top stripe
+    slide.addShape(pptx.ShapeType.rect, {
+        x: 0, y: 0, w: 13.333, h: 0.12,
+        fill: { color: "DBEAFE" },
+        line: { color: "DBEAFE", transparency: 100 },
+    });
+
+    // small slide label
+    slide.addText(data.title, {
+        x: 0.8, y: 0.3, w: 11.7, h: 0.5,
+        fontFace: "Aptos", fontSize: 13, bold: true,
+        color: "2563EB", align: "center",
+    });
+
+    // the key statement — very large
+    slide.addText(data.body, {
+        x: 1, y: 1.2, w: 11.3, h: 5.0,
+        fontFace: "Aptos Display", fontSize: 36,
+        color: "111827", align: "center", valign: "middle",
+        breakLine: true, fit: "shrink",
+    });
+
+    slide.addText(`${slideNum}/${total}`, {
+        x: 11.95, y: 6.85, w: 0.9, h: 0.22,
+        fontFace: "Aptos", fontSize: 10, color: "CBD5E1",
+        align: "right", margin: 0,
+    });
+
+    if (data.notes) slide.addNotes(data.notes);
+    return slide;
+};
+
+/** Dispatcher — route to correct template based on AI's templateType choice */
+const renderSlide = (pptx: any, data: SlideData, slideNum: number, total: number) => {
+    switch (data.templateType) {
+        case "title": return renderTitleSlide(pptx, data, slideNum, total);
+        case "two_column": return renderTwoColumnSlide(pptx, data, slideNum, total);
+        case "image_focus": return renderImageFocusSlide(pptx, data, slideNum, total);
+        case "table": return renderTableSlide(pptx, data, slideNum, total);
+        case "minimal": return renderMinimalSlide(pptx, data, slideNum, total);
+        case "bullets":
+        default: return renderBulletsSlide(pptx, data, slideNum, total);
+    }
+};
+
+// ─── Routes ──────────────────────────────────────────────────────────────────
 
 route.post("/claude", async (req, res, next) => {
     try {
         const { prompt } = req.body;
-        if (!prompt) {
-            return res.status(400).json({ message: "Prompt is required" });
-        }
+        if (!prompt) return res.status(400).json({ message: "Prompt is required" });
         const msg = await runModel(prompt);
         res.json({ message: msg });
     } catch (error) {
         next(error);
     }
 });
+
 route.post("/teacher/ai-chad", verifyRole.verifyTeacher, async (req, res, next) => {
     try {
         const { prompt } = req.body;
-        if (!prompt) {
-            return res.status(400).json({ message: "Prompt is required" });
-        }
+        if (!prompt) return res.status(400).json({ message: "Prompt is required" });
         const msg = await runModelWithHistory(prompt);
         res.json({ message: msg });
     } catch (error) {
@@ -556,215 +412,330 @@ route.post("/teacher/ai-chad", verifyRole.verifyTeacher, async (req, res, next) 
     }
 });
 
-// Generate a teacher-editable quiz using AI. Expects JSON body:
-// { topicTitle, topicDescription, count, mcCount, tfCount }
+// ─── AI Quiz ──────────────────────────────────────────────────────────────────
 route.post("/teacher/ai-create-quiz", verifyRole.verifyTeacher, async (req, res, next) => {
     try {
         const { topicTitle, topicDescription, count = 5, mcCount = 5, tfCount = 0 } = req.body;
-        if (!topicTitle) {
-            return res.status(400).json({ message: "topicTitle is required" });
-        }
+        if (!topicTitle) return res.status(400).json({ message: "topicTitle is required" });
 
-<<<<<<< HEAD
-        const buildQuizPrompt = (title: string, description: string | undefined, total: number, mc: number, tf: number) => {
-            return `You are an assistant that generates teacher-editable quizzes. Produce a single valid JSON object only (no commentary) with this exact shape:\n\n{\n  "title": "<quiz title>",\n  "type": "interactive|standard",\n  "keyword": "<optional short keyword|null>",\n  "questions": [ { "id": "q1", "title": "question text", "type": "multiple-choice", "options": ["A","B","C"], "correctAnswer": "A", "editable": true } ]\n}\n\nConstraints:\n- Return exactly ${total} questions in the \"questions\" array (no more, no less).\n- Include exactly ${tf} true/false style questions (represent them as multiple-choice with options exactly [\"True\",\"False\"]).\n- Include exactly ${mc} non-true/false multiple-choice questions (each with 3–5 unique options).\n- EVERY question must use \"type\": \"multiple-choice\".\n- Topic context: Title: \"${title}\" Description: \"${description || ''}\".\n- Output JSON only, no surrounding text or explanation.`;
-=======
         const total = Math.max(1, Number(count) || 5);
         const multipleChoice = Math.max(0, Number(mcCount) || 0);
         const trueFalse = Math.max(0, Number(tfCount) || 0);
         const adjustedTotal = Math.max(total, multipleChoice + trueFalse);
 
-        const buildQuizPrompt = (
-            title: string,
-            description: string | undefined,
-            total: number,
-            mc: number,
-            tf: number,
-        ) => {
-            return `You are an assistant that generates teacher-editable quizzes. Produce ONE valid JSON object only (no commentary, no markdown) with this exact shape:\n\n{\n  "title": "<quiz title>",\n  "type": "interactive",\n  "keyword": "<optional short keyword|null>",\n  "status": true,\n  "questions": [\n    {\n      "title": "question text",\n      "type": "multiple_choice|true_false",\n      "options": ["A","B","C"],\n      "correct_index": 0\n    }\n  ]\n}\n\nConstraints:\n- Return exactly ${total} questions in the "questions" array (no more, no less).\n- Include exactly ${tf} true/false questions with type "true_false" and options exactly ["True","False"].\n- Include exactly ${mc} multiple-choice questions with type "multiple_choice" and 3–5 unique options.\n- "correct_index" must be a 0-based index into the options array.\n- Keep all values JSON-safe strings (no HTML).\n- Topic context: Title: "${title}" Description: "${description || ""}".\n- Output JSON only, no surrounding text or explanation.`;
->>>>>>> bb947e61701eb5e990bd18a2b93eb7b2f59f45ca
-        };
+        const prompt = `You are an assistant that generates teacher-editable quizzes. Produce ONE valid JSON object only (no commentary, no markdown) with this exact shape:
 
-        const prompt = buildQuizPrompt(topicTitle, topicDescription, adjustedTotal, multipleChoice, trueFalse);
+{
+  "chat_message": "A short, friendly conversational message saying here is the quiz.",
+  "content": {
+    "title": "<quiz title>",
+    "type": "interactive",
+    "keyword": "<optional short keyword|null>",
+    "status": true,
+    "questions": [
+      {
+        "title": "question text",
+        "type": "multiple_choice|true_false",
+        "options": ["A","B","C"],
+        "correct_index": 0
+      }
+    ]
+  }
+}
+
+Constraints:
+- Return exactly ${adjustedTotal} questions in the "questions" array (no more, no less).
+- Include exactly ${trueFalse} true/false questions with type "true_false" and options exactly ["True","False"].
+- Include exactly ${multipleChoice} multiple-choice questions with type "multiple_choice" and 3–5 unique options.
+- "correct_index" must be a 0-based index into the options array.
+- Keep all values JSON-safe strings (no HTML).
+- Topic context: Title: "${topicTitle}" Description: "${topicDescription || ""}".
+- Output JSON only, no surrounding text or explanation.`;
+
         const aiResponse = await runModel(prompt);
-        return res.json({ message: aiResponse });
+        console.log("----- AI QUIZ RAW RESPONSE -----");
+        console.log(aiResponse);
+        console.log("--------------------------------");
+
+        const parsed = extractJsonWrapper(aiResponse);
+        if (!parsed || !parsed.content) {
+            return res.status(502).json({ message: "Failed to generate usable quiz format." });
+        }
+
+        // Return dual response: the chat message + the raw JSON content as string (for frontend to parse)
+        return res.json({
+            message: parsed.chat_message || "Here is the quiz you requested.",
+            rawContent: JSON.stringify(parsed.content)
+        });
     } catch (error) {
         next(error);
     }
 });
 
+// ─── AI Slide ────────────────────────────────────────────────────────────────
 route.post("/teacher/ai-create-slide", verifyRole.verifyTeacher, async (req, res, next) => {
     try {
         const { topicTitle, topicDescription, notes } = req.body;
-        if (!topicTitle) {
-            return res.status(400).json({ message: "topicTitle is required" });
-        }
-        const buildSlidePrompt = (title: string, description: string | undefined, notes: string | undefined) => {
-            return `Create a 40-slide presentation about: "${title}".
-    Description: "${description || ""}"
-    Additional Notes: "${notes || ""}"
-    Add the main title as the first slide, and then 20 slides with a title and body text. Include speaker notes for each slide.
-      Respond ONLY with a JSON array (no markdown) in this format:
-      [{ "title": "...", "body": "...", "notes": "..." }]`;
-        }
-        const prompt = buildSlidePrompt(topicTitle, topicDescription, notes);
+        if (!topicTitle) return res.status(400).json({ message: "topicTitle is required" });
+
+        const userId = (req as any).user?.id ?? null;
+
+        const prompt = `You are a professional presentation designer. Create a 10-slide deck about: "${topicTitle}".
+Description: "${topicDescription || ""}"
+User style request: "${notes || "standard educational layout"}"
+
+CRITICAL: You must honour the user's style request above when choosing templates — e.g. if they say "more visual", prefer image_focus; if "minimal", prefer minimal; if "to the point", prefer minimal or bullets.
+
+Available templateType values (pick the BEST fit per slide):
+- "title"       : Large centred title + one-line subtitle. Use for chapter headings.
+- "bullets"     : Header + bulleted list. Best for lists of facts or steps.
+- "two_column"  : Header + two side-by-side panels. Use for comparisons or pros/cons.
+- "image_focus" : Large image/diagram on the left, short text on the right. Use when visuals matter most.
+- "table"       : Data table. Use for structured, tabular data, comparisons, or schedules.
+- "minimal"     : One big statement/quote centred on a white slide. Use for key insights.
+
+Rules:
+- First slide MUST use templateType "title".
+- Vary templates throughout the deck — do NOT use the same template more than 3 times in a row.
+- For "two_column" slides, populate both "body" (left panel) and "secondaryBody" (right panel).
+- For "image_focus" slides, you MUST provide a real, copyright-free image URL from Flickr using "https://loremflickr.com/800/600/{keyword}" where {keyword} is a single english word (e.g., https://loremflickr.com/800/600/chemistry) in the "imageUrl" field.
+- For "table" slides, you MUST provide a "tableData" field which is an array of arrays of strings. The first inner array is the header row.
+- Keep "body" concise — bullet points separated by newlines work best.
+- Include "notes" for the speaker on every slide.
+- Respond ONLY with a valid JSON object in this EXACT format (no markdown):
+
+{
+  "chat_message": "A short, friendly conversational message saying here are the slides.",
+  "content": [
+    {
+      "templateType": "title|bullets|two_column|image_focus|table|minimal",
+      "title": "...",
+      "body": "...",
+      "secondaryBody": "...",
+      "imageUrl": "https://loremflickr.com/800/600/keyword",
+      "tableData": [ ["Header1", "Header2"], ["Row1Col1", "Row1Col2"] ],
+      "notes": "..."
+    }
+  ]
+}`;
+
         const aiResponse = await runModel(prompt);
-        const slides = extractJsonArray(aiResponse);
-        if (!Array.isArray(slides)) {
-            return res.status(502).json({
-                message: "AI returned invalid slide JSON. Please retry.",
-            });
+        console.log("----- AI SLIDE RAW RESPONSE -----");
+        console.log(aiResponse);
+        console.log("---------------------------------");
+
+        // Save request to DB (fire-and-forget, don't block the response)
+        const savedRequest = await AiRepo.saveRequest(userId, prompt, "slide").catch(() => null);
+
+        const parsed = extractJsonWrapper(aiResponse);
+        if (!parsed || !Array.isArray(parsed.content)) {
+            return res.status(502).json({ message: "AI returned invalid JSON structure. Please retry." });
         }
 
-        // Step 3: Build the PPTX
-        // Support both ESM default export and CommonJS interop
-        const PptxCtor = (PptxGenJS && (PptxGenJS.default || PptxGenJS)) as any;
+        const slides = parsed.content;
+        const chatMessage = parsed.chat_message || "Here is your slide deck!";
+
+        // Persist AI content record
+        if (savedRequest) {
+            AiRepo.saveContent(savedRequest._id as any, "slide", {
+                title: topicTitle,
+                slideCount: slides.length,
+                templates: slides.map((s: any) => s.templateType),
+            }).catch(() => null);
+        }
+
+        // Build PPTX
+        const PptxCtor = (PptxGenJS && ((PptxGenJS as any).default || PptxGenJS)) as any;
         const pptx = new PptxCtor();
         pptx.layout = "LAYOUT_WIDE";
         pptx.author = "Teacher AI Content Tool";
         pptx.company = "swd392backEND";
         pptx.subject = `AI presentation for ${topicTitle}`;
         pptx.title = `AI Presentation - ${topicTitle}`;
-        pptx.lang = "en-US";
-        pptx.theme = {
-            headFontFace: "Aptos Display",
-            bodyFontFace: "Aptos",
-            lang: "en-US",
-        };
+        pptx.theme = { headFontFace: "Aptos Display", bodyFontFace: "Aptos", lang: "en-US" };
 
-        const normalizedSlides = slides.map((slide: any, index: number) => ({
-            title: String(slide?.title || `Slide ${index + 1}`),
-            body: String(slide?.body || ""),
-            notes: slide?.notes ? String(slide.notes) : "",
-        }));
-
-        const titleSlide = pptx.addSlide();
-        titleSlide.background = { color: "F5F8FF" };
-        titleSlide.addImage({
-            data: buildFreeImageSvg(topicTitle),
-            x: 0.55,
-            y: 0.45,
-            w: 12.2,
-            h: 5.75,
-        });
-        titleSlide.addShape(pptx.ShapeType.roundRect, {
-            x: 0.85,
-            y: 5.52,
-            w: 11.65,
-            h: 0.88,
-            rectRadius: 0.16,
-            line: { color: "D8E2F3", pt: 1 },
-            fill: { color: "FFFFFF", transparency: 6 },
-        });
-        titleSlide.addText(`AI Presentation`, {
-            x: 1.15,
-            y: 5.72,
-            w: 4,
-            h: 0.22,
-            fontFace: "Aptos",
-            fontSize: 11,
-            bold: true,
-            color: "2563EB",
-            margin: 0,
-        });
-        titleSlide.addText(topicTitle, {
-            x: 1.15,
-            y: 5.95,
-            w: 11.1,
-            h: 0.28,
-            fontFace: "Aptos Display",
-            fontSize: 20,
-            bold: true,
-            color: "111827",
-            margin: 0,
+        const normalizedSlides: SlideData[] = slides.map((slide: any, index: number) => {
+            const res: SlideData = {
+                templateType: slide?.templateType || (index === 0 ? "title" : "bullets"),
+                title: String(slide?.title || `Slide ${index + 1}`),
+                body: String(slide?.body || ""),
+            };
+            if (slide?.secondaryBody) res.secondaryBody = String(slide.secondaryBody);
+            if (slide?.imageUrl) res.imageUrl = String(slide.imageUrl);
+            if (Array.isArray(slide?.tableData)) res.tableData = slide.tableData;
+            if (slide?.notes) res.notes = String(slide.notes);
+            return res;
         });
 
-        normalizedSlides.forEach((slideData: any, index: number) => {
-            addBeautifiedSlide(pptx, slideData, index + 1, normalizedSlides.length, topicTitle);
+        // Fetch image blobs for PptxGenJS (DataURIs bypass network/redirect issues inside PptxGenJS)
+        for (const slideData of normalizedSlides) {
+            if (slideData.imageUrl && slideData.imageUrl.startsWith("http")) {
+                try {
+                    const imgRes = await fetch(slideData.imageUrl);
+                    if (imgRes.ok) {
+                        const arrayBuffer = await imgRes.arrayBuffer();
+                        const base64 = Buffer.from(arrayBuffer).toString('base64');
+                        slideData.imageUrl = `data:image/jpeg;base64,${base64}`;
+                    } else {
+                        delete slideData.imageUrl;
+                    }
+                } catch {
+                    delete slideData.imageUrl;
+                }
+            }
+        }
+
+        normalizedSlides.forEach((slideData, index) => {
+            renderSlide(pptx, slideData, index + 1, normalizedSlides.length);
         });
 
         if (normalizedSlides.length === 0) {
             const emptySlide = pptx.addSlide();
             emptySlide.background = { color: "F5F8FF" };
-            emptySlide.addImage({
-                data: buildFreeImageSvg(`No content - ${topicTitle}`),
-                x: 0.75,
-                y: 0.6,
-                w: 11.8,
-                h: 5,
-            });
-            emptySlide.addText(`No slides were generated for ${topicTitle}`, {
-                x: 1,
-                y: 2.2,
-                w: 11,
-                h: 0.8,
-                fontFace: "Aptos Display",
-                fontSize: 24,
-                bold: true,
-                color: "1E3A8A",
-                align: "center",
-            });
-            emptySlide.addText("Try regenerating with a clearer prompt.", {
-                x: 1,
-                y: 3.1,
-                w: 11,
-                h: 0.5,
-                fontFace: "Aptos",
-                fontSize: 16,
-                color: "475569",
-                align: "center",
+            emptySlide.addText(`No slides were generated for "${topicTitle}"`, {
+                x: 1, y: 2.5, w: 11, h: 1,
+                fontFace: "Aptos Display", fontSize: 24, bold: true,
+                color: "1E3A8A", align: "center",
             });
         }
 
-        // Step 4: Write to buffer and send
-        const buffer = await pptx.write({ outputType: 'nodebuffer' });
-        res.setHeader('Content-Type',
-            'application/vnd.openxmlformats-officedocument.presentationml.presentation');
-        res.setHeader('Content-Disposition', 'attachment; filename="presentation.pptx"');
-        res.send(buffer);
+        const buffer = await pptx.write({ outputType: "nodebuffer" });
+
+        // Return dual response: chat message + base64 file data
+        return res.json({
+            message: chatMessage,
+            fileBase64: buffer.toString('base64'),
+        });
     } catch (error) {
         next(error);
     }
 });
 
+// ─── AI PDF ──────────────────────────────────────────────────────────────────
 route.post("/teacher/ai-create-pdf", verifyRole.verifyTeacher, async (req, res, next) => {
     try {
         const { topicTitle, topicDescription, notes } = req.body;
-        if (!topicTitle) {
-            return res.status(400).json({ message: "topicTitle is required" });
-        }
-        const buildSlidePrompt = (title: string, description: string | undefined, notes: string | undefined) => {
-            return `Write a clean HTML document about "${title}".
-    Description: "${description || ""}"
-    Additional Notes: "${notes || ""}"
-      Include inline CSS. Output ONLY raw HTML starting with <!DOCTYPE html>.`;
-        }
-        const prompt = buildSlidePrompt(topicTitle, topicDescription, notes);
+        if (!topicTitle) return res.status(400).json({ message: "topicTitle is required" });
+
+        const userId = (req as any).user?.id ?? null;
+
+        const prompt = `You are a professional document designer. Create a complete, self-contained HTML document about "${topicTitle}".
+Topic description: "${topicDescription || ""}"
+User style request: "${notes || "standard educational document"}"
+
+Design rules you MUST follow:
+1. The user's style request above overrides everything — if they say "dark background", use dark colours; if "minimalist", strip all decorations. However, default to a PLAIN WHITE background for the body. ABSOLUTELY NO PURPLE BORDERS, no colorful sidebars, and no "AI purple" colors unless EXPLICITLY requested. Keep it strictly professional, black/dark-gray text on white backgrounds.
+2. Embed ALL CSS inside a <style> tag in <head>. No external libraries.
+3. Include real educational content — headings, paragraphs, lists, tables, and inline SVG diagrams/charts wherever they add value.
+4. To include REAL copyright-free images from the open internet, use '<img src="https://loremflickr.com/800/600/{keyword}" alt="..." />' where {keyword} is a single English word describing the photo (e.g. "chemistry"). Do this generously where it adds value.
+5. Layout must be print-friendly (professional A4 proportions, max-width ~900px, readability is priority).
+6. CSS PRINT RULES: You MUST include CSS rules to prevent awkward page breaks. Use \`page-break-inside: avoid;\` and \`break-inside: avoid;\` on ALL containers, boxes, tables, and list items. Keep padding reasonable (e.g. 15-20px max for boxes, small margins) so it doesn't waste space.
+7. Start the document with <!DOCTYPE html> and end with </html>.
+8. CRITICAL: Keep the document concise. Do NOT exceed 2000 words total. If you write too much, the output will truncate and fail.
+9. ALWAYS include a section at the very end titled "Sources & References" (or similar in the relevant language) citing a few realistic or actual sources (URLs, books) for the generated content.
+10. Respond ONLY with a valid JSON object in this EXACT format (no markdown):
+
+{
+  "chat_message": "A short, friendly conversational message saying here is the PDF.",
+  "content": "<!DOCTYPE html><html>...</html>"
+}`;
+
         const aiResponse = await runModel(prompt);
-        const html = buildPdfHtmlShell(topicTitle, topicDescription, aiResponse);
-        if (!html.toLowerCase().includes("<html")) {
-            return res.status(502).json({
-                message: "AI returned invalid HTML. Please retry.",
-            });
+        console.log("----- AI PDF RAW RESPONSE -----");
+        console.log(aiResponse);
+        console.log("-------------------------------");
+
+        const parsed = extractJsonWrapper(aiResponse);
+        if (!parsed || typeof parsed.content !== "string") {
+            return res.status(502).json({ message: "AI returned invalid JSON structure. Please retry." });
         }
 
-        const browser = await puppeteer.launch({ args: ['--no-sandbox'] });
+        const chatMessage = parsed.chat_message || "Here is your PDF document!";
+        let html = stripMarkdownFences(parsed.content);
+
+        // DB persistence
+        const savedRequest = await AiRepo.saveRequest(userId, prompt, "pdf").catch(() => null);
+        if (savedRequest) {
+            AiRepo.saveContent(savedRequest._id as any, "pdf", {
+                title: topicTitle,
+                htmlLength: html.length,
+            }).catch(() => null);
+        }
+
+        if (!html.toLowerCase().includes("<html")) {
+            html = `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${topicTitle}</title></head><body>${html}</body></html>`;
+        }
+
+        if (!html.toLowerCase().includes("<html")) {
+            return res.status(502).json({ message: "AI returned invalid HTML. Please retry." });
+        }
+
+        const browser = await puppeteer.launch({ args: ["--no-sandbox"] });
         const page = await browser.newPage();
         await page.setViewport({ width: 1440, height: 1920, deviceScaleFactor: 2 });
-        await page.setContent(html, { waitUntil: 'networkidle0' });
-        await page.emulateMediaType('screen');
+        await page.setContent(html, { waitUntil: "networkidle0" });
+        await page.emulateMediaType("screen");
         const pdfBuffer = await page.pdf({
-            format: 'A4', printBackground: true,
-            margin: { top: '1cm', bottom: '1cm', left: '1cm', right: '1cm' }
+            format: "A4",
+            printBackground: true,
+            margin: { top: "1.5cm", bottom: "1.5cm", left: "1.5cm", right: "1.5cm" },
         });
         await browser.close();
 
-        res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', 'attachment; filename="document.pdf"');
-        res.send(pdfBuffer);
-
+        // Return dual response: chat message + base64 file data
+        return res.json({
+            message: chatMessage,
+            fileBase64: Buffer.from(pdfBuffer).toString('base64'),
+        });
     } catch (error) {
         next(error);
     }
 });
+
+// ─── History — Teacher ────────────────────────────────────────────────────────
+/**
+ * GET /teacher/ai-history
+ * Returns all AI requests made by the currently authenticated teacher.
+ */
+route.get("/teacher/ai-history", verifyRole.verifyTeacher, async (req, res, next) => {
+    try {
+        const userId = (req as any).user?.id;
+        if (!userId) return res.status(400).json({ message: "User ID not found in token" });
+
+        const requests = await AiRepo.getRequestsByUser(userId);
+        return res.json({ data: requests });
+    } catch (error) {
+        next(error);
+    }
+});
+
+// ─── History — Admin / Moderator ─────────────────────────────────────────────
+/**
+ * GET /admin/ai-history?page=1
+ * Returns all AI requests, paginated. Admin and moderator access.
+ */
+route.get("/admin/ai-history", verifyRole.verifyAdminOrModerator, async (req, res, next) => {
+    try {
+        const page = Math.max(1, Number(req.query.page as string) || 1);
+        const result = await AiRepo.getAllRequests(page);
+        return res.json(result);
+    } catch (error) {
+        next(error);
+    }
+});
+
+/**
+ * GET /admin/ai-history/:requestId/content
+ * Returns the AiContent record(s) for a specific AI request. Admin and moderator access.
+ */
+route.get("/admin/ai-history/:requestId/content", verifyRole.verifyAdminOrModerator, async (req, res, next) => {
+    try {
+        const { requestId } = req.params;
+        const content = await AiRepo.getContentByRequest(String(requestId));
+        return res.json({ data: content });
+    } catch (error) {
+        next(error);
+    }
+});
+
 export default route;

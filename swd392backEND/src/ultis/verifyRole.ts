@@ -98,24 +98,8 @@ class VerifyRole {
             return res.status(403).json({ message: "Forbidden: Invalid token" });
         }
     }
-    
-    async verifyAdminOrModerator(req: Request, res: Response, next: NextFunction) {
-        try {
-            const token = req.signedCookies.Authorization;
-            const user = await UserService.getUserByToken(token as string);
-            const verified = UserGetFromTokenSchema.parse(user);
 
-            const admin = await Admin.findOne({ user_id: verified.id });
-            if (admin && (admin.authorization_lvl === 1 || admin.authorization_lvl === 2)) {
-                req.user = verified;
-                req.admin = admin;
-                return next();
-            }
-            return res.status(403).json({ message: "Forbidden: Admins or Moderators only" });
-        } catch (error) {
-            return res.status(403).json({ message: "Forbidden: Invalid token" });
-        }
-    }
+
     async verifyStudent(req: Request, res: Response, next: NextFunction) {// verify if the user is a student
         try {
             const token = req.signedCookies?.Authorization;
