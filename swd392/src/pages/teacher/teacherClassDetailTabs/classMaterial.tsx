@@ -7,7 +7,7 @@ import {
   Quiz,
   AutoAwesome,
 } from "@mui/icons-material";
-import { type Topic, type ClassMaterialType, type ClassMaterial, } from "../../../types/teacherType";
+import { type Topic, type ClassMaterialType, type ClassMaterial } from "../../../types/teacherType";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import CreateClassMaterialModal from "../../../components/CreateClassMaterialModal";

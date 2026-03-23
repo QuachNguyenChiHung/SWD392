@@ -16,7 +16,7 @@ import {
 } from "@mui/icons-material";
 import { useState, useEffect } from "react";
 import type { Quiz as QuizType, Question } from "../../types/teacherType";
-import { quizAttemptResultApiService, type QuizAttemptWithResults } from "../../services/teacherApi/materialApi/quizAttemptResultApi";
+import {quizAttemptResultApiService, type QuizAttemptWithResults} from "../../services/teacherApi/materialApi/quizAttemptResultApi";
 import QuizAttemptResultsTable from "./QuizAttemptResultsTable";
 import { COLORS, RADIUS, tableContainer, tableBodyRow, flatChip } from "../../pages/teacher/teacherStyles";
 

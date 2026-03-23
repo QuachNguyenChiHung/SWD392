@@ -1,3 +1,4 @@
+import { type Student } from "../../../types/teacherType";
 import {
     Paper,
     TableContainer,
@@ -10,7 +11,6 @@ import {
     Typography,
 } from "@mui/material";
 import type { SxProps, Theme } from "@mui/material";
-import { type Student } from "../../../types/teacherType";
 import { useState, useEffect } from "react";
 import { classMaterialProgressionApi } from "../../../services/teacherApi/classMaterialProgressionApi";
 import {

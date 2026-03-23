@@ -1,3 +1,4 @@
+import { type Student, type Class } from "../../../types/teacherType";
 import {
   Typography,
   Stack,
@@ -15,7 +16,6 @@ import {
   Box,
 } from "@mui/material";
 import { Add } from "@mui/icons-material";
-import { type Student, type Class } from "../../../types/teacherType";
 import { useState, useEffect } from "react";
 import { enrollStudentApi } from "../../../services/teacherApi/enrollStudentApi";
 import StudentProgress from "./studentProgress";

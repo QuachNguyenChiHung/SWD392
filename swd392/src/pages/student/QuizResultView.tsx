@@ -47,7 +47,7 @@ const QuizResultView = () => {
   const [score, setScore] = useState<Score | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [quizId, setQuizId] = useState<string | null>(null);
+  const [_quizId, setQuizId] = useState<string | null>(null);
   const [maxAttempts, setMaxAttempts] = useState<number>(999);
   const [attemptCount, setAttemptCount] = useState<number>(0);
   const timestamp = searchParams.get('t');
@@ -149,7 +149,7 @@ const QuizResultView = () => {
   if (error) {
     return (
       <Box sx={{ p: 4 }}>
-        <Button startIcon={<ArrowBack />} onClick={() => navigate(classId ? `/student/class/${classId}` : -1)} sx={{ mb: 3 }}>
+        <Button startIcon={<ArrowBack />} onClick={() => classId ? navigate(`/student/class/${classId}`) : navigate(-1)} sx={{ mb: 3 }}>
           Quay lại
         </Button>
         <Alert severity="error">{error}</Alert>
@@ -173,7 +173,7 @@ const QuizResultView = () => {
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ width: { xs: '100%', md: 'auto' } }}>
           <Button
             startIcon={<ArrowBack />}
-            onClick={() => navigate(classId ? `/student/class/${classId}` : -1)}
+            onClick={() => classId ? navigate(`/student/class/${classId}`) : navigate(-1)}
             sx={{ textTransform: 'none', fontWeight: 700, color: '#12344d' }}
           >
             Quay lại
