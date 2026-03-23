@@ -304,6 +304,7 @@ class ClassController {
         try {
             const { id } = req.params;
             const updateData = updateClassSchema.parse(req.body);
+            delete (updateData as any).course_id; // Prevent updating course_id
             const teacher_id = req.teacher?._id?.toString();
             const updatedClass = await ClassService.updateClass(id as string, updateData, teacher_id as string);
             if ((updatedClass as any).error) {
