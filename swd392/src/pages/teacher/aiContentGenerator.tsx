@@ -8,16 +8,10 @@ import {
     Divider,
     Grid,
     TextField,
-    IconButton,
     List,
     ListItem,
-    ListItemText,
     Avatar,
     CircularProgress,
-    Select,
-    MenuItem,
-    FormControl,
-    InputLabel,
     Card,
     CardContent,
 } from "@mui/material";
@@ -25,7 +19,6 @@ import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 import {
     ArrowBack,
-    Send,
     SmartToy,
     Person,
     Description,
@@ -33,12 +26,11 @@ import {
     ViewInAr,
     Quiz,
     AutoAwesome,
-    Add,
 } from "@mui/icons-material";
 import { useState, useRef, useEffect } from "react";
 import type { ReactElement } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import type { ClassMaterial, ClassMaterialType, Quiz as QuizType, Question } from "../../types/teacherType";
+import type { ClassMaterial, ClassMaterialType, } from "../../types/teacherType";
 import MaterialTypeViewer from "../../components/MaterialTypeViewer";
 import QuizForm from "../../components/createMaterial/QuizForm";
 import chadApi from "../../services/teacherApi/chadApi";
@@ -128,11 +120,11 @@ Description: ${state.topic.description}
         },
     ]);
 
-    const [inputValue, setInputValue] = useState("");
+
     const [isLoading, setIsLoading] = useState(false);
     const [generatedMaterials, setGeneratedMaterials] = useState<ClassMaterial[]>([]);
     const [selectedContentType, setSelectedContentType] = useState<ClassMaterialType | "">("");
-    const [showGenerationForm, setShowGenerationForm] = useState(false);
+
     const [quizPreview, setQuizPreview] = useState<null | { title: string; questions: FrontendQuestionData[] }>(null);
     const [quizTitle, setQuizTitle] = useState<string>("");
     const [quizType, setQuizType] = useState<'interactive' | 'standard'>('interactive');
@@ -155,80 +147,9 @@ Description: ${state.topic.description}
 
     // ─── Handlers ───────────────────────────────────────────────────────────────
 
-    const handleSendMessage = async () => {
 
 
-        // Simulate AI response delay
 
-        try {
-            if (!inputValue.trim() || isLoading) return;
-
-            const userMessage: ChatMessage = {
-                id: Date.now().toString(),
-                content: inputValue,
-                sender: "user",
-                timestamp: new Date(),
-            };
-
-            // include the new user message when sending to the API
-            const payload = [...messages, userMessage];
-            setMessages(payload);
-            setInputValue("");
-            setIsLoading(true);
-
-            const p = await chadApi.getChadResponse(payload);
-            console.log("API response", JSON.parse(p.message));
-            // apiService returns response.data, so p is the data object
-            const s = p?.message;
-            const aiResponse: ChatMessage = {
-                id: (Date.now() + 1).toString(),
-                content: s ?? "",
-                sender: "assistant",
-                timestamp: new Date(),
-            };
-            setMessages(prev => [...prev, aiResponse]);
-            setIsLoading(false);
-
-        } catch (error) {
-            console.error("Error getting AI response:", error);
-            setIsLoading(false);
-        }
-
-    };
-
-    const generateAIResponse = (userInput: string): string => {
-        const responses = [
-            "I understand you'd like to create content. Could you provide more details about what specific material you need?",
-            "That's a great idea! Let me help you create that content. What subject area should we focus on?",
-            "I can help you with that. Would you prefer to create a quiz, slide presentation, document, or 2D visualization?",
-            "Excellent! I'll help you generate that content. Please provide more context about your requirements.",
-            "That sounds interesting! Let me know the target audience and learning objectives for better customization.",
-        ];
-        return responses[Math.floor(Math.random() * responses.length)];
-    };
-
-    const handleGenerateContent = async () => {
-        if (!selectedContentType) return;
-
-        setIsLoading(true);
-
-        // Simulate content generation delay
-        setTimeout(() => {
-            // TODO: Replace with actual AI content generation
-            // const newMaterial = generateMockMaterial(generationRequest);
-            // setGeneratedMaterials(prev => [...prev, newMaterial]);
-
-            const aiMessage: ChatMessage = {
-                id: Date.now().toString(),
-                content: `I've successfully generated a ${TYPE_META[selectedContentType].label.toLowerCase()} based on our conversation. You can see it in the content display panel on the left. Would you like me to create anything else?`,
-                sender: "assistant",
-                timestamp: new Date(),
-            };
-
-            setMessages(prev => [...prev, aiMessage]);
-            setIsLoading(false);
-        }, 2000);
-    };
 
     // buildQuizPrompt removed — quiz prompt construction now happens server-side
 
@@ -298,9 +219,7 @@ Description: ${state.topic.description}
                     try { parsed = JSON.parse(jsonText); isParsed = true; } catch (er) { parsed = null; }
                 }
             }
-            if (parsed) {
-                alert('AI response parsed successfully. Preview will be generated based on the content. Please review the questions and edit as needed before saving.');
-            }
+
             if (parsed && Array.isArray(parsed.questions)) {
                 const questionsRaw = parsed.questions.slice(0, remaining);
                 const newQuestions: FrontendQuestionData[] = questionsRaw.map((q: any) => {
@@ -356,12 +275,12 @@ Description: ${state.topic.description}
                 setQuizPreview({ title: derivedTitle, questions: shuffled });
                 setQuizTitle(derivedTitle);
                 // Validate distribution and warn if AI did not obey counts
-                const actualTF = (quizPreview?.questions || []).filter(q => Array.isArray(q.options) && q.options.length === 2 && q.options.includes('True') && q.options.includes('False')).length;
-                const actualMC = (quizPreview?.questions || []).length - actualTF;
-                if (typeof quizQuestionCount === 'number') {
-                    const desiredTF = quizTFCount;
-                    const desiredMC = quizMCCount;
-                }
+                // const actualTF = (quizPreview?.questions || []).filter(q => Array.isArray(q.options) && q.options.length === 2 && q.options.includes('True') && q.options.includes('False')).length;
+                // const actualMC = (quizPreview?.questions || []).length - actualTF;
+                // if (typeof quizQuestionCount === 'number') {
+                //     const desiredTF = quizTFCount;
+                //     const desiredMC = quizMCCount;
+                // }
             } else {
                 const derivedTitle = `Quiz on ${state.topic.title}`;
                 setQuizPreview(prev => ({ title: derivedTitle, questions: prev?.questions || [] }));
@@ -494,12 +413,12 @@ Description: ${state.topic.description}
         setQuizEndDate("");
     }
 
-    const handleKeyPress = (event: React.KeyboardEvent) => {
-        if (event.key === "Enter" && !event.shiftKey) {
-            event.preventDefault();
-            handleSendMessage();
-        }
-    };
+    // const handleKeyPress = (event: React.KeyboardEvent) => {
+    //     if (event.key === "Enter" && !event.shiftKey) {
+    //         event.preventDefault();
+    //         handleSendMessage();
+    //     }
+    // };
 
     // ─── Render ─────────────────────────────────────────────────────────────────
 
@@ -834,27 +753,7 @@ Description: ${state.topic.description}
                                     </List>
                                 </Box>
 
-                                {/* Input
-                                <Stack direction="row" spacing={1}>
-                                    <TextField
-                                        size="small"
-                                        placeholder={`Describe the ${selectedContentType ? TYPE_META[selectedContentType].label.toLowerCase() : 'content'} you want to create...`}
-                                        value={inputValue}
-                                        onChange={(e) => setInputValue(e.target.value)}
-                                        onKeyPress={handleKeyPress}
-                                        disabled={isLoading}
-                                        multiline
-                                        maxRows={3}
-                                        sx={{ flex: 1 }}
-                                    />
-                                    <IconButton
-                                        color="primary"
-                                        onClick={handleSendMessage}
-                                        disabled={!inputValue.trim() || isLoading}
-                                    >
-                                        <Send />
-                                    </IconButton>
-                                </Stack> */}
+                                {/* input handled via chat flow; UI input removed for now */}
                             </>
                         )}
                     </Paper>
