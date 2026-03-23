@@ -1,4 +1,5 @@
-import { Box, Typography, Stack, Paper, Grid, Tabs, Tab, CircularProgress, Alert } from "@mui/material";
+import { Box, Typography, Stack, Paper, Grid, Tabs, Tab, CircularProgress, Alert, IconButton } from "@mui/material";
+import { Visibility, VisibilityOff } from "@mui/icons-material";
 import type { Class, Topic, Student } from "../../types/teacherType";
 import ClassMaterial from "./teacherClassDetailTabs/classMaterial";
 import StudentList from "./teacherClassDetailTabs/studentList";
@@ -27,6 +28,7 @@ const TeacherClassDetail = () => {
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showKeypass, setShowKeypass] = useState(false);
 
   useEffect(() => {
     const fetchClassData = async () => {
@@ -187,7 +189,40 @@ const TeacherClassDetail = () => {
               Tổng quan lớp học
             </Typography>
             <Box>
-              {detailRow("Mã khoá học", classData.course_name)}
+              <Box
+                sx={{
+                  display: "flex",
+                  py: 1,
+                  borderBottom: `1px solid ${COLORS.borderLight}`,
+                  alignItems: "center",
+                }}
+              >
+                <Typography
+                  sx={{
+                    width: 130,
+                    flexShrink: 0,
+                    fontWeight: 700,
+                    fontSize: "0.7rem",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.08em",
+                    color: COLORS.textSecondary,
+                  }}
+                >
+                  Mã khóa học
+                </Typography>
+                <Stack direction="row" alignItems="center" spacing={1}>
+                  <Typography sx={{ fontSize: "0.875rem", color: COLORS.textDark, letterSpacing: showKeypass ? "normal" : "0.2em", mt: showKeypass ? 0 : 0.5 }}>
+                    {showKeypass ? classData.keypass : "••••••••"}
+                  </Typography>
+                  <IconButton
+                    size="small"
+                    onClick={() => setShowKeypass(!showKeypass)}
+                    sx={{ p: 0.25, color: COLORS.textSecondary }}
+                  >
+                    {showKeypass ? <VisibilityOff sx={{ fontSize: 16 }} /> : <Visibility sx={{ fontSize: 16 }} />}
+                  </IconButton>
+                </Stack>
+              </Box>
               {detailRow("Học sinh", String(students.length))}
               {detailRow("Ngày tạo", new Date(classData.date_create).toLocaleDateString())}
               {detailRow("Trạng thái", classData.status)}

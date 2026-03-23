@@ -226,10 +226,10 @@ export default function QuestionManager({ questions, onChange, quizType }: Quest
                             }}
                         >
                             <Stack direction="row" alignItems="center" spacing={2} sx={{ width: '100%' }}>
-                                <Typography variant="subtitle1" sx={{ color: COLORS.textDark, fontWeight: 600 }}>
+                                <Typography variant="subtitle1" sx={{ color: COLORS.textDark, fontWeight: 600, flex: 1 }}>
                                     Câu {index + 1}: {question.title || "Chưa có nội dung"}
                                 </Typography>
-                                <Box sx={{ ml: 'auto', display: 'flex', gap: 1 }}>
+                                <Box sx={{ display: 'flex', gap: 1 }}>
                                     <Chip
                                         label={
                                             question.type === 'multiple_choice' ? 'Trắc nghiệm' : 'Đúng/Sai'
@@ -345,11 +345,10 @@ export default function QuestionManager({ questions, onChange, quizType }: Quest
                                                         label={`Lựa chọn ${optionIndex + 1}`}
                                                         value={option}
                                                         onChange={(e) => updateQuestionOption(question.tempId, optionIndex, e.target.value)}
-                                                        fullWidth
                                                         size="small"
-                                                        sx={inputSx}
+                                                        sx={{ flex: 1, ...inputSx }}
                                                     />
-                                                    <Stack direction="row" spacing={1} alignItems="center" sx={{ ml: "auto" }}>
+                                                    <Stack direction="row" spacing={1} alignItems="center">
                                                         <Button
                                                             variant={question.correct_index === optionIndex ? "contained" : "outlined"}
                                                             size="small"

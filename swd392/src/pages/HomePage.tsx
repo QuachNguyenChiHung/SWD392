@@ -134,11 +134,9 @@ const HomePage = () => {
         position="fixed"
         elevation={0}
         sx={{
-          background: 'rgba(15, 23, 42, 0.88)',
-          backdropFilter: 'blur(20px)',
-          WebkitBackdropFilter: 'blur(20px)',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-          boxShadow: '0 4px 30px rgba(0, 0, 0, 0.15)',
+          background: 'linear-gradient(130deg, #0f4c81 0%, #1b6cb5 58%, #2d8bd4 100%)',
+          borderBottom: '1px solid rgba(255,255,255,0.2)',
+          boxShadow: '0 10px 24px rgba(12, 56, 97, 0.24)',
         }}
       >
         <Container maxWidth="lg">
@@ -151,16 +149,14 @@ const HomePage = () => {
               sx={{ cursor: 'pointer', '&:hover': { opacity: 0.85 }, transition: 'opacity 0.2s' }}
               onClick={() => navigate('/')}
             >
-              <Science sx={{ color: '#38bdf8', fontSize: 26 }} />
+              <Science sx={{ color: '#fff', fontSize: 26 }} />
               <Typography
                 sx={{
                   fontWeight: 800,
-                  fontSize: '1.05rem',
+                  fontSize: '1.25rem',
                   fontFamily: '"Space Grotesk", sans-serif',
-                  letterSpacing: '-0.02em',
-                  background: 'linear-gradient(135deg, #e0f2fe 0%, #38bdf8 100%)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
+                  letterSpacing: '-0.01em',
+                  color: '#fff',
                 }}
               >
                 Hóa học THPT
@@ -199,11 +195,12 @@ const HomePage = () => {
                       textTransform: 'none',
                       px: 2.5,
                       borderRadius: 2,
-                      background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                      boxShadow: '0 2px 12px rgba(16,185,129,0.35)',
+                      background: '#fff',
+                      color: '#1b6cb5',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
                       '&:hover': {
-                        background: 'linear-gradient(135deg, #34d399 0%, #10b981 100%)',
-                        boxShadow: '0 4px 20px rgba(16,185,129,0.45)',
+                        background: '#f0f7ff',
+                        boxShadow: '0 6px 16px rgba(0,0,0,0.15)',
                       },
                     }}
                   >
@@ -221,11 +218,12 @@ const HomePage = () => {
                       textTransform: 'none',
                       px: 2.5,
                       borderRadius: 2,
-                      background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                      boxShadow: '0 2px 12px rgba(16,185,129,0.35)',
+                      background: '#fff',
+                      color: '#1b6cb5',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
                       '&:hover': {
-                        background: 'linear-gradient(135deg, #34d399 0%, #10b981 100%)',
-                        boxShadow: '0 4px 20px rgba(16,185,129,0.45)',
+                        background: '#f0f7ff',
+                        boxShadow: '0 6px 16px rgba(0,0,0,0.15)',
                       },
                     }}
                   >

@@ -9,9 +9,11 @@ import {
   Stack,
   Select,
   MenuItem,
+  TextField,
+  CircularProgress
 } from "@mui/material";
 import { Link as RouterLink } from "react-router-dom";
-import { Visibility, VisibilityOff } from "@mui/icons-material";
+import { Visibility, VisibilityOff, Edit, Check, Close } from "@mui/icons-material";
 import type { Class } from "../../types/teacherType";
 import { useEffect } from "react";
 import {
@@ -28,6 +30,7 @@ interface ClassTableRowProps extends Class {
     status: "active" | "inactive" | "archived" | "deleted",
   ) => void;
   onChangeImage?: (classItem: Class) => void;
+  onEditName?: (classId: string, newName: string) => Promise<void>;
 }
 
 const maskKey = (key: string) => "•".repeat(Math.max(4, key.length));
@@ -51,21 +54,93 @@ const ClassTableRow = ({
   date_update,
   onStatusChange,
   onChangeImage,
+  onEditName,
 }: ClassTableRowProps) => {
   const [showKey, setShowKey] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState<"active" | "inactive" | "archived" | "deleted">(status);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editName, setEditName] = useState(class_name);
+  const [isSavingName, setIsSavingName] = useState(false);
   const createdAt = formatDate(date_create);
 
   useEffect(() => {
     setSelectedStatus(status);
   }, [status]);
 
+  const handleClickSaveName = async () => {
+    if (!editName.trim() || editName.trim() === class_name) {
+      setIsEditingName(false);
+      setEditName(class_name);
+      return;
+    }
+    try {
+      setIsSavingName(true);
+      if (onEditName) await onEditName(_id, editName.trim());
+      setIsEditingName(false);
+    } catch (err) {
+      setEditName(class_name);
+    } finally {
+      setIsSavingName(false);
+    }
+  };
+
   return (
     <TableRow sx={tableBodyRow}>
       <TableCell>
-        <Typography sx={{ fontWeight: 600, fontSize: "0.875rem", color: COLORS.textDark }}>
-          {class_name}
-        </Typography>
+        {isEditingName ? (
+          <Stack direction="row" spacing={0.5} alignItems="center">
+            <TextField
+              size="small"
+              value={editName}
+              onChange={(e) => setEditName(e.target.value)}
+              disabled={isSavingName}
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleClickSaveName();
+                if (e.key === "Escape") {
+                  setIsEditingName(false);
+                  setEditName(class_name);
+                }
+              }}
+              sx={{ minWidth: 160, '& .MuiOutlinedInput-root': { borderRadius: RADIUS, fontSize: '0.875rem', py: 0, height: 32 } }}
+            />
+            {isSavingName ? (
+              <CircularProgress size={16} sx={{ ml: 1 }} />
+            ) : (
+              <>
+                <IconButton size="small" color="success" onClick={handleClickSaveName} sx={{ p: 0.5 }}>
+                  <Check fontSize="small" />
+                </IconButton>
+                <IconButton size="small" color="error" onClick={() => {
+                  setIsEditingName(false);
+                  setEditName(class_name);
+                }} sx={{ p: 0.5 }}>
+                  <Close fontSize="small" />
+                </IconButton>
+              </>
+            )}
+          </Stack>
+        ) : (
+          <Stack direction="row" spacing={1} alignItems="center">
+            <Typography sx={{ fontWeight: 600, fontSize: "0.875rem", color: COLORS.textDark }}>
+              {class_name}
+            </Typography>
+            <IconButton 
+              size="small" 
+              onClick={() => {
+                setEditName(class_name);
+                setIsEditingName(true);
+              }} 
+              sx={{ 
+                color: COLORS.textSecondary, 
+                padding: 0.5,
+                '&:hover': { color: COLORS.accent, bgcolor: COLORS.accentLight }
+              }}
+            >
+              <Edit sx={{ fontSize: 16 }} />
+            </IconButton>
+          </Stack>
+        )}
       </TableCell>
       <TableCell>
         <Typography

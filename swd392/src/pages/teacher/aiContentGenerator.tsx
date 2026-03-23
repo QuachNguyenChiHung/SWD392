@@ -8,9 +8,6 @@ import {
     Grid,
     TextField,
     IconButton,
-    List,
-    ListItem,
-    ListItemText,
     Avatar,
     Tooltip,
     CircularProgress,
@@ -22,7 +19,6 @@ import {
     SmartToy,
     Description,
     Slideshow,
-    ViewInAr,
     Quiz,
     Send,
     ContentCopy,
@@ -31,7 +27,7 @@ import {
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ReactElement } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import type { ClassMaterial, ClassMaterialType, Quiz as QuizType, Question, CreateClassMaterialDTO } from "../../types/teacherType";
+import type { ClassMaterial, ClassMaterialType, CreateClassMaterialDTO } from "../../types/teacherType";
 import MaterialTypeViewer from "../../components/MaterialTypeViewer";
 import chadApi from "../../services/teacherApi/chadApi";
 import CreateClassMaterialModal from "../../components/CreateClassMaterialModal";
@@ -57,7 +53,7 @@ type ChatMessage = {
     content: string;
 };
 
-const TYPE_META: Record<
+const TYPE_META: Partial<Record<
     ClassMaterialType,
     {
         label: string;
@@ -66,7 +62,7 @@ const TYPE_META: Record<
         icon: ReactElement;
         description: string;
     }
-> = {
+>> = {
     file: {
         label: "File",
         bg: COLORS.infoBg,
@@ -80,13 +76,6 @@ const TYPE_META: Record<
         text: COLORS.accent,
         icon: <Slideshow fontSize="small" />,
         description: "Generate presentation slides",
-    },
-    "2d_render": {
-        label: "2D Render",
-        bg: "#F5F3FF",
-        text: "#7C3AED",
-        icon: <ViewInAr fontSize="small" />,
-        description: "Generate 2D data preview",
     },
     quiz: {
         label: "Quiz",
@@ -122,27 +111,14 @@ export default function AiContentGenerator() {
         {
             id: crypto.randomUUID(),
             sender: "assistant",
-            content: `Hello, what do you want today bro?`,
+            content: `Hello! How can I assist you with generating class materials today?`,
         },
     ]);
     const [input, setInput] = useState("");
     const [isChatLoading, setIsChatLoading] = useState(false);
 
-    const [inputValue, setInputValue] = useState("");
-    const [isLoading, setIsLoading] = useState(false);
-    const [generatedMaterials, setGeneratedMaterials] = useState<ClassMaterial[]>([]);
+
     const [selectedContentType, setSelectedContentType] = useState<ClassMaterialType | "">("");
-    const [showGenerationForm, setShowGenerationForm] = useState(false);
-    const [quizPreview, setQuizPreview] = useState<null | { title: string; questions: any[] }>(null);
-    const [quizTitle, setQuizTitle] = useState<string>("");
-    const [quizType, setQuizType] = useState<'interactive' | 'standard'>('interactive');
-    const [isSavingQuiz, setIsSavingQuiz] = useState(false);
-    const [quizMaxAttempts, setQuizMaxAttempts] = useState<number | "">(3);
-    const [quizStartDate, setQuizStartDate] = useState<string>("");
-    const [quizEndDate, setQuizEndDate] = useState<string>("");
-    const [quizQuestionCount, setQuizQuestionCount] = useState<number | "">(5);
-    const [quizTFCount, setQuizTFCount] = useState<number>(0);
-    const [quizMCCount, setQuizMCCount] = useState<number>(5);
 
     // Restored Original Application State
     const [quizCount, setQuizCount] = useState(5);
@@ -306,18 +282,6 @@ export default function AiContentGenerator() {
 
         const promptForPreview = overridePrompt ?? latestUserPrompt;
 
-        // Fisher-Yates shuffle helper
-        const shuffleArray = <T,>(arr: T[]) => {
-            const a = arr.slice();
-            for (let i = a.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                const tmp = a[i];
-                a[i] = a[j];
-                a[j] = tmp;
-            }
-            return a;
-        }
-
         setPreviewError("");
         setIsPreviewLoading(true);
 
@@ -434,31 +398,6 @@ export default function AiContentGenerator() {
                     });
                     return result?.message || "Quiz generated successfully.";
                 }
-                case "2d_render": {
-                    setAiPreviewMaterial({
-                        _id: `preview-2d-${Date.now()}`,
-                        status: "draft",
-                        type: "2d_render",
-                        order_num: 0,
-                        class_assign_id: classId || "",
-                        title: `2D Preview - ${topicTitle}`,
-                        dateUpdate: new Date(),
-                        dateCreate: new Date(),
-                        content: {
-                            render_data: JSON.stringify(
-                                {
-                                    topic: topicTitle,
-                                    notes: promptForPreview || "No additional prompt",
-                                },
-                                null,
-                                2,
-                            ),
-                        },
-                        is_ai_material: true,
-                        ai_content_id: null,
-                    });
-                    return "2D render preview generated.";
-                }
                 default:
                     break;
             }
@@ -474,20 +413,6 @@ export default function AiContentGenerator() {
         setCreateModalOpen(false);
     };
 
-    const resetQuizPreview = () => {
-        setQuizPreview(null);
-        setQuizTitle("");
-        setQuizMaxAttempts(3);
-        setQuizStartDate("");
-        setQuizEndDate("");
-    }
-
-    const handleKeyPress = (event: React.KeyboardEvent) => {
-        if (event.key === "Enter" && !event.shiftKey) {
-            event.preventDefault();
-            handleSend();
-        }
-    };
 
     const inputSx = {
         "& .MuiOutlinedInput-root": {
@@ -660,6 +585,7 @@ export default function AiContentGenerator() {
                         <Stack direction="row" spacing={1} sx={{ mb: 2, flexWrap: "wrap" }}>
                             {(Object.keys(TYPE_META) as ClassMaterialType[]).map((type) => {
                                 const meta = TYPE_META[type];
+                                if (!meta) return null;
                                 const isSelected = selectedContentType === type;
                                 return (
                                     <Chip

@@ -18,6 +18,7 @@ import {
   pageTitle,
   flatButtonContained,
   flatButtonOutlined,
+  COLORS,
   RADIUS,
 } from "../pages/teacher/teacherStyles";
 
@@ -172,9 +173,9 @@ export default function MaterialEditModal({
             sx={{
               mb: 3,
               p: 2,
-              border: "1px solid #D6E7F4",
+              border: `1px solid ${COLORS.border}`,
               borderRadius: RADIUS,
-              bgcolor: "#F6FBFF",
+              bgcolor: COLORS.bg,
             }}
           >
             <Typography sx={sectionLabel}>Edit</Typography>
@@ -184,7 +185,7 @@ export default function MaterialEditModal({
             >
               Chỉnh sửa tài liệu
             </Typography>
-            <Typography sx={{ fontSize: "0.85rem", color: "#31536B" }}>
+            <Typography sx={{ fontSize: "0.85rem", color: COLORS.textSecondary }}>
               Cập nhật thông tin và nội dung cho tài liệu hiện tại.
             </Typography>
           </Box>
@@ -192,7 +193,7 @@ export default function MaterialEditModal({
           <Box
             sx={{
               p: 2,
-              border: "1px solid #D6E7F4",
+              border: `1px solid ${COLORS.border}`,
               borderRadius: RADIUS,
               bgcolor: "#fff",
             }}

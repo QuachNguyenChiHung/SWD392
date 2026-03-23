@@ -254,6 +254,17 @@ const TeacherClasses = () => {
     }
   };
 
+  const handleEditClassName = async (classId: string, newName: string) => {
+    try {
+      await teacherClassApi.updateClass(classId, { class_name: newName });
+      await fetchClasses(page, showDeleted);
+    } catch (err) {
+      console.error('Error updating class name:', err);
+      alert('Không thể cập nhật tên lớp học. Vui lòng thử lại.');
+      throw err;
+    }
+  };
+
   const handleUpdateClassImage = async () => {
     if (!selectedClassForImage) return;
 
@@ -366,6 +377,7 @@ const TeacherClasses = () => {
                   {...classItem}
                   onStatusChange={handleStatusChange}
                   onChangeImage={handleOpenImageModal}
+                  onEditName={handleEditClassName}
                 />
               ))
             )}
