@@ -4,9 +4,9 @@ export interface Class {
   keypass: string;
   course_id: string;
   teacher_id: string;
-  img_cover_link: string;
+  img_cover_link?: string | null;
   date_create: Date;
-  status: "active" | "inactive" | "archived";
+  status: "active" | "inactive" | "archived" | "deleted";
   course_name: string;
   description?: string;
   image_cover_id?: string;
@@ -17,12 +17,15 @@ export interface CreateClassData {
   class_name: string;
   description?: string;
   course_id: string;
+  img_cover_link?: string;
 }
 
 export interface UpdateClassData {
   class_name?: string;
   description?: string;
   course_id?: string;
+  status?: "active" | "inactive" | "archived" | "deleted";
+  img_cover_link?: string;
 }
 
 export interface ClassCompletionStat {
@@ -91,6 +94,7 @@ export interface ClassMaterial {
   title: string;
   dateUpdate: Date | null;
   dateCreate: Date;
+  content_id?: string;
   content: FileMaterial | SlideMaterial | Render2DMaterial | Quiz;
   is_ai_material: boolean;
   ai_content_id: string | null;
@@ -104,10 +108,11 @@ export interface FileMaterial {
 // Question interface
 export interface Question {
   _id?: string;
-  content: string;
-  type: "multiple-choice" | "true-false";
-  options?: string[];
-  correctAnswer: string | string[];
+  quiz_id?: string;
+  title: string;
+  type: "multiple_choice" | "true_false";
+  options: string[];
+  correct_index: number;
   has2DVisualization?: boolean;
 }
 // Quiz interface
@@ -225,7 +230,6 @@ export interface CreateClassMaterialDTO {
   ai_content_id?: string;
   isFlagged?: boolean;
   isFlaggable?: boolean;
-  description: any;
 }
 
 export interface UpdateClassMaterialDTO {

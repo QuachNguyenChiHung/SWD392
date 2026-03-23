@@ -156,15 +156,18 @@ export const adminMaterialsApi = {
     };
 
     try {
-      const response = await apiService.get(`/questions/${encodeURIComponent(quizId)}`);
+      // Try the newer/correct endpoint first
+      const response = await apiService.get(`/quizzes/${encodeURIComponent(quizId)}/questions`);
       return normalizeQuestions(response);
-    } catch (errorByQuestions) {
+    } catch (errorByQuizQuestions) {
       try {
-        const response = await apiService.get(`/quizzes/${encodeURIComponent(quizId)}/questions`);
+        // Fallback to older endpoint (may produce 404 but we catch it)
+        const response = await apiService.get(`/questions/${encodeURIComponent(quizId)}`);
         return normalizeQuestions(response);
-      } catch (errorByQuizQuestions) {
-        console.error(`Error fetching questions for quiz ${quizId}:`, errorByQuestions, errorByQuizQuestions);
-        throw errorByQuizQuestions;
+      } catch (errorByQuestions) {
+        // Only log if BOTH fail
+        console.warn(`Could not fetch questions via any endpoint for quiz ${quizId}`);
+        throw errorByQuestions;
       }
     }
   },

@@ -7,7 +7,7 @@ import {
   Quiz,
   AutoAwesome,
 } from "@mui/icons-material";
-import { type Topic, type ClassMaterialType, type ClassMaterial, type CreateClassMaterialDTO } from "../../../types/teacherType";
+import { type Topic, type ClassMaterialType, type ClassMaterial, } from "../../../types/teacherType";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import CreateClassMaterialModal from "../../../components/CreateClassMaterialModal";
@@ -19,8 +19,10 @@ const getMaterialIcon = (type: ClassMaterialType) => {
       return <Description fontSize="small" />;
     case "slide":
       return <Slideshow fontSize="small" />;
+
     case "2d_render":
       return <ViewInAr fontSize="small" />;
+
     case "quiz":
       return <Quiz fontSize="small" />;
     default:
@@ -79,8 +81,7 @@ export default function ClassMaterial({ topics, classId }: ClassMaterialProps) {
     setCurrentTopic(null);
   };
 
-  const handleMaterialCreated = async (topicId: string, newMaterial: CreateClassMaterialDTO) => {
-    // Refresh materials for the topic
+  const handleMaterialCreated = async (topicId: string) => {
     try {
       const updatedMaterials = await classMaterialApi.getMaterialByTopicAndClass(topicId, classId);
       setMaterialsByTopic(prev => ({
@@ -95,7 +96,7 @@ export default function ClassMaterial({ topics, classId }: ClassMaterialProps) {
   const handleMaterialClick = (material: any) => {
     const id = material._id || material.material_id;
     console.log('Material clicked:', material, 'Resolved ID:', id);
-    navigate(`/teacher/class/${classId}/materials/${id}`, { state: { material } });
+    navigate(`/teacher/class/${classId}/materials/${id}`);
   };
 
   return (
@@ -116,19 +117,29 @@ export default function ClassMaterial({ topics, classId }: ClassMaterialProps) {
             <Stack
               direction="row"
               justifyContent="space-between"
-              alignItems="center"
+              alignItems="flex-start"
             >
-              <Typography variant="h6">{topic.title}</Typography>
-              <div style={{ display: "flex", gap: "8px" }}>
+              <Typography variant="h6" flex={3}>{topic.title}</Typography>
+              <div style={{ display: "flex", gap: "8px", height: "2rem" }}>
                 <Button variant="contained" size="small" startIcon={<Add />} onClick={() => handleOpenModal(getTopicId(topic))}>
                   Thêm tài liệu
                 </Button>
                 <Button
                   variant="contained"
                   startIcon={<AutoAwesome />}
-                  onClick={() => navigate(`/teacher/class/${classId}/ai-generator`, {
-                    state: { topic: topic, classId: classId }
-                  })}
+                  onClick={() => {
+                    const topicId = getTopicId(topic);
+                    const topicMaterials = materialsByTopic[topicId] || [];
+                    navigate(`/teacher/class/${classId}/ai-generator`, {
+                      state: {
+                        topic: {
+                          ...topic,
+                          classMaterials: topicMaterials,
+                        },
+                        classId,
+                      }
+                    });
+                  }}
                 >
                   Tạo với AI
                 </Button>
@@ -136,9 +147,6 @@ export default function ClassMaterial({ topics, classId }: ClassMaterialProps) {
 
             </Stack>
             <Box>
-              <Typography variant="body2" color="text.secondary">
-                {topic.description}
-              </Typography>
               <Typography variant="caption" color="text.secondary">
                 Chủ đề {topic.order_num} · {materialsByTopic[getTopicId(topic)]?.length || 0} tài liệu
               </Typography>
@@ -146,9 +154,9 @@ export default function ClassMaterial({ topics, classId }: ClassMaterialProps) {
           </Stack>
 
           <Stack spacing={1}>
-            {materialsByTopic[getTopicId(topic)]?.map((material, materialIndex) => (
+            {materialsByTopic[getTopicId(topic)]?.map((material) => (
               <Box
-                key={material._id ?? materialIndex}
+                key={material._id}
                 sx={{
                   display: "flex",
                   justifyContent: "space-between",
@@ -175,7 +183,7 @@ export default function ClassMaterial({ topics, classId }: ClassMaterialProps) {
                         slide: "Slide",
                         "2d_render": "2D Render",
                         quiz: "Bài kiểm tra",
-                      }[material.type] ?? material.type}
+                      }[material.type]}
                     </Typography>
                   </Box>
                 </Stack>

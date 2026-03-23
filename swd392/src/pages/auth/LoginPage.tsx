@@ -51,10 +51,13 @@ const LoginPage = () => {
     <Box
       component="form"
       onSubmit={handleSubmit}
-      sx={{ width: '100%', mt: 1 }}
+      sx={{ width: '100%' }}
     >
-      <Typography variant="h5" component="h2" gutterBottom textAlign="center">
+      <Typography variant="h5" component="h2" gutterBottom>
         Đăng nhập
+      </Typography>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+        Truy cập lớp học và tài liệu Hóa học của bạn.
       </Typography>
 
       {error && (
@@ -92,7 +95,7 @@ const LoginPage = () => {
         type="submit"
         fullWidth
         variant="contained"
-        sx={{ mt: 3, mb: 2 }}
+        sx={{ mt: 2.5, mb: 2 }}
         disabled={loading}
       >
         {loading ? 'Đang đăng nhập...' : 'Đăng nhập'}

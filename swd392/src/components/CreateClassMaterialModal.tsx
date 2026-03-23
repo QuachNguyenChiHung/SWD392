@@ -16,6 +16,8 @@ import {
     type ClassMaterialType,
     type Question,
     type CreateClassMaterialDTO,
+    type ClassMaterial,
+    type Quiz,
 } from "../types/teacherType";
 import FileUploadForm from "./createMaterial/FileUploadForm";
 import Render2DForm from "./createMaterial/Render2DForm";
@@ -37,6 +39,7 @@ interface CreateClassMaterialModalProps {
     classId: string;
     currentMaterialCount: number;
     topicTitle?: string;
+    aiPreviewMaterial?: ClassMaterial | null;
 }
 
 export default function CreateClassMaterialModal({
@@ -47,14 +50,15 @@ export default function CreateClassMaterialModal({
     classId,
     currentMaterialCount,
     topicTitle,
+    aiPreviewMaterial,
 }: CreateClassMaterialModalProps) {
     const [selectedMaterialType, setSelectedMaterialType] = useState<
         ClassMaterialType | ""
     >("");
     const [selectedQuizType, setSelectedQuizType] = useState("standard");
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [selectedStatus, setSelectedStatus] = useState<"published" | "draft">("draft");
     const [materialName, setMaterialName] = useState("");
-    const [materialDescription, setMaterialDescription] = useState("");
     const [quizQuestions, setQuizQuestions] = useState<Question[]>([]);
     const [isLoading, setIsLoading] = useState(false);
 
@@ -68,8 +72,8 @@ export default function CreateClassMaterialModal({
         setSelectedMaterialType("");
         setSelectedQuizType("standard");
         setSelectedFile(null);
+        setSelectedStatus("draft");
         setMaterialName("");
-        setMaterialDescription("");
         setQuizQuestions([]);
         setQuizTitle("");
         setQuizStartDate("");
@@ -82,6 +86,31 @@ export default function CreateClassMaterialModal({
             resetForm();
         }
     }, [open]);
+
+    useEffect(() => {
+        if (!open || !aiPreviewMaterial) return;
+        setSelectedMaterialType(aiPreviewMaterial.type);
+        setMaterialName(aiPreviewMaterial.title || "");
+        setSelectedStatus("draft");
+
+        if (aiPreviewMaterial.type === "quiz") {
+            const quizContent = aiPreviewMaterial.content as Quiz;
+            setQuizTitle(quizContent?.title || aiPreviewMaterial.title || "");
+            setSelectedQuizType(quizContent?.type || "standard");
+            setQuizQuestions(quizContent?.questions || []);
+            setQuizStartDate(
+                quizContent?.available_date
+                    ? new Date(quizContent.available_date).toISOString().slice(0, 10)
+                    : "",
+            );
+            setQuizEndDate(
+                quizContent?.end_date
+                    ? new Date(quizContent.end_date).toISOString().slice(0, 10)
+                    : "",
+            );
+            setMaxAttempts(quizContent?.max_attempt_number ?? "");
+        }
+    }, [aiPreviewMaterial, open]);
 
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.files && event.target.files[0]) {
@@ -99,6 +128,98 @@ export default function CreateClassMaterialModal({
             setIsLoading(true);
             let content_id: string | undefined = undefined;
             const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB in bytes
+
+            if (aiPreviewMaterial) {
+                switch (aiPreviewMaterial.type) {
+                    case "file": {
+                        const fileContent = aiPreviewMaterial.content as { file_name: string; file_path: string };
+                        const response = await fetch(fileContent.file_path);
+                        const blob = await response.blob();
+                        const aiFile = new File([blob], fileContent.file_name || "ai-document.pdf", {
+                            type: blob.type || "application/pdf",
+                        });
+                        if (aiFile.size > MAX_FILE_SIZE) {
+                            alert("Tệp tin quá lớn. Vui lòng tạo tệp có kích thước tối đa 10MB.");
+                            return;
+                        }
+                        const fileFormData = new FormData();
+                        fileFormData.append("file", aiFile);
+                        const uploadResult = await fileApiService.uploadFile(fileFormData);
+                        content_id = uploadResult._id;
+                        break;
+                    }
+                    case "slide": {
+                        const slideContent = aiPreviewMaterial.content as { slide_name: string; file_path: string };
+                        const response = await fetch(slideContent.file_path);
+                        const blob = await response.blob();
+                        const aiSlide = new File([blob], slideContent.slide_name || "ai-slides.pptx", {
+                            type: blob.type || "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+                        });
+                        if (aiSlide.size > MAX_FILE_SIZE) {
+                            alert("Tệp tin quá lớn. Vui lòng tạo tệp có kích thước tối đa 10MB.");
+                            return;
+                        }
+                        const slideFormData = new FormData();
+                        slideFormData.append("slide", aiSlide);
+                        const slideUploadResult = await slideApiService.uploadSlide(slideFormData);
+                        content_id = slideUploadResult._id;
+                        break;
+                    }
+                    case "quiz": {
+                        const quizContent = aiPreviewMaterial.content as Quiz;
+                        const quizData = {
+                            title: materialName || quizTitle || `Bài kiểm tra ${currentMaterialCount + 1}`,
+                            type: selectedQuizType,
+                            status: quizContent?.status ?? true,
+                            ...(quizStartDate && { available_date: new Date(quizStartDate) }),
+                            ...(quizEndDate && { end_date: new Date(quizEndDate) }),
+                            ...(maxAttempts !== "" && { max_attempt_number: maxAttempts }),
+                        };
+                        const quizResult = await quizApiService.createQuiz(quizData);
+                        content_id = quizResult._id;
+
+                        const aiQuestions = quizQuestions.length > 0 ? quizQuestions : quizContent?.questions || [];
+                        for (const q of aiQuestions) {
+                            await questionApiService.createQuestion({
+                                quiz_id: quizResult._id as string,
+                                title: q.title,
+                                type: q.type,
+                                options: q.options || [],
+                                correct_index: q.correct_index,
+                            });
+                        }
+                        break;
+                    }
+                    default:
+                        alert("Vui lòng chọn loại tài liệu.");
+                        return;
+                }
+
+                const newMaterial: CreateClassMaterialDTO = {
+                    type: aiPreviewMaterial.type as ClassMaterialType,
+                    status: selectedStatus,
+                    order_num: currentMaterialCount + 1,
+                    class_assign_id: classId,
+                    title: materialName || aiPreviewMaterial.title || `Tài liệu ${currentMaterialCount + 1}`,
+                    topic_id: topicId,
+                    content_id: content_id || undefined,
+                    is_ai_material: true,
+                    ai_content_id: aiPreviewMaterial.ai_content_id || undefined,
+                };
+
+                const createdMaterial = await classMaterialApi.createMaterial(
+                    newMaterial,
+                    content_id || undefined,
+                );
+                if (!createdMaterial) {
+                    alert("Đã có lỗi xảy ra khi tạo tài liệu. Vui lòng thử lại.");
+                    return;
+                }
+
+                onMaterialCreated(topicId, newMaterial);
+                handleModalClose();
+                return;
+            }
 
             switch (selectedMaterialType) {
                 case "file": {
@@ -173,13 +294,12 @@ export default function CreateClassMaterialModal({
                     for (const q of quizQuestions) {
                         await questionApiService.createQuestion(
                             {
-                                content: q.content,
+                                quiz_id: quizResult._id as string,
+                                title: q.title,
                                 type: q.type,
-                                options: q.options,
-                                correctAnswer: q.correctAnswer,
-                                has2DVisualization: q.has2DVisualization || false,
+                                options: q.options || [],
+                                correct_index: q.correct_index,
                             },
-                            quizResult._id as string,
                         );
                     }
                     break;
@@ -192,6 +312,7 @@ export default function CreateClassMaterialModal({
             // Step 3: Create ClassMaterial linking to the content
             const newMaterial: CreateClassMaterialDTO = {
                 type: selectedMaterialType as ClassMaterialType,
+                status: selectedStatus,
                 order_num: currentMaterialCount + 1,
                 class_assign_id: classId,
                 title:
@@ -201,7 +322,6 @@ export default function CreateClassMaterialModal({
                         : `Tài liệu ${currentMaterialCount + 1}`),
                 topic_id: topicId,
                 content_id: content_id || undefined,
-                description: materialDescription || undefined,
             };
 
             const createdMaterial = await classMaterialApi.createMaterial(
@@ -284,40 +404,50 @@ export default function CreateClassMaterialModal({
                             placeholder="Nhập tên tài liệu..."
                         />
 
-                        <TextField
-                            label="Mô tả tài liệu"
-                            variant="outlined"
-                            multiline
-                            rows={3}
-                            fullWidth
-                            value={materialDescription}
-                            onChange={(e) => setMaterialDescription(e.target.value)}
-                            placeholder="Nhập mô tả cho tài liệu (tùy chọn)..."
-                        />
+
+                        {!aiPreviewMaterial && (
+                            <FormControl fullWidth>
+                                <InputLabel id="material-type-select-label">
+                                    Loại tài liệu
+                                </InputLabel>
+                                <Select
+                                    labelId="material-type-select-label"
+                                    id="material-type-select"
+                                    value={selectedMaterialType}
+                                    onChange={(e) =>
+                                        setSelectedMaterialType(e.target.value as ClassMaterialType)
+                                    }
+                                    label="Loại tài liệu"
+                                >
+                                    <MenuItem value="file">Tệp tin (PDF, DOC, etc.)</MenuItem>
+                                    <MenuItem value="slide">Slide thuyết trình</MenuItem>
+                                    <MenuItem value="quiz">Bài kiểm tra</MenuItem>
+                                </Select>
+                            </FormControl>
+                        )}
 
                         <FormControl fullWidth>
-                            <InputLabel id="material-type-select-label">
-                                Loại tài liệu
+                            <InputLabel id="material-status-select-label">
+                                Trạng thái
                             </InputLabel>
                             <Select
-                                labelId="material-type-select-label"
-                                id="material-type-select"
-                                value={selectedMaterialType}
+                                labelId="material-status-select-label"
+                                id="material-status-select"
+                                value={selectedStatus}
                                 onChange={(e) =>
-                                    setSelectedMaterialType(e.target.value as ClassMaterialType)
+                                    setSelectedStatus(e.target.value as "published" | "draft")
                                 }
-                                label="Loại tài liệu"
+                                label="Trạng thái"
                             >
-                                <MenuItem value="file">Tệp tin (PDF, DOC, etc.)</MenuItem>
-                                <MenuItem value="slide">Slide thuyết trình</MenuItem>
-                                <MenuItem value="2d_render">Mô hình hóa 2D</MenuItem>
-                                <MenuItem value="quiz">Bài kiểm tra</MenuItem>
+                                <MenuItem value="draft">Bản nháp</MenuItem>
+                                <MenuItem value="published">Xuất bản</MenuItem>
                             </Select>
                         </FormControl>
 
                         {/* File Upload for File and Slide types */}
-                        {(selectedMaterialType === "file" ||
-                            selectedMaterialType === "slide") && (
+                        {!aiPreviewMaterial &&
+                            (selectedMaterialType === "file" ||
+                                selectedMaterialType === "slide") && (
                                 <FileUploadForm
                                     materialType={selectedMaterialType}
                                     selectedFile={selectedFile}
@@ -326,7 +456,7 @@ export default function CreateClassMaterialModal({
                             )}
 
                         {/* 2D Render placeholder */}
-                        {selectedMaterialType === "2d_render" && <Render2DForm />}
+                        {!aiPreviewMaterial && selectedMaterialType === "2d_render" && <Render2DForm />}
 
                         {/* Quiz Creation */}
                         {selectedMaterialType === "quiz" && (

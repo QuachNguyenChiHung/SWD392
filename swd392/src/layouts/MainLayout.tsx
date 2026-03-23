@@ -19,17 +19,16 @@ import {
 } from '@mui/material';
 import {
   Menu as MenuIcon,
+  HomeRounded,
   Dashboard,
   School,
   Class,
-  Quiz,
   Person,
   Group,
-  Settings,
+  Quiz,
   Logout,
   Science,
   AdminPanelSettings,
-  Description,
 } from '@mui/icons-material';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -49,6 +48,12 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   {
+    text: 'Trang chủ',
+    icon: <HomeRounded />,
+    path: '/',
+    roles: [UserRole.GUEST, UserRole.STUDENT, UserRole.TEACHER, UserRole.MODERATOR, UserRole.ADMIN],
+  },
+  {
     text: 'Dashboard',
     icon: <Dashboard />,
     path: '/dashboard',
@@ -60,12 +65,7 @@ const navItems: NavItem[] = [
     path: '/student/classes',
     roles: [UserRole.STUDENT],
   },
-  {
-    text: 'Bài kiểm tra',
-    icon: <Quiz />,
-    path: '/student/quizzes',
-    roles: [UserRole.STUDENT],
-  },
+
   {
     text: 'Quản lý lớp học',
     icon: <School />,
@@ -73,9 +73,33 @@ const navItems: NavItem[] = [
     roles: [UserRole.TEACHER],
   },
   {
-    text: 'Kiểm duyệt',
-    icon: <Settings />,
-    path: '/moderator/dashboard',
+    text: 'Xem hồ sơ',
+    icon: <Person />,
+    path: '/teacher/profile',
+    roles: [UserRole.TEACHER],
+  },
+ {
+    text: "Quản lý người dùng",
+    icon: <Group />,
+    path: "/moderator/user-suspension",
+    roles: [UserRole.MODERATOR],
+  },
+  {
+    text: "Tài liệu bị Flag",
+    icon: <Quiz />,
+    path: "/moderator/flagged",
+    roles: [UserRole.MODERATOR],
+  },
+  {
+    text: "Quản lý lớp học",
+    icon: <School />,
+    path: "/moderator/classes",
+    roles: [UserRole.MODERATOR],
+  },
+  {
+    text: "Quản lý khóa học",
+    icon: <Science />,
+    path: "/moderator/courses",
     roles: [UserRole.MODERATOR],
   },
   {
@@ -102,12 +126,6 @@ const navItems: NavItem[] = [
   //   path: '/admin/topics',
   //   roles: [UserRole.ADMIN],
   // },
-  {
-    text: 'Tài liệu và câu hỏi',
-    icon: <Description />,
-    path: '/admin/materials',
-    roles: [UserRole.ADMIN],
-  },
   {
     text: 'Quản lý lớp/Quiz',
     icon: <AdminPanelSettings />,
@@ -213,6 +231,14 @@ const MainLayout = () => {
             {user?.role === UserRole.MODERATOR && 'Kiểm duyệt viên'}
             {user?.role === UserRole.GUEST && 'Khách'}
           </Typography>
+          <IconButton
+            color="inherit"
+            onClick={() => navigate('/')}
+            aria-label="go home"
+            sx={{ mr: 1 }}
+          >
+            <HomeRounded />
+          </IconButton>
           <IconButton onClick={handleMenuOpen} sx={{ p: 0 }}>
             <Avatar alt={user?.name} src={user?.avatar}>
               {user?.name?.charAt(0).toUpperCase()}

@@ -22,10 +22,18 @@ import StudentQuizzes from "../pages/student/StudentQuizzes";
 import TeacherDashboard from "../pages/teacher/TeacherDashboard";
 import TeacherClasses from "../pages/teacher/TeacherClasses";
 import AiContentGenerator from "../pages/teacher/aiContentGenerator";
+import TeacherProfilePage from "../pages/teacher/teacherProfile";
 
 
 // Moderator Pages
 import ModeratorDashboard from "../pages/moderator/ModeratorDashboard";
+import ModeratorFlaggedMaterialPage from "../pages/moderator/ModeratorFlaggedMaterialPage";
+import ModeratorUserSuspension from "../pages/moderator/ModeratorUserSuspension";
+import ModeratorCoursesPage from "../pages/moderator/ModeratorCoursesPage";
+import ModeratorTopicsPage from "../pages/moderator/ModeratorTopicsPage";
+import ModeratorMaterialsPage from "../pages/moderator/ModeratorMaterialsPage";
+import ModeratorClassesPage from "../pages/moderator/ModeratorClassesPage";
+import ModeratorClassMaterialsPage from "../pages/moderator/ModeratorClassMaterialsPage";
 
 // Admin Pages
 import AdminDashboard from "../pages/admin/AdminDashboard";
@@ -43,11 +51,12 @@ import MaterialDetailPage from "../pages/teacher/MaterialDetailPage";
 import StudentClassDetail from "../pages/student/StudentClassDetail";
 import QuizTakingInterface from "../components/student/quizTakingInterface";
 import QuizResultView from "../pages/student/QuizResultView";
+import HomePage from "../pages/HomePage";
 
 export const routes: RouteObject[] = [
   {
     path: "/",
-    element: <Navigate to="/dashboard" replace />,
+    element: <HomePage />,
   },
   {
     path: "/auth",
@@ -155,6 +164,14 @@ export const routes: RouteObject[] = [
             ),
           },
           {
+            path: "profile",
+            element: (
+              <ProtectedRoute allowedRoles={[UserRole.TEACHER]}>
+                <TeacherProfilePage />
+              </ProtectedRoute>
+            ),
+          },
+          {
             path: "class/:classId",
             element: (
               <ProtectedRoute allowedRoles={[UserRole.TEACHER]}>
@@ -190,6 +207,62 @@ export const routes: RouteObject[] = [
             element: (
               <ProtectedRoute allowedRoles={[UserRole.MODERATOR]}>
                 <ModeratorDashboard />
+              </ProtectedRoute>
+            ),
+          },
+          {
+            path: "flagged",
+            element: (
+              <ProtectedRoute allowedRoles={[UserRole.MODERATOR]}>
+                <ModeratorFlaggedMaterialPage />
+              </ProtectedRoute>
+            ),
+          },
+          {
+            path: "user-suspension",
+            element: (
+              <ProtectedRoute allowedRoles={[UserRole.MODERATOR]}>
+                <ModeratorUserSuspension />
+              </ProtectedRoute>
+            ),
+          },
+          {
+            path: "courses",
+            element: (
+              <ProtectedRoute allowedRoles={[UserRole.MODERATOR]}>
+                <ModeratorCoursesPage />
+              </ProtectedRoute>
+            ),
+          },
+          {
+            path: "courses/:courseId/topics",
+            element: (
+              <ProtectedRoute allowedRoles={[UserRole.MODERATOR]}>
+                <ModeratorTopicsPage />
+              </ProtectedRoute>
+            ),
+          },
+          {
+            path: "topics/:topicId/materials",
+            element: (
+              <ProtectedRoute allowedRoles={[UserRole.MODERATOR]}>
+                <ModeratorMaterialsPage />
+              </ProtectedRoute>
+            ),
+          },
+          {
+            path: "classes",
+            element: (
+              <ProtectedRoute allowedRoles={[UserRole.MODERATOR]}>
+                <ModeratorClassesPage />
+              </ProtectedRoute>
+            ),
+          },
+          {
+            path: "classes/:classId/materials",
+            element: (
+              <ProtectedRoute allowedRoles={[UserRole.MODERATOR]}>
+                <ModeratorClassMaterialsPage />
               </ProtectedRoute>
             ),
           },
@@ -262,6 +335,6 @@ export const routes: RouteObject[] = [
   },
   {
     path: "*",
-    element: <Navigate to="/dashboard" replace />,
+    element: <Navigate to="/" replace />,
   },
 ];

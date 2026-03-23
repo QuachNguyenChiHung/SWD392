@@ -2,9 +2,9 @@ import { apiService } from '../api';
 import type { CreateClassMaterialDTO, UpdateClassMaterialDTO } from '../../types/teacherType';
 
 const classMaterialApi = {
-    // Public / authenticated reads (student + teacher)
+    // Teacher reads: includes all statuses (draft, reviewed, published, deleted)
     getMaterialsByClass: async (classId: string, page: number = 1) => {
-        const response = await apiService.get(`/class-materials?class_id=${classId}&page=${page}`);
+        const response = await apiService.get(`/class-materials/teacher?class_id=${classId}&page=${page}`);
         return response;
     },
 
@@ -14,7 +14,7 @@ const classMaterialApi = {
     },
 
     getMaterialCount: async (classId: string) => {
-        const response = await apiService.get(`/class-materials/count?class_id=${classId}`);
+        const response = await apiService.get(`/class-materials/teacher/count?class_id=${classId}`);
         return response;
     },
 

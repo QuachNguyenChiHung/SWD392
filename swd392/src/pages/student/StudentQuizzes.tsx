@@ -6,6 +6,7 @@ import {
 import { Quiz, CheckCircle, Timer, ChevronRight, ExpandMore, School, MenuBook } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { apiService } from '../../services/api';
+import StudentPageShell from '../../components/student/StudentPageShell';
 
 const CLASS_COLORS = ['#6366f1', '#0ea5e9', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6'];
 
@@ -145,8 +146,11 @@ const StudentQuizzes = () => {
     s + c.topicGroups.reduce((ts, tg) => ts + tg.quizzes.filter(q => getAttemptForQuiz(q.content_id)).length, 0), 0);
 
   return (
-    <Box>
-      <Typography color="text.secondary" mb={4}>Hoàn thành các bài đánh giá để tích lũy điểm số</Typography>
+    <StudentPageShell
+      title="Bài kiểm tra"
+      subtitle="Theo dõi các quiz theo từng lớp và từng chủ đề trong cùng một màn hình"
+      chipLabel="Quiz học sinh"
+    >
 
       {/* Stats */}
       <Stack direction="row" spacing={2} mb={4}>
@@ -155,7 +159,19 @@ const StudentQuizzes = () => {
           { label: 'ĐÃ LÀM', value: completedQuizzes, color: '#10b981' },
           { label: 'CHƯA LÀM', value: totalQuizzes - completedQuizzes, color: '#f59e0b' },
         ].map(({ label, value, color }) => (
-          <Paper key={label} variant="outlined" sx={{ p: 2.5, flex: 1, textAlign: 'center', borderTop: `4px solid ${color}` }}>
+          <Paper
+            key={label}
+            elevation={0}
+            sx={{
+              p: 2.5,
+              flex: 1,
+              textAlign: 'center',
+              borderTop: `4px solid ${color}`,
+              borderRadius: 3,
+              border: '1px solid #d6e7f4',
+              backgroundColor: '#fff',
+            }}
+          >
             {loading ? <Skeleton width={40} sx={{ mx: 'auto' }} /> : <Typography variant="h4" fontWeight="800" color={color}>{value}</Typography>}
             <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: 1 }}>{label}</Typography>
           </Paper>
@@ -164,7 +180,16 @@ const StudentQuizzes = () => {
 
       {loading && <Stack spacing={2}>{[1, 2, 3].map(i => <Skeleton key={i} variant="rounded" height={80} />)}</Stack>}
       {!loading && !classesWithQuizzes.length && (
-        <Paper sx={{ p: 6, textAlign: 'center' }}>
+        <Paper
+          elevation={0}
+          sx={{
+            p: 6,
+            textAlign: 'center',
+            borderRadius: 3,
+            border: '1px solid #dce8f4',
+            background: 'linear-gradient(120deg, rgba(255,255,255,0.96) 0%, rgba(236,247,255,0.96) 45%, rgba(240,255,246,0.96) 100%)',
+          }}
+        >
           <Quiz sx={{ fontSize: 48, color: 'text.disabled', mb: 2 }} />
           <Typography variant="h6" gutterBottom>Chưa có bài kiểm tra nào</Typography>
           <Typography color="text.secondary">Các bài kiểm tra sẽ xuất hiện khi giáo viên tạo</Typography>
@@ -178,7 +203,17 @@ const StudentQuizzes = () => {
           const doneCount = topicGroups.reduce((s, tg) => s + tg.quizzes.filter(q => getAttemptForQuiz(q.content_id)).length, 0);
 
           return (
-            <Accordion key={cls._id} defaultExpanded variant="outlined" sx={{ borderRadius: '8px !important', '&:before': { display: 'none' } }}>
+            <Accordion
+              key={cls._id}
+              defaultExpanded
+              elevation={0}
+              sx={{
+                borderRadius: '12px !important',
+                border: '1px solid #d6e7f4',
+                '&:before': { display: 'none' },
+                backgroundColor: '#fff',
+              }}
+            >
               <AccordionSummary expandIcon={<ExpandMore />}>
                 <Stack direction="row" alignItems="center" spacing={2} sx={{ width: '100%', pr: 1 }}>
                   <Avatar sx={{ bgcolor: `${color}20`, color, width: 36, height: 36 }}><School fontSize="small" /></Avatar>
@@ -251,7 +286,7 @@ const StudentQuizzes = () => {
           );
         })}
       </Stack>
-    </Box>
+    </StudentPageShell>
   );
 };
 

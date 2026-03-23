@@ -4,9 +4,9 @@ import type { Class, CreateClassData, UpdateClassData } from '../../types/teache
 // API functions for teacher class management
 export const teacherClassApi = {
     // Get all classes for the authenticated teacher
-    getClassesByTeacher: async (page = 1): Promise<Class[]> => {
+    getClassesByTeacher: async (page = 1, viewHidden = true): Promise<Class[]> => {
         try {
-            const response = await apiService.get(`/teacher/class?page=${page}`);
+            const response = await apiService.get(`/teacher/class?page=${page}&view_hidden=${viewHidden}`);
             return response;
         } catch (error) {
             console.error('Error fetching teacher classes:', error);
@@ -43,6 +43,17 @@ export const teacherClassApi = {
             return response;
         } catch (error) {
             console.error(`Error updating class ${classId}:`, error);
+            throw error;
+        }
+    },
+
+    // Delete a class
+    deleteClass: async (classId: string) => {
+        try {
+            const response = await apiService.delete(`/class/${classId}`);
+            return response;
+        } catch (error) {
+            console.error(`Error deleting class ${classId}:`, error);
             throw error;
         }
     },
@@ -84,13 +95,13 @@ export const teacherClassApi = {
     },
 
     // Update image cover
-    updateImageCover: async (imageFile: File, imageId: string) => {
+    updateImageCover: async (imageFile: File, imageUrl: string) => {
         try {
             const formData = new FormData();
             formData.append('image', imageFile);
-            formData.append('imageId', imageId);
+            formData.append('url', imageUrl);
 
-            const response = await apiService.put('/teacher/update-image', formData);
+            const response = await apiService.updateFileUpload('/teacher/update-image', formData);
             return response;
         } catch (error) {
             console.error('Error updating image cover:', error);

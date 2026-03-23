@@ -1,9 +1,6 @@
 import { apiService } from '../api';
 import type {
     Topic,
-    CreateTopicData,
-    UpdateTopicData,
-    TopicSearchParams,
     PaginatedTopicsResponse
 } from '../../types/teacherType';
 
@@ -27,48 +24,6 @@ export const topicApi = {
             return response;
         } catch (error) {
             console.error(`Error fetching topics for course ${courseId}:`, error);
-            throw error;
-        }
-    },
-
-    // Create a new topic (admin only)
-    createTopic: async (topicData: CreateTopicData): Promise<Topic> => {
-        try {
-            const response = await apiService.post('/topics', topicData);
-            return response;
-        } catch (error) {
-            console.error('Error creating topic:', error);
-            throw error;
-        }
-    },
-
-    // Update an existing topic (admin only)
-    updateTopic: async (topicId: string, topicData: UpdateTopicData): Promise<Topic> => {
-        try {
-            const response = await apiService.put(`/topics/${topicId}`, topicData);
-            return response;
-        } catch (error) {
-            console.error(`Error updating topic ${topicId}:`, error);
-            throw error;
-        }
-    },
-
-    // Search topics by keyword
-    searchTopics: async (params: TopicSearchParams): Promise<PaginatedTopicsResponse> => {
-        try {
-            const searchParams = new URLSearchParams();
-
-            if (params.q) searchParams.append('q', params.q);
-            if (params.page) searchParams.append('page', params.page.toString());
-            if (params.limit) searchParams.append('limit', params.limit.toString());
-
-            const queryString = searchParams.toString();
-            const url = queryString ? `/topics/search?${queryString}` : '/topics/search';
-
-            const response = await apiService.get(url);
-            return response;
-        } catch (error) {
-            console.error('Error searching topics:', error);
             throw error;
         }
     },

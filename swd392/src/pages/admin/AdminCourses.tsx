@@ -1,7 +1,7 @@
-import { Box, Typography, Paper, Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip, IconButton, TextField, InputAdornment, Dialog, DialogTitle, DialogContent, DialogActions, Alert, Stack, CircularProgress, Pagination, List, ListItem, ListItemText, Breadcrumbs, Divider } from '@mui/material';
+import { Box, Typography, Paper, Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip, IconButton, TextField, InputAdornment, Dialog, DialogTitle, DialogContent, DialogActions, Alert, Stack, CircularProgress, Pagination, List, ListItem, Breadcrumbs, Divider } from '@mui/material';
 import { useState, useEffect } from 'react';
 import { Add, Search, Edit, Delete, School, ToggleOn, ToggleOff, Topic, ArrowBack, NavigateNext, InsertDriveFile, ViewInAr } from '@mui/icons-material';
-import type { AdminCourse, AdminTopic, AdminClassMaterial, CreateCourseRequest, UpdateCourseRequest } from '../../types/adminType';
+import type { AdminCourse, AdminTopic, AdminClassMaterial, CreateCourseRequest, UpdateCourseRequest, CreateTopicRequest, UpdateTopicRequest } from '../../types/adminType';
 import { adminCoursesApi, adminTopicsApi, adminMaterialsApi } from '../../services/adminApi';
 
 const AdminCourses = () => {
@@ -23,6 +23,21 @@ const AdminCourses = () => {
   const [topicPage, setTopicPage] = useState(1);
   const [topicHasNextPage, setTopicHasNextPage] = useState(false);
   const [topicsLoading, setTopicsLoading] = useState(false);
+  const [openCreateTopicDialog, setOpenCreateTopicDialog] = useState(false);
+  const [openEditTopicDialog, setOpenEditTopicDialog] = useState(false);
+  const [openDeleteTopicDialog, setOpenDeleteTopicDialog] = useState(false);
+  const [topicCreating, setTopicCreating] = useState(false);
+  const [topicUpdating, setTopicUpdating] = useState(false);
+  const [topicDeleting, setTopicDeleting] = useState(false);
+  const [selectedTopicForAction, setSelectedTopicForAction] = useState<AdminTopic | null>(null);
+  const [newTopicForm, setNewTopicForm] = useState({
+    title: '',
+    description: '',
+  });
+  const [editTopicForm, setEditTopicForm] = useState({
+    title: '',
+    description: '',
+  });
   const [drilldownTopic, setDrilldownTopic] = useState<AdminTopic | null>(null);
   const [topicMaterials, setTopicMaterials] = useState<AdminClassMaterial[]>([]);
   const [materialsLoading, setMaterialsLoading] = useState(false);
@@ -185,6 +200,12 @@ const AdminCourses = () => {
     setDrilldownCourseId('');
     setDrilldownView('topics');
     setTopicPage(1);
+    setOpenCreateTopicDialog(false);
+    setOpenEditTopicDialog(false);
+    setOpenDeleteTopicDialog(false);
+    setSelectedTopicForAction(null);
+    setNewTopicForm({ title: '', description: '' });
+    setEditTopicForm({ title: '', description: '' });
   };
 
   const handleBackToTopics = () => {
@@ -247,23 +268,123 @@ const AdminCourses = () => {
     }
   };
 
+  const loadCourseTopics = async (courseId: string, page: number) => {
+    setTopicsLoading(true);
+    try {
+      const response = await adminTopicsApi.getTopicsByCourse(courseId, page);
+      const payload = (response as any)?.data ?? response;
+      const topics = Array.isArray(payload?.topics)
+        ? payload.topics
+        : Array.isArray(payload?.course?.topics)
+          ? payload.course.topics
+          : [];
+      const totalPages = Number((payload as any)?.totalPages ?? (payload as any)?.total_pages);
+      setCourseTopics(topics);
+      setTopicHasNextPage(Number.isFinite(totalPages) ? page < totalPages : topics.length >= 12);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load topics');
+    } finally {
+      setTopicsLoading(false);
+    }
+  };
+
+  const handleCreateTopicForCourse = async () => {
+    if (!drilldownCourseId) {
+      setError('Không tìm thấy Course ID để tạo topic.');
+      return;
+    }
+
+    const title = newTopicForm.title.trim();
+    const description = newTopicForm.description.trim();
+    if (!title) {
+      setError('Vui lòng nhập tiêu đề topic.');
+      return;
+    }
+
+    try {
+      setTopicCreating(true);
+      setError(null);
+      const payload: CreateTopicRequest = {
+        title,
+        course_id: drilldownCourseId,
+        description: description || undefined,
+      };
+      await adminTopicsApi.createTopic(payload);
+
+      setOpenCreateTopicDialog(false);
+      setNewTopicForm({ title: '', description: '' });
+      setTopicPage(1);
+      await loadCourseTopics(drilldownCourseId, 1);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create topic');
+    } finally {
+      setTopicCreating(false);
+    }
+  };
+
+  const handleOpenEditTopic = (topic: AdminTopic) => {
+    setSelectedTopicForAction(topic);
+    setEditTopicForm({
+      title: topic.title,
+      description: topic.description || '',
+    });
+    setOpenEditTopicDialog(true);
+  };
+
+  const handleUpdateTopicForCourse = async () => {
+    if (!selectedTopicForAction) return;
+
+    const title = editTopicForm.title.trim();
+    const description = editTopicForm.description.trim();
+    if (!title) {
+      setError('Vui lòng nhập tiêu đề topic.');
+      return;
+    }
+
+    try {
+      setTopicUpdating(true);
+      setError(null);
+      const payload: UpdateTopicRequest = {
+        title,
+        description: description || undefined,
+      };
+      await adminTopicsApi.updateTopic(selectedTopicForAction._id, payload);
+      setOpenEditTopicDialog(false);
+      setSelectedTopicForAction(null);
+      setEditTopicForm({ title: '', description: '' });
+      await loadCourseTopics(drilldownCourseId, topicPage);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update topic');
+    } finally {
+      setTopicUpdating(false);
+    }
+  };
+
+  const handleOpenDeleteTopic = (topic: AdminTopic) => {
+    setSelectedTopicForAction(topic);
+    setOpenDeleteTopicDialog(true);
+  };
+
+  const handleDeleteTopicForCourse = async () => {
+    if (!selectedTopicForAction) return;
+
+    try {
+      setTopicDeleting(true);
+      setError(null);
+      await adminTopicsApi.deleteTopic(selectedTopicForAction._id);
+      setOpenDeleteTopicDialog(false);
+      setSelectedTopicForAction(null);
+      await loadCourseTopics(drilldownCourseId, topicPage);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete topic');
+    } finally {
+      setTopicDeleting(false);
+    }
+  };
+
   useEffect(() => {
     if (!openDrilldown || !drilldownCourseId || drilldownView !== 'topics') return;
-    setTopicsLoading(true);
-    adminTopicsApi.getTopicsByCourse(drilldownCourseId, topicPage)
-      .then((response) => {
-        const payload = (response as any)?.data ?? response;
-        const topics = Array.isArray(payload?.topics)
-          ? payload.topics
-          : Array.isArray(payload?.course?.topics)
-            ? payload.course.topics
-            : [];
-        const totalPages = Number((payload as any)?.totalPages ?? (payload as any)?.total_pages);
-        setCourseTopics(topics);
-        setTopicHasNextPage(Number.isFinite(totalPages) ? topicPage < totalPages : topics.length >= 12);
-      })
-      .catch((err) => setError(err instanceof Error ? err.message : 'Failed to load topics'))
-      .finally(() => setTopicsLoading(false));
+    loadCourseTopics(drilldownCourseId, topicPage);
   }, [openDrilldown, drilldownCourseId, topicPage, drilldownView]);
 
   const getMaterialTypeLabel = (type: string) => {
@@ -495,7 +616,7 @@ const AdminCourses = () => {
                         startIcon={<Topic />}
                         onClick={() => handleOpenDrilldown(course)}
                       >
-                        Xem topics
+                        Chi tiết khóa học
                       </Button>
                     </TableCell>
                     <TableCell align="right">
@@ -666,6 +787,25 @@ const AdminCourses = () => {
           {/* TOPICS */}
           {drilldownView === 'topics' && (
             <>
+              <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems={{ xs: 'stretch', sm: 'center' }}>
+                  <Box sx={{ flexGrow: 1 }}>
+                    <Typography variant="subtitle2" fontWeight={700}>Tạo topic mới cho khóa học này</Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Khóa học: {drilldownCourse?.course_name || 'Không xác định'}
+                    </Typography>
+                  </Box>
+                  <Button
+                    variant="contained"
+                    startIcon={<Add />}
+                    onClick={() => setOpenCreateTopicDialog(true)}
+                    disabled={!drilldownCourseId}
+                  >
+                    Tạo topic
+                  </Button>
+                </Stack>
+              </Paper>
+
               {topicsLoading ? (
                 <Box sx={{ display: 'flex', justifyContent: 'center', py: 5 }}><CircularProgress /></Box>
               ) : courseTopics.length > 0 ? (
@@ -674,13 +814,59 @@ const AdminCourses = () => {
                     <ListItem
                       key={topic._id}
                       divider
-                      secondaryAction={
-                        <Button size="small" variant="outlined" startIcon={<Topic />} onClick={() => handleViewTopicMaterials(topic)}>
-                          Xem tài liệu
-                        </Button>
-                      }
+                      sx={{ py: 2, px: 0, alignItems: 'flex-start' }}
                     >
-                      <ListItemText primary={topic.title} secondary={topic.description || 'Không có mô tả'} />
+                      <Stack
+                        direction={{ xs: 'column', md: 'row' }}
+                        spacing={1.5}
+                        sx={{ width: '100%', alignItems: { xs: 'stretch', md: 'flex-start' } }}
+                      >
+                        <Box sx={{ flex: 1, minWidth: 0, pr: { md: 1 } }}>
+                          <Typography variant="subtitle1" fontWeight={600}>
+                            {topic.title}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, wordBreak: 'break-word' }}>
+                            {topic.description || 'Không có mô tả'}
+                          </Typography>
+                        </Box>
+                        <Stack
+                          direction="row"
+                          spacing={1}
+                          useFlexGap
+                          flexWrap="wrap"
+                          justifyContent={{ xs: 'flex-start', md: 'flex-end' }}
+                          sx={{ flexShrink: 0 }}
+                        >
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            startIcon={<Topic />}
+                            sx={{ whiteSpace: 'nowrap' }}
+                            onClick={() => handleViewTopicMaterials(topic)}
+                          >
+                            Xem tài liệu
+                          </Button>
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            startIcon={<Edit />}
+                            sx={{ whiteSpace: 'nowrap' }}
+                            onClick={() => handleOpenEditTopic(topic)}
+                          >
+                            Sửa
+                          </Button>
+                          <Button
+                            size="small"
+                            color="error"
+                            variant="outlined"
+                            startIcon={<Delete />}
+                            sx={{ whiteSpace: 'nowrap' }}
+                            onClick={() => handleOpenDeleteTopic(topic)}
+                          >
+                            Xóa
+                          </Button>
+                        </Stack>
+                      </Stack>
                     </ListItem>
                   ))}
                 </List>
@@ -761,6 +947,94 @@ const AdminCourses = () => {
 
         <DialogActions>
           <Button onClick={handleCloseDrilldown}>Đóng</Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={openCreateTopicDialog} onClose={() => setOpenCreateTopicDialog(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Tạo topic cho khóa học</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            <TextField
+              label="Khóa học"
+              fullWidth
+              value={drilldownCourse ? `${drilldownCourse.course_name} - Lớp ${drilldownCourse.grade_level}` : ''}
+              InputProps={{ readOnly: true }}
+            />
+            <TextField
+              label="Tiêu đề topic"
+              fullWidth
+              required
+              value={newTopicForm.title}
+              onChange={(e) => setNewTopicForm((prev) => ({ ...prev, title: e.target.value }))}
+            />
+            <TextField
+              label="Mô tả"
+              fullWidth
+              multiline
+              minRows={3}
+              value={newTopicForm.description}
+              onChange={(e) => setNewTopicForm((prev) => ({ ...prev, description: e.target.value }))}
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenCreateTopicDialog(false)}>Hủy</Button>
+          <Button variant="contained" onClick={handleCreateTopicForCourse} disabled={topicCreating || !newTopicForm.title.trim()}>
+            {topicCreating ? 'Đang tạo...' : 'Tạo topic'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={openEditTopicDialog} onClose={() => setOpenEditTopicDialog(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Chỉnh sửa topic</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            <TextField
+              label="Khóa học"
+              fullWidth
+              value={drilldownCourse ? `${drilldownCourse.course_name} - Lớp ${drilldownCourse.grade_level}` : ''}
+              InputProps={{ readOnly: true }}
+            />
+            <TextField
+              label="Tiêu đề topic"
+              fullWidth
+              required
+              value={editTopicForm.title}
+              onChange={(e) => setEditTopicForm((prev) => ({ ...prev, title: e.target.value }))}
+            />
+            <TextField
+              label="Mô tả"
+              fullWidth
+              multiline
+              minRows={3}
+              value={editTopicForm.description}
+              onChange={(e) => setEditTopicForm((prev) => ({ ...prev, description: e.target.value }))}
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenEditTopicDialog(false)}>Hủy</Button>
+          <Button variant="contained" onClick={handleUpdateTopicForCourse} disabled={topicUpdating || !editTopicForm.title.trim()}>
+            {topicUpdating ? 'Đang lưu...' : 'Lưu'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={openDeleteTopicDialog} onClose={() => setOpenDeleteTopicDialog(false)}>
+        <DialogTitle>Xóa topic</DialogTitle>
+        <DialogContent>
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            Việc xóa topic có thể xóa cascade dữ liệu material, quiz và tiến độ liên quan.
+          </Alert>
+          <Typography>
+            Bạn có chắc chắn muốn xóa topic <strong>{selectedTopicForAction?.title}</strong>?
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenDeleteTopicDialog(false)}>Hủy</Button>
+          <Button variant="contained" color="error" onClick={handleDeleteTopicForCourse} disabled={topicDeleting}>
+            {topicDeleting ? 'Đang xóa...' : 'Xóa'}
+          </Button>
         </DialogActions>
       </Dialog>
     </Box>

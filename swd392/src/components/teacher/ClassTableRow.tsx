@@ -7,10 +7,21 @@ import {
   Tooltip,
   Button,
   Stack,
+  Select,
+  MenuItem,
 } from "@mui/material";
 import { Link as RouterLink } from "react-router-dom";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
 import type { Class } from "../../types/teacherType";
+import { useEffect } from "react";
+
+interface ClassTableRowProps extends Class {
+  onStatusChange?: (
+    classItem: Class,
+    status: "active" | "inactive" | "archived" | "deleted",
+  ) => void;
+  onChangeImage?: (classItem: Class) => void;
+}
 
 const maskKey = (key: string) => "•".repeat(Math.max(4, key.length));
 
@@ -19,64 +30,37 @@ const formatDate = (value: Date | string) => {
   return Number.isNaN(date.getTime()) ? "-" : date.toLocaleDateString();
 };
 
-const getStatusColor = (status: string) => {
-  switch (status) {
-    case 'active': return 'success.main';
-    case 'inactive': return 'warning.main';
-    case 'archived': return 'error.main';
-    default: return 'text.secondary';
-  }
-};
-
-const getStatusLabel = (status: string) => {
-  switch (status) {
-    case 'active': return 'Hoạt động';
-    case 'inactive': return 'Tạm dừng';
-    case 'archived': return 'Đã lưu trữ';
-    default: return status;
-  }
-};
-
 const ClassTableRow = ({
   class_name,
   course_id,
   course_name,
-  description,
   status,
   date_create,
   keypass,
   _id,
-}: Class) => {
+  teacher_id,
+  img_cover_link,
+  image_cover_id,
+  date_update,
+  onStatusChange,
+  onChangeImage,
+}: ClassTableRowProps) => {
   const [showKey, setShowKey] = useState(false);
+  const [selectedStatus, setSelectedStatus] = useState<"active" | "inactive" | "archived" | "deleted">(status);
   const createdAt = formatDate(date_create);
+
+  useEffect(() => {
+    setSelectedStatus(status);
+  }, [status]);
 
   return (
     <TableRow hover>
       <TableCell>
         <Typography variant="subtitle2">{class_name}</Typography>
-        <Typography variant="body2" color="text.secondary">
-          {course_name || course_id}
-        </Typography>
-      </TableCell>
-      <TableCell>
-        <Typography variant="body2">
-          {description || "N/A"}
-        </Typography>
       </TableCell>
       <TableCell>
         <Typography variant="body2" sx={{ fontFamily: "monospace" }}>
           {course_id}
-        </Typography>
-      </TableCell>
-      <TableCell>
-        <Typography
-          variant="body2"
-          sx={{
-            color: getStatusColor(status),
-            fontWeight: 'medium'
-          }}
-        >
-          {getStatusLabel(status)}
         </Typography>
       </TableCell>
       <TableCell>{createdAt}</TableCell>
@@ -101,13 +85,68 @@ const ClassTableRow = ({
       </TableCell>
       <TableCell align="right">
         <Stack direction="row" spacing={1} justifyContent="flex-end">
-          <Button size="small">Quản lý</Button>
-          <Button
+          <Select
             size="small"
+            value={selectedStatus}
+            onChange={(e) => {
+              const nextStatus = e.target.value as "active" | "inactive" | "archived" | "deleted";
+              setSelectedStatus(nextStatus);
+              onStatusChange?.({
+                _id,
+                class_name,
+                course_id,
+                course_name,
+                status,
+                date_create,
+                date_update,
+                keypass,
+                teacher_id,
+                img_cover_link,
+                image_cover_id,
+              }, nextStatus);
+            }}
+            sx={{
+              minWidth: 100,
+              '& .MuiSelect-select': {
+                py: 0.5,
+                fontSize: '0.8rem',
+              },
+            }}
+          >
+            <MenuItem value="active">Hoạt động</MenuItem>
+            <MenuItem value="inactive">Tạm dừng</MenuItem>
+            <MenuItem value="archived">Lưu trữ</MenuItem>
+            <MenuItem value="deleted">Đã xóa</MenuItem>
+          </Select>
+          <Button
+            size="medium"
+            variant="contained"
             component={RouterLink}
             to={`/teacher/class/${_id}`}
           >
             Xem chi tiết
+          </Button>
+          <Button
+            size="small"
+            color="success"
+            variant="contained"
+            onClick={() =>
+              onChangeImage?.({
+                _id,
+                class_name,
+                course_id,
+                course_name,
+                status,
+                date_create,
+                date_update,
+                keypass,
+                teacher_id,
+                img_cover_link,
+                image_cover_id,
+              })
+            }
+          >
+            Đổi ảnh
           </Button>
         </Stack>
       </TableCell>

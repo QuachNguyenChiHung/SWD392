@@ -8,7 +8,7 @@ import {
 } from '@mui/material';
 import {
   Timer, ChevronLeft, ChevronRight, Send,
-  FlagOutlined, Flag, WarningAmber, CheckCircle
+  FlagOutlined, Flag, WarningAmber
 } from '@mui/icons-material';
 import { useParams, useNavigate } from 'react-router-dom';
 import { apiService } from '../../services/api';
@@ -50,12 +50,11 @@ const QuizTakingInterface = () => {
   const [answers, setAnswers] = useState<{ [key: number]: number }>({});
   const [timeLeft, setTimeLeft] = useState(1800);
   const [flagged, setFlagged] = useState<number[]>([]);
-  const [isFinished, setIsFinished] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [openConfirm, setOpenConfirm] = useState(false);
 
   const userStr = localStorage.getItem('user');
-  const userId = userStr ? JSON.parse(userStr).id : '';
+  void userStr;
 
   useEffect(() => {
     const fetchQuiz = async () => {
@@ -92,12 +91,17 @@ const QuizTakingInterface = () => {
     setSubmitting(true);
     try {
       // Build answers array theo format API
-      const answersPayload = questions.map((question, idx) => ({
-        question_id: question._id,
-        options_picked_index: answers[idx] !== undefined ? answers[idx] : 0,
-        text: '',
-        option: {}
-      }));
+      const answersPayload = questions.map((question, idx) => {
+        const payload: any = {
+          question_id: question._id,
+          text: '',
+          option: {}
+        };
+        if (answers[idx] !== undefined) {
+          payload.options_picked_index = answers[idx];
+        }
+        return payload;
+      });
 
       await apiService.post('/quiz-attempts/submit', {
         quiz_id: quizInfo?._id,
@@ -117,7 +121,7 @@ const QuizTakingInterface = () => {
   }, [answers, quizInfo, questions, timeLeft]);
 
   useEffect(() => {
-    if (loading || isFinished || questions.length === 0) return;
+    if (loading || questions.length === 0) return;
 
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
@@ -131,7 +135,7 @@ const QuizTakingInterface = () => {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [executeSubmit, loading, isFinished, questions.length]);
+  }, [executeSubmit, loading, questions.length]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -167,31 +171,6 @@ const QuizTakingInterface = () => {
       <Box sx={{ p: 4 }}>
         <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>
         <Button onClick={() => navigate(-1)}>Quay lại</Button>
-      </Box>
-    );
-  }
-
-  if (isFinished) {
-    return (
-      <Box sx={{ p: 5, textAlign: 'center', mt: 10 }}>
-        <Paper elevation={0} sx={{ p: 5, border: '1px solid #e2e8f0', borderRadius: 4, maxWidth: 500, mx: 'auto' }}>
-          <CheckCircle sx={{ fontSize: 64, color: '#10b981', mb: 2 }} />
-          <Typography variant="h4" fontWeight="bold" gutterBottom>Hoàn thành!</Typography>
-          <Typography color="text.secondary" mb={1}>
-            Đã trả lời: <b>{answeredCount}/{questions.length}</b> câu
-          </Typography>
-          <Typography color="text.secondary" mb={3}>
-            Bài làm của bạn đã được ghi nhận thành công.
-          </Typography>
-          <Stack direction="row" spacing={2} justifyContent="center">
-            <Button variant="outlined" size="large" onClick={() => navigate(`/student/take-quiz/${id}`, { replace: true })}>
-              Làm lại
-            </Button>
-            <Button variant="contained" size="large" onClick={() => navigate('/student/quizzes', { replace: true })}>
-              Quay lại danh sách
-            </Button>
-          </Stack>
-        </Paper>
       </Box>
     );
   }
