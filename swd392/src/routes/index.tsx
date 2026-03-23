@@ -1,57 +1,50 @@
+import { lazy } from "react";
 import { Navigate } from "react-router-dom";
 import type { RouteObject } from "react-router-dom";
 import { UserRole } from "../types";
 
-// Layouts
-import MainLayout from "../layouts/MainLayout";
-import AuthLayout from "../layouts/AuthLayout";
-
-// Pages
-import LoginPage from "../pages/auth/LoginPage";
-import RegisterPage from "../pages/auth/RegisterPage";
-
-// Guest Pages
-import GuestDashboard from "../pages/guest/GuestDashboard";
-
-// Student Pages
-import StudentDashboard from "../pages/student/StudentDashboard";
-import StudentClasses from "../pages/student/StudentClasses";
-import StudentQuizzes from "../pages/student/StudentQuizzes";
-
-// Teacher Pages
-import TeacherDashboard from "../pages/teacher/TeacherDashboard";
-import TeacherClasses from "../pages/teacher/TeacherClasses";
-import AiContentGenerator from "../pages/teacher/aiContentGenerator";
-import TeacherProfilePage from "../pages/teacher/teacherProfile";
-
-
-// Moderator Pages
-import ModeratorDashboard from "../pages/moderator/ModeratorDashboard";
-import ModeratorFlaggedMaterialPage from "../pages/moderator/ModeratorFlaggedMaterialPage";
-import ModeratorUserSuspension from "../pages/moderator/ModeratorUserSuspension";
-import ModeratorCoursesPage from "../pages/moderator/ModeratorCoursesPage";
-import ModeratorTopicsPage from "../pages/moderator/ModeratorTopicsPage";
-import ModeratorMaterialsPage from "../pages/moderator/ModeratorMaterialsPage";
-import ModeratorClassesPage from "../pages/moderator/ModeratorClassesPage";
-import ModeratorClassMaterialsPage from "../pages/moderator/ModeratorClassMaterialsPage";
-
-// Admin Pages
-import AdminDashboard from "../pages/admin/AdminDashboard";
-import AdminUsers from "../pages/admin/AdminUsers";
-import AdminSystemManagement from "../pages/admin/AdminSystemManagement";
-import AdminCourses from "../pages/admin/AdminCourses";
-import AdminMaterials from "../pages/admin/AdminMaterials";
-import AdminClasses from "../pages/admin/AdminClasses";
-// import AdminTopics from "../pages/admin/AdminTopics";
-
 // Protected Route Component
 import ProtectedRoute from "../components/ProtectedRoute";
-import TeacherClassDetail from "../pages/teacher/teacherClassDetail";
-import MaterialDetailPage from "../pages/teacher/MaterialDetailPage";
-import StudentClassDetail from "../pages/student/StudentClassDetail";
-import QuizTakingInterface from "../components/student/quizTakingInterface";
-import QuizResultView from "../pages/student/QuizResultView";
-import HomePage from "../pages/HomePage";
+
+const MainLayout = lazy(() => import("../layouts/MainLayout"));
+const AuthLayout = lazy(() => import("../layouts/AuthLayout"));
+
+const LoginPage = lazy(() => import("../pages/auth/LoginPage"));
+const RegisterPage = lazy(() => import("../pages/auth/RegisterPage"));
+
+const GuestDashboard = lazy(() => import("../pages/guest/GuestDashboard"));
+
+const StudentDashboard = lazy(() => import("../pages/student/StudentDashboard"));
+const StudentClasses = lazy(() => import("../pages/student/StudentClasses"));
+const StudentQuizzes = lazy(() => import("../pages/student/StudentQuizzes"));
+const StudentClassDetail = lazy(() => import("../pages/student/StudentClassDetail"));
+const QuizResultView = lazy(() => import("../pages/student/QuizResultView"));
+const QuizTakingInterface = lazy(() => import("../components/student/quizTakingInterface"));
+
+const TeacherDashboard = lazy(() => import("../pages/teacher/TeacherDashboard"));
+const TeacherClasses = lazy(() => import("../pages/teacher/TeacherClasses"));
+const TeacherProfilePage = lazy(() => import("../pages/teacher/teacherProfile"));
+const TeacherClassDetail = lazy(() => import("../pages/teacher/teacherClassDetail"));
+const MaterialDetailPage = lazy(() => import("../pages/teacher/MaterialDetailPage"));
+const AiContentGenerator = lazy(() => import("../pages/teacher/aiContentGenerator"));
+
+const ModeratorDashboard = lazy(() => import("../pages/moderator/ModeratorDashboard"));
+const ModeratorFlaggedMaterialPage = lazy(() => import("../pages/moderator/ModeratorFlaggedMaterialPage"));
+const ModeratorUserSuspension = lazy(() => import("../pages/moderator/ModeratorUserSuspension"));
+const ModeratorCoursesPage = lazy(() => import("../pages/moderator/ModeratorCoursesPage"));
+const ModeratorTopicsPage = lazy(() => import("../pages/moderator/ModeratorTopicsPage"));
+const ModeratorMaterialsPage = lazy(() => import("../pages/moderator/ModeratorMaterialsPage"));
+const ModeratorClassesPage = lazy(() => import("../pages/moderator/ModeratorClassesPage"));
+const ModeratorClassMaterialsPage = lazy(() => import("../pages/moderator/ModeratorClassMaterialsPage"));
+
+const AdminDashboard = lazy(() => import("../pages/admin/AdminDashboard"));
+const AdminUsers = lazy(() => import("../pages/admin/AdminUsers"));
+const AdminCourses = lazy(() => import("../pages/admin/AdminCourses"));
+const AdminClasses = lazy(() => import("../pages/admin/AdminClasses"));
+const AdminMaterials = lazy(() => import("../pages/admin/AdminMaterials"));
+const AdminSystemManagement = lazy(() => import("../pages/admin/AdminSystemManagement"));
+
+const HomePage = lazy(() => import("../pages/HomePage"));
 
 export const routes: RouteObject[] = [
   {
