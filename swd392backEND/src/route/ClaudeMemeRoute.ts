@@ -390,13 +390,14 @@ const renderSlide = (pptx: any, data: SlideData, slideNum: number, total: number
 
 // ─── Routes ──────────────────────────────────────────────────────────────────
 
-route.post("/claude", async (req, res, next) => {
+route.post("/claude", verifyRole.verifyStudent, async (req, res, next) => {
     try {
         const { prompt } = req.body;
+        const userId = (req as any).user?.id ?? null;
         if (!prompt) return res.status(400).json({ message: "Prompt is required" });
         const msg = await runModel(prompt);
 
-        const savedRequest = await AiRepo.saveRequest(null, prompt, "chat").catch(() => null);
+        const savedRequest = await AiRepo.saveRequest(userId, prompt, "chat").catch(() => null);
         if (savedRequest) {
             AiRepo.saveContent(savedRequest._id as any, "chat", {
                 response: msg
