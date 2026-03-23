@@ -15,13 +15,25 @@ import {
   FormControl,
   InputLabel,
   Select,
-  Grid,
-  InputAdornment,
   CircularProgress,
   Paper,
+  Container,
+  Breadcrumbs,
+  InputAdornment,
 } from "@mui/material";
-import { Search } from "@mui/icons-material";
-import { suspendUser, unsuspendUser, searchUsers } from "../../services/moderatorService";
+import {
+  Search,
+  NavigateNext,
+  PersonOff,
+  Person,
+  Mail,
+} from "@mui/icons-material";
+import { Link } from "react-router-dom";
+import {
+  suspendUser,
+  unsuspendUser,
+  searchUsers,
+} from "../../services/moderatorService";
 
 type UserItem = {
   id: string;
@@ -43,6 +55,23 @@ const ModeratorUserSuspension: React.FC = () => {
     keyword: "",
   });
 
+  const normalizeUser = (u: any, i: number = 0): UserItem => ({
+    id: u.id || u._id || `user-${i}`,
+    username:
+      u.username || u.name || (u.email ? u.email.split("@")[0] : `user-${i}`),
+    email: u.email,
+    suspended: !!(
+      u.suspended ||
+      u.isSuspended ||
+      u.status === "banned" ||
+      u.banned
+    ),
+    suspendReason: u.suspendReason || u.reason,
+    status: u.status || (u.banned ? "banned" : "active"),
+    latestReason: u.latestReason || u.latest_reason || u.suspendReason,
+    role: u.role,
+  });
+
   // Load users from moderation service
   const fetchData = async (params = filter) => {
     setLoading(true);
@@ -56,34 +85,19 @@ const ModeratorUserSuspension: React.FC = () => {
 
       // Normalize backend user objects to the expected frontend shape.
       const list: any[] = Array.isArray(data) ? data : data?.users || [];
-      const normalized: UserItem[] = list.map((u: any, i: number) => ({
-        id: u.id || u._id || `user-${i}`,
-        username:
-          u.username ||
-          u.name ||
-          (u.email ? u.email.split("@")[0] : `user-${i}`),
-        email: u.email,
-        suspended: !!(
-          u.suspended ||
-          u.isSuspended ||
-          u.status === "banned" ||
-          u.banned
-        ),
-        suspendReason: u.suspendReason || u.reason,
-        status: u.status || (u.banned ? "banned" : "active"),
-        latestReason: u.latestReason || u.latest_reason || u.suspendReason,
-        role: u.role,
-      }));
+      const normalized: UserItem[] = list.map((u, i) => normalizeUser(u, i));
 
       // ==========================================
-      // CLIENT-SIDE FILTERING 
+      // CLIENT-SIDE FILTERING
       // ==========================================
       let filteredUsers = normalized;
 
       // Lọc theo vai trò (nếu chọn)
       if (params.role) {
         const rolesToMatch = params.role.split(",");
-        filteredUsers = filteredUsers.filter((u) => u.role && rolesToMatch.includes(u.role));
+        filteredUsers = filteredUsers.filter(
+          (u) => u.role && rolesToMatch.includes(u.role),
+        );
       }
 
       // Lọc theo trạng thái (nếu chọn)
@@ -137,7 +151,8 @@ const ModeratorUserSuspension: React.FC = () => {
       if (!window.confirm(`Gỡ đình chỉ tài khoản ${user.username}?`)) return;
       try {
         setLoadingUser(id, true);
-        const updated = await unsuspendUser(id);
+        const responseData = await unsuspendUser(id);
+        const updated = normalizeUser(responseData);
         setUsers((prev) => prev.map((u) => (u.id === id ? updated : u)));
         setSnack({
           open: true,
@@ -172,7 +187,8 @@ const ModeratorUserSuspension: React.FC = () => {
 
     try {
       setLoadingUser(id, true);
-      const updated = await suspendUser(id, reason);
+      const responseData = await suspendUser(id, reason);
+      const updated = normalizeUser(responseData);
       setUsers((prev) => prev.map((u) => (u.id === id ? updated : u)));
       setReasonInput((r) => ({ ...r, [id]: "" }));
       setSnack({
@@ -193,166 +209,410 @@ const ModeratorUserSuspension: React.FC = () => {
   };
 
   return (
-    <Box p={3}>
-      <Typography variant="h5" fontWeight="bold" gutterBottom>
-        Quản lý đình chỉ người dùng
-      </Typography>
-
-      <Paper sx={{ p: 3, mb: 4 }}>
-        <Grid container spacing={2} alignItems="center">
-          <Grid size={{ xs: 12, sm: 4 }}>
-            <TextField
-              fullWidth
-              label="Tìm kiếm người dùng..."
-              name="keyword"
-              value={filter.keyword}
-              onChange={(e) => handleFilterChange("keyword", e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleFilter()}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Search />
-                  </InputAdornment>
-                ),
-              }}
-              size="small"
-            />
-          </Grid>
-          <Grid size={{ xs: 12, sm: 3 }}>
-            <FormControl fullWidth size="small">
-              <InputLabel>Vai trò</InputLabel>
-              <Select
-                value={filter.role}
-                label="Vai trò"
-                onChange={(e) => handleFilterChange("role", e.target.value)}
-              >
-                <MenuItem value="">Tất cả vai trò</MenuItem>
-                <MenuItem value="teacher">Giáo viên</MenuItem>
-                <MenuItem value="student">Học sinh</MenuItem>
-                <MenuItem value="moderator">Kiểm duyệt viên</MenuItem>
-              </Select>
-            </FormControl>
-          </Grid>
-          <Grid size={{ xs: 12, sm: 3 }}>
-            <FormControl fullWidth size="small">
-              <InputLabel>Trạng thái</InputLabel>
-              <Select
-                value={filter.status}
-                label="Trạng thái"
-                onChange={(e) => handleFilterChange("status", e.target.value)}
-              >
-                <MenuItem value="">Tất cả trạng thái</MenuItem>
-                <MenuItem value="active">Đang hoạt động</MenuItem>
-                <MenuItem value="banned">Bị đình chỉ</MenuItem>
-              </Select>
-            </FormControl>
-          </Grid>
-          <Grid size={{ xs: 12, sm: 2 }}>
-            <Button
-              fullWidth
-              variant="contained"
-              onClick={() => handleFilter()}
-            >
-              Lọc
-            </Button>
-          </Grid>
-        </Grid>
-      </Paper>
-
-      {loading ? (
-        <Box display="flex" justifyContent="center" py={5}>
-          <CircularProgress />
-        </Box>
-      ) : (
-        <Stack spacing={2}>
-          {users.length === 0 ? (
-            <Typography align="center" color="text.secondary" py={5}>
-              Không tìm thấy người dùng nào phù hợp với bộ lọc.
-            </Typography>
-          ) : (
-            users.map((u) => (
-              <Card key={u.id} variant="outlined">
-                <CardContent>
-                  <Stack direction="row" spacing={2} alignItems="center">
-                    <Avatar sx={{ width: 44, height: 44 }}>
-                      {u.username[0].toUpperCase()}
-                    </Avatar>
-                    <Box sx={{ flex: 1 }}>
-                      <Typography fontWeight="bold" variant="subtitle1">
-                        {u.username}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {u.email}
-                      </Typography>
-                      {u.suspended && (
-                        <Chip
-                          label={`Đã đình chỉ (${u.status || "banned"}): ${u.latestReason || u.suspendReason || "(không có lý do)"}`}
-                          color="error"
-                          size="small"
-                          sx={{ mt: 1 }}
-                        />
-                      )}
-                    </Box>
-
-                    <Stack direction="row" spacing={1} alignItems="center">
-                      {!u.suspended && (
-                        <TextField
-                          size="small"
-                          placeholder="Lý do đình chỉ (tùy chọn)"
-                          value={reasonInput[u.id] ?? ""}
-                          onChange={(e) =>
-                            setReasonInput((r) => ({
-                              ...r,
-                              [u.id]: e.target.value,
-                            }))
-                          }
-                          sx={{ width: { xs: 150, sm: 250 } }}
-                        />
-                      )}
-
-                      <Button
-                        color={u.suspended ? "success" : "error"}
-                        variant={u.suspended ? "outlined" : "contained"}
-                        onClick={() => toggleSuspend(u.id)}
-                        disabled={!!loadingIds[u.id]}
-                        sx={{ minWidth: 120 }}
-                      >
-                        {loadingIds[u.id]
-                          ? "Đang xử lý..."
-                          : u.suspended
-                            ? "Gỡ đình chỉ"
-                            : "Đình chỉ"}
-                      </Button>
-                    </Stack>
-                  </Stack>
-                </CardContent>
-              </Card>
-            ))
-          )}
-        </Stack>
-      )}
-
-      <Typography
-        variant="caption"
-        color="text.secondary"
-        sx={{ mt: 2, display: "block" }}
-      >
-        Ghi chú: giao diện hiện gọi API filter thực tế để đình chỉ/gỡ đình chỉ
-        user.
-      </Typography>
-
-      <Snackbar
-        open={snack.open}
-        autoHideDuration={4000}
-        onClose={() => setSnack((s) => ({ ...s, open: false }))}
-      >
-        <Alert
-          severity={snack.severity}
-          onClose={() => setSnack((s) => ({ ...s, open: false }))}
+    <Box
+      sx={{
+        bgcolor: "#f8f9fa",
+        minHeight: "100vh",
+        py: 4,
+        fontFamily: "'Nunito', sans-serif",
+      }}
+    >
+      <Container maxWidth="xl">
+        {/* Breadcrumbs */}
+        <Breadcrumbs
+          separator={
+            <NavigateNext fontSize="small" sx={{ color: "text.disabled" }} />
+          }
+          sx={{
+            mb: 1,
+            "& .MuiTypography-root": { fontFamily: "'Nunito', sans-serif" },
+          }}
         >
-          {snack.message}
-        </Alert>
-      </Snackbar>
+          <Link to="/moderator/dashboard" style={{ textDecoration: "none" }}>
+            <Typography
+              variant="body2"
+              sx={{
+                color: "text.secondary",
+                "&:hover": { color: "primary.main" },
+              }}
+            >
+              Kiểm duyệt
+            </Typography>
+          </Link>
+          <Typography variant="body2" fontWeight={700} color="text.primary">
+            Đình chỉ người dùng
+          </Typography>
+        </Breadcrumbs>
+
+        {/* Title Section */}
+        <Box mb={4}>
+          <Typography
+            variant="h4"
+            fontWeight={800}
+            sx={{ color: "#2d3436", mb: 0.5 }}
+          >
+            Quản lý đình chỉ người dùng
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Theo dõi, đình chỉ hoặc gỡ đình chỉ các tài khoản vi phạm chính sách
+          </Typography>
+        </Box>
+
+        {/* Filter Section - Matching the user's preferred style */}
+        <Box
+          sx={{
+            display: "flex",
+            gap: 2,
+            mb: 4,
+            alignItems: "flex-start",
+            flexWrap: { xs: "wrap", md: "nowrap" },
+          }}
+        >
+          <TextField
+            fullWidth
+            variant="outlined"
+            label="Tìm kiếm người dùng..."
+            size="small"
+            value={filter.keyword}
+            onChange={(e) => handleFilterChange("keyword", e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleFilter()}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Search fontSize="small" />
+                </InputAdornment>
+              ),
+              sx: {
+                borderRadius: "4px",
+                fontFamily: "'Nunito', sans-serif",
+                height: "40px",
+                bgcolor: "#fff",
+              },
+            }}
+            InputLabelProps={{ sx: { fontFamily: "'Nunito', sans-serif" } }}
+            sx={{ flex: 2 }}
+          />
+          <FormControl
+            variant="outlined"
+            size="small"
+            sx={{ flex: 1, minWidth: { md: 180 } }}
+          >
+            <InputLabel sx={{ fontFamily: "'Nunito', sans-serif" }}>
+              Vai trò
+            </InputLabel>
+            <Select
+              value={filter.role}
+              label="Vai trò"
+              onChange={(e) => handleFilterChange("role", e.target.value)}
+              sx={{
+                borderRadius: "4px",
+                height: "40px",
+                bgcolor: "#fff",
+                "& .MuiSelect-select": { fontFamily: "'Nunito', sans-serif" },
+              }}
+            >
+              <MenuItem value="">Tất cả vai trò</MenuItem>
+              <MenuItem value="teacher">Giáo viên</MenuItem>
+              <MenuItem value="student">Học sinh</MenuItem>
+              <MenuItem value="moderator">Kiểm duyệt viên</MenuItem>
+            </Select>
+          </FormControl>
+          <FormControl
+            variant="outlined"
+            size="small"
+            sx={{ flex: 1, minWidth: { md: 180 } }}
+          >
+            <InputLabel sx={{ fontFamily: "'Nunito', sans-serif" }}>
+              Trạng thái
+            </InputLabel>
+            <Select
+              value={filter.status}
+              label="Trạng thái"
+              onChange={(e) => handleFilterChange("status", e.target.value)}
+              sx={{
+                borderRadius: "4px",
+                height: "40px",
+                bgcolor: "#fff",
+                "& .MuiSelect-select": { fontFamily: "'Nunito', sans-serif" },
+              }}
+            >
+              <MenuItem value="">Tất cả trạng thái</MenuItem>
+              <MenuItem value="active">Đang hoạt động</MenuItem>
+              <MenuItem value="banned">Bị đình chỉ</MenuItem>
+            </Select>
+          </FormControl>
+          <Button
+            variant="contained"
+            onClick={() => handleFilter()}
+            sx={{
+              px: 4,
+              height: "40px",
+              borderRadius: "4px",
+              textTransform: "uppercase",
+              fontWeight: 700,
+              boxShadow: "none",
+              bgcolor: "#667eea",
+              "&:hover": { bgcolor: "#5a6fd6", boxShadow: "none" },
+              fontFamily: "'Nunito', sans-serif",
+              whiteSpace: "nowrap",
+            }}
+          >
+            LỌC
+          </Button>
+        </Box>
+
+        {/* Users List */}
+        {loading ? (
+          <Box display="flex" justifyContent="center" py={10}>
+            <CircularProgress
+              thickness={5}
+              size={50}
+              sx={{ color: "primary.main" }}
+            />
+          </Box>
+        ) : (
+          <Stack spacing={2.5}>
+            {users.length === 0 ? (
+              <Paper
+                sx={{
+                  p: 10,
+                  textAlign: "center",
+                  borderRadius: "16px",
+                  border: "1px solid #edf2f7",
+                }}
+              >
+                <PersonOff
+                  sx={{ fontSize: 60, color: "text.disabled", mb: 2 }}
+                />
+                <Typography
+                  variant="h6"
+                  fontWeight={700}
+                  sx={{ fontFamily: "'Nunito', sans-serif" }}
+                >
+                  Không tìm thấy người dùng
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm
+                </Typography>
+              </Paper>
+            ) : (
+              users.map((u) => (
+                <Card
+                  key={u.id}
+                  elevation={0}
+                  sx={{
+                    borderRadius: "16px",
+                    border: "1px solid #edf2f7",
+                    transition: "transform 0.2s, box-shadow 0.2s",
+                    "&:hover": {
+                      transform: "translateY(-4px)",
+                      boxShadow: "0 10px 20px rgba(0,0,0,0.05)",
+                    },
+                  }}
+                >
+                  <CardContent sx={{ p: 3, "&:last-child": { pb: 3 } }}>
+                    <Stack
+                      direction={{ xs: "column", sm: "row" }}
+                      spacing={3}
+                      alignItems="center"
+                    >
+                      <Avatar
+                        sx={{
+                          width: 60,
+                          height: 60,
+                          bgcolor: u.suspended ? "#ffebee" : "#e3f2fd",
+                          color: u.suspended ? "#d32f2f" : "#1976d2",
+                          fontSize: "1.5rem",
+                          fontWeight: 800,
+                          borderRadius: "14px",
+                        }}
+                      >
+                        {u.username[0].toUpperCase()}
+                      </Avatar>
+
+                      <Box sx={{ flex: 1 }}>
+                        <Stack
+                          direction="row"
+                          spacing={1}
+                          alignItems="center"
+                          mb={0.5}
+                        >
+                          <Typography
+                            variant="h6"
+                            fontWeight={800}
+                            sx={{
+                              color: "#2d3436",
+                              fontFamily: "'Nunito', sans-serif",
+                            }}
+                          >
+                            {u.username}
+                          </Typography>
+                          <Chip
+                            label={u.role || "user"}
+                            size="small"
+                            sx={{
+                              bgcolor: "#f1f2f6",
+                              color: "#747d8c",
+                              fontWeight: 700,
+                              fontSize: "0.7rem",
+                              height: "20px",
+                            }}
+                          />
+                        </Stack>
+
+                        <Stack direction="row" spacing={2} alignItems="center">
+                          <Stack
+                            direction="row"
+                            spacing={0.5}
+                            alignItems="center"
+                          >
+                            <Mail
+                              sx={{
+                                fontSize: "0.9rem",
+                                color: "text.disabled",
+                              }}
+                            />
+                            <Typography
+                              variant="body2"
+                              sx={{ color: "#636e72", fontWeight: 500 }}
+                            >
+                              {u.email}
+                            </Typography>
+                          </Stack>
+                          <Typography
+                            variant="caption"
+                            sx={{ color: "text.disabled", fontWeight: 600 }}
+                          >
+                            ID: {u.id?.substring(u.id.length - 8).toUpperCase()}
+                          </Typography>
+                        </Stack>
+
+                        {u.suspended && (
+                          <Box
+                            sx={{
+                              mt: 2,
+                              p: 1.5,
+                              bgcolor: "#fff5f5",
+                              borderRadius: "10px",
+                              border: "1px solid #fed7d7",
+                              display: "flex",
+                              alignItems: "flex-start",
+                              gap: 1,
+                            }}
+                          >
+                            <PersonOff
+                              sx={{
+                                color: "#e53e3e",
+                                fontSize: "1.1rem",
+                                mt: 0.3,
+                              }}
+                            />
+                            <Box>
+                              <Typography
+                                variant="caption"
+                                fontWeight={800}
+                                sx={{ color: "#c53030", display: "block" }}
+                              >
+                                ĐÃ ĐÌNH CHỈ
+                              </Typography>
+                              <Typography
+                                variant="body2"
+                                sx={{ color: "#9b2c2c", fontWeight: 500 }}
+                              >
+                                Lý do:{" "}
+                                {u.latestReason ||
+                                  u.suspendReason ||
+                                  "Không có lý do cụ thể"}
+                              </Typography>
+                            </Box>
+                          </Box>
+                        )}
+                      </Box>
+
+                      <Stack
+                        direction={{ xs: "column", sm: "row" }}
+                        spacing={2}
+                        alignItems="center"
+                        sx={{ width: { xs: "100%", sm: "auto" } }}
+                      >
+                        {!u.suspended && (
+                          <TextField
+                            size="small"
+                            placeholder="Nhập lý do đình chỉ..."
+                            value={reasonInput[u.id] ?? ""}
+                            onChange={(e) =>
+                              setReasonInput((r) => ({
+                                ...r,
+                                [u.id]: e.target.value,
+                              }))
+                            }
+                            sx={{
+                              width: { xs: "100%", sm: 250 },
+                              "& .MuiOutlinedInput-root": {
+                                borderRadius: "10px",
+                                bgcolor: "#fff",
+                              },
+                            }}
+                          />
+                        )}
+
+                        <Button
+                          fullWidth={false}
+                          variant={u.suspended ? "outlined" : "contained"}
+                          color={u.suspended ? "success" : "error"}
+                          onClick={() => toggleSuspend(u.id)}
+                          disabled={!!loadingIds[u.id]}
+                          startIcon={
+                            loadingIds[u.id] ? (
+                              <CircularProgress size={16} color="inherit" />
+                            ) : u.suspended ? (
+                              <Person />
+                            ) : (
+                              <PersonOff />
+                            )
+                          }
+                          sx={{
+                            minWidth: 140,
+                            height: "40px",
+                            borderRadius: "10px",
+                            fontWeight: 700,
+                            textTransform: "none",
+                            boxShadow: u.suspended
+                              ? "none"
+                              : "0 4px 14px rgba(229, 62, 62, 0.3)",
+                          }}
+                        >
+                          {loadingIds[u.id]
+                            ? "Đang xử lý"
+                            : u.suspended
+                              ? "Gỡ đình chỉ"
+                              : "Đình chỉ"}
+                        </Button>
+                      </Stack>
+                    </Stack>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </Stack>
+        )}
+
+        <Snackbar
+          open={snack.open}
+          autoHideDuration={4000}
+          onClose={() => setSnack((s) => ({ ...s, open: false }))}
+          anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+        >
+          <Alert
+            severity={snack.severity}
+            onClose={() => setSnack((s) => ({ ...s, open: false }))}
+            variant="filled"
+            sx={{ borderRadius: "12px", fontWeight: 600 }}
+          >
+            {snack.message}
+          </Alert>
+        </Snackbar>
+      </Container>
     </Box>
   );
 };

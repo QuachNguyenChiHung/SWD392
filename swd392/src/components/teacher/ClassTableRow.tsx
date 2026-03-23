@@ -14,6 +14,13 @@ import { Link as RouterLink } from "react-router-dom";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
 import type { Class } from "../../types/teacherType";
 import { useEffect } from "react";
+import {
+  flatButton,
+  flatButtonContained,
+  tableBodyRow,
+  COLORS,
+  RADIUS,
+} from "../../pages/teacher/teacherStyles";
 
 interface ClassTableRowProps extends Class {
   onStatusChange?: (
@@ -54,25 +61,44 @@ const ClassTableRow = ({
   }, [status]);
 
   return (
-    <TableRow hover>
+    <TableRow sx={tableBodyRow}>
       <TableCell>
-        <Typography variant="subtitle2">{class_name}</Typography>
+        <Typography sx={{ fontWeight: 600, fontSize: "0.875rem", color: COLORS.textDark }}>
+          {class_name}
+        </Typography>
       </TableCell>
       <TableCell>
-        <Typography variant="body2" sx={{ fontFamily: "monospace" }}>
+        <Typography
+          sx={{
+            fontFamily: "monospace",
+            fontSize: "0.8rem",
+            color: COLORS.textSecondary,
+          }}
+        >
           {course_id}
         </Typography>
       </TableCell>
-      <TableCell>{createdAt}</TableCell>
+      <TableCell>
+        <Typography sx={{ fontSize: "0.85rem", color: COLORS.textDark }}>
+          {createdAt}
+        </Typography>
+      </TableCell>
       <TableCell>
         <Stack direction="row" spacing={1} alignItems="center">
-          <Typography variant="body2" sx={{ fontFamily: "monospace" }}>
+          <Typography
+            sx={{
+              fontFamily: "monospace",
+              fontSize: "0.8rem",
+              color: COLORS.textDark,
+            }}
+          >
             {showKey ? keypass : maskKey(keypass)}
           </Typography>
           <Tooltip title={showKey ? "Hide class key" : "Show class key"}>
             <IconButton
               size="small"
               onClick={() => setShowKey((prev) => !prev)}
+              sx={{ color: COLORS.textSecondary }}
             >
               {showKey ? (
                 <VisibilityOff fontSize="small" />
@@ -107,9 +133,13 @@ const ClassTableRow = ({
             }}
             sx={{
               minWidth: 100,
+              borderRadius: RADIUS,
               '& .MuiSelect-select': {
                 py: 0.5,
                 fontSize: '0.8rem',
+              },
+              '& .MuiOutlinedInput-notchedOutline': {
+                borderColor: COLORS.border,
               },
             }}
           >
@@ -123,13 +153,13 @@ const ClassTableRow = ({
             variant="contained"
             component={RouterLink}
             to={`/teacher/class/${_id}`}
+            sx={flatButtonContained}
           >
             Xem chi tiết
           </Button>
           <Button
             size="small"
-            color="success"
-            variant="contained"
+            variant="outlined"
             onClick={() =>
               onChangeImage?.({
                 _id,
@@ -145,6 +175,16 @@ const ClassTableRow = ({
                 image_cover_id,
               })
             }
+            sx={{
+              ...flatButton,
+              borderColor: COLORS.border,
+              color: COLORS.textDark,
+              "&:hover": {
+                borderColor: COLORS.accent,
+                bgcolor: COLORS.accentLight,
+                boxShadow: "none",
+              },
+            }}
           >
             Đổi ảnh
           </Button>

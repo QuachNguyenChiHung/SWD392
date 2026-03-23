@@ -2,6 +2,7 @@ import { Box, Typography, Button } from "@mui/material";
 import { Download } from "@mui/icons-material";
 import type { FileMaterial } from "../../types/teacherType";
 import { isImageExtension, isPdfExtension, isPptxExtension } from "./viewerUtils";
+import { COLORS, RADIUS, flatButtonContained } from "../../pages/teacher/teacherStyles";
 
 interface FileViewerProps {
     content: FileMaterial;
@@ -15,12 +16,12 @@ export default function FileViewer({ content }: FileViewerProps) {
 
     return (
         <Box>
-            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                Tên tệp: <strong>{content.file_name}</strong>
+            <Typography sx={{ fontSize: "0.85rem", color: COLORS.textSecondary, mb: 2 }}>
+                Tên tệp: <strong style={{ color: COLORS.textDark }}>{content.file_name}</strong>
             </Typography>
 
             {isPptx && (
-                <Typography variant="caption" color="info.main" sx={{ display: 'block', mb: 1 }}>
+                <Typography sx={{ fontSize: "0.75rem", color: COLORS.info, mb: 1.5, fontWeight: 500 }}>
                     Tệp PowerPoint đang được hiển thị dưới dạng PDF
                 </Typography>
             )}
@@ -32,10 +33,9 @@ export default function FileViewer({ content }: FileViewerProps) {
                     alt={content.file_name}
                     sx={{
                         maxWidth: "100%",
-                        maxHeight: 420,
-                        borderRadius: 2,
-                        border: "1px solid",
-                        borderColor: "divider",
+                        maxHeight: 500,
+                        borderRadius: RADIUS,
+                        border: `1px solid ${COLORS.border}`,
                         objectFit: "contain",
                         display: "block",
                         mt: 1,
@@ -44,9 +44,11 @@ export default function FileViewer({ content }: FileViewerProps) {
                         (e.target as HTMLImageElement).style.display = "none";
                         const errorMsg = document.createElement("div");
                         errorMsg.textContent = "Không thể tải hình ảnh";
-                        errorMsg.style.color = "red";
+                        errorMsg.style.color = COLORS.error;
                         errorMsg.style.textAlign = "center";
                         errorMsg.style.padding = "20px";
+                        errorMsg.style.backgroundColor = COLORS.errorBg;
+                        errorMsg.style.borderRadius = RADIUS;
                         (e.target as HTMLImageElement).parentNode?.appendChild(errorMsg);
                     }}
                 />
@@ -61,30 +63,38 @@ export default function FileViewer({ content }: FileViewerProps) {
                         sx={{
                             width: "100%",
                             height: 600,
-                            border: "1px solid",
-                            borderColor: "divider",
-                            borderRadius: 2,
+                            border: `1px solid ${COLORS.border}`,
+                            borderRadius: RADIUS,
                             mt: 1,
+                            bgcolor: COLORS.bg,
                         }}
                     />
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+                    <Typography sx={{ fontSize: "0.75rem", color: COLORS.textSecondary, mt: 1.5 }}>
                         {isPdf ? 'Nếu PDF không hiển thị, vui lòng tải về để xem' : 'Nếu không hiển thị, vui lòng tải về để xem'}
                     </Typography>
                 </Box>
             )}
 
             {!isImage && !canShowAsPdf && (
-                <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                <Typography sx={{ fontSize: "0.85rem", color: COLORS.textSecondary, mt: 1 }}>
                     Không thể xem trước loại tệp này. Vui lòng tải về để xem.
                 </Typography>
             )}
 
             <Button
-                variant="outlined"
+                variant="contained"
                 startIcon={<Download />}
                 href={content.file_path}
                 download={content.file_name}
-                sx={{ mt: 2 }}
+                sx={{
+                    ...flatButtonContained,
+                    mt: 3,
+                    bgcolor: COLORS.info,
+                    "&:hover": {
+                        bgcolor: "#2563EB",
+                        boxShadow: "none",
+                    },
+                }}
             >
                 Tải tệp về
             </Button>
