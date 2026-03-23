@@ -30,26 +30,27 @@ const AuthLayout = () => {
             <Grid
               size={{ xs: 12, md: 6 }}
               sx={{
-                position: 'relative',
                 minHeight: { xs: 320, md: 620 },
                 p: { xs: 3, md: 5 },
                 color: '#f2f8ff',
-                backgroundImage:
-                  'linear-gradient(140deg, rgba(8,54,96,0.92), rgba(14,116,145,0.83)), url(/sample/sample_data.gif)',
+                backgroundImage: 'url(/loginImage.png)',
+                backgroundRepeat: 'no-repeat',
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
+                overflow: 'hidden',
               }}
             >
-              <Box
+              <Stack
+                spacing={2.2}
                 sx={{
-                  position: 'absolute',
-                  inset: 0,
-                  background:
-                    'radial-gradient(circle at 80% 18%, rgba(255,191,105,0.35), transparent 38%), radial-gradient(circle at 15% 82%, rgba(139,233,253,0.25), transparent 32%)',
+                  maxWidth: 500,
+                  p: { xs: 2, md: 2.6 },
+                  borderRadius: 3,
+                  backgroundColor: 'rgba(6, 33, 58, 0.45)',
+                  backdropFilter: 'blur(2px)',
+                  border: '1px solid rgba(255,255,255,0.2)',
                 }}
-              />
-
-              <Stack spacing={2.2} sx={{ position: 'relative', zIndex: 1, maxWidth: 500 }}>
+              >
                 <Chip
                   icon={<Biotech sx={{ color: '#1f4b2f !important' }} />}
                   label="Nền tảng LMS Hóa học THPT"
