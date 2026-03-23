@@ -433,7 +433,7 @@ route.post("/teacher/ai-chad", verifyRole.verifyTeacher, async (req, res, next) 
 // ─── AI Quiz ──────────────────────────────────────────────────────────────────
 route.post("/teacher/ai-create-quiz", verifyRole.verifyTeacher, async (req, res, next) => {
     try {
-        const { topicTitle, topicDescription, count = 5, mcCount = 5, tfCount = 0 } = req.body;
+        const { topicTitle, topicDescription, count = 5, mcCount = 5, tfCount = 0, notes } = req.body;
         if (!topicTitle) return res.status(400).json({ message: "topicTitle is required" });
         const userId = (req as any).user?.id ?? null;
 
@@ -469,6 +469,7 @@ Constraints:
 - "correct_index" must be a 0-based index into the options array.
 - Keep all values JSON-safe strings (no HTML).
 - Topic context: Title: "${topicTitle}" Description: "${topicDescription || ""}".
+- Content value: User request (IMPORTANT): generated content must fit user request:"${notes}".
 - Output JSON only, no surrounding text or explanation.`;
 
         const aiResponse = await runModel(prompt);
@@ -487,7 +488,8 @@ Constraints:
             AiRepo.saveContent(savedRequest._id as any, "quiz", {
                 title: parsed.content.title || topicTitle,
                 questionCount: parsed.content.questions?.length || 0,
-                content: parsed.content
+                content: parsed.content,
+                prompt: notes
             }, aiResponse).catch(() => null);
         }
 
@@ -549,12 +551,10 @@ Rules:
 }`;
 
         const aiResponse = await runModel(prompt);
-        console.log("----- AI SLIDE RAW RESPONSE -----");
-        console.log(aiResponse);
-        console.log("---------------------------------");
+
 
         // Save request to DB (fire-and-forget, don't block the response)
-        const savedRequest = await AiRepo.saveRequest(userId, prompt, "slide").catch(() => null);
+        const savedRequest = await AiRepo.saveRequest(userId, notes, "slide").catch(() => null);
 
         const parsed = extractJsonWrapper(aiResponse);
         if (!parsed || !Array.isArray(parsed.content)) {
@@ -684,7 +684,7 @@ Design rules you MUST follow:
         let html = stripMarkdownFences(parsed.content);
 
         // DB persistence
-        const savedRequest = await AiRepo.saveRequest(userId, prompt, "pdf").catch(() => null);
+        const savedRequest = await AiRepo.saveRequest(userId, notes, "pdf").catch(() => null);
         if (savedRequest) {
             AiRepo.saveContent(savedRequest._id as any, "pdf", {
                 title: topicTitle,
