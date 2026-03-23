@@ -28,8 +28,6 @@
  *       properties:
  *         _id:
  *           type: string
- *         user:
- *           $ref: '#/components/schemas/User'
  *         credential:
  *           type: string
  *           nullable: true
@@ -66,11 +64,20 @@
  *         description: Teacher document ID
  *     responses:
  *       200:
- *         description: Teacher details with populated user
+ *         description: Teacher credential plus populated user information (password excluded)
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/TeacherResponse'
+ *             example:
+ *               credential: "https://res.cloudinary.com/demo/raw/upload/v123/files/credential.pdf"
+ *               user:
+ *                 _id: "507f1f77bcf86cd799439011"
+ *                 username: "john_doe"
+ *                 email: "john@example.com"
+ *                 role: "teacher"
+ *                 status: "active"
+ *                 date_create: "2026-03-01T08:00:00.000Z"
  *       404:
  *         description: Teacher not found
  *         content:
@@ -78,7 +85,7 @@
  *             schema:
  *               type: object
  *               properties:
- *                 error:
+ *                 message:
  *                   type: string
  *                   example: "Teacher not found"
  *
@@ -101,11 +108,20 @@
  *         description: User document ID
  *     responses:
  *       200:
- *         description: Teacher details for the given user
+ *         description: Teacher credential plus populated user information for the given user ID
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/TeacherResponse'
+ *             example:
+ *               credential: "https://res.cloudinary.com/demo/raw/upload/v123/files/credential.pdf"
+ *               user:
+ *                 _id: "507f1f77bcf86cd799439011"
+ *                 username: "john_doe"
+ *                 email: "john@example.com"
+ *                 role: "teacher"
+ *                 status: "active"
+ *                 date_create: "2026-03-01T08:00:00.000Z"
  *       404:
  *         description: Teacher not found for the given user
  *         content:
@@ -113,7 +129,7 @@
  *             schema:
  *               type: object
  *               properties:
- *                 error:
+ *                 message:
  *                   type: string
- *                   example: "Teacher not found for the provided userId"
+ *                   example: "Teacher not found for the given user"
  */

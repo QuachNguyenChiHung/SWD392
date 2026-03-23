@@ -7,7 +7,7 @@ const client = new Anthropic({
 
 async function runModel(prompt: string) {
     const msg = await client.messages.create({
-        model: process.env.CLAUDE_KEY_MODAL || "Blaude-Baiku-4.5",
+        model: process.env.CLAUDE_KEY_MODAL_SECONDARY || "Blaude-Baiku-4.5",
         max_tokens: 10024,
         messages: [
             { role: "user", content: prompt }
@@ -22,7 +22,7 @@ interface ChatMessage {
 }
 async function runModelWithHistory(prompt: ChatMessage[]) {
     const msg = await client.messages.create({
-        model: process.env.CLAUDE_KEY_MODAL || "Blaude-Baiku-4.5",
+        model: process.env.CLAUDE_KEY_MODAL_SECONDARY || "Blaude-Baiku-4.5",
         max_tokens: 2024,
         messages: prompt.map(m => ({ role: m.sender === "user" ? "user" : "assistant", content: m.content }))
     });
