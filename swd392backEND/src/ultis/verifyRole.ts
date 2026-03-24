@@ -5,21 +5,10 @@ import { Admin } from "../entities/Admin.ts";
 import { Teacher } from "../entities/Teacher.ts";
 
 class VerifyRole {
-    // Helper method to extract token from cookie or header
-    private getToken(req: Request): string | undefined {
-        // First try to get from Authorization header (for cross-domain)
-        const authHeader = req.headers.authorization;
-        if (authHeader && authHeader.startsWith('Bearer ')) {
-            return authHeader; // Already includes "Bearer " prefix
-        }
-        
-        // Fallback to signed cookie (for same-domain)
-        return req.signedCookies.Authorization;
-    }
-
+    
     async verifyAdmin(req: Request, res: Response, next: NextFunction) {// verify if the user is an admin
         try {
-            const token = this.getToken(req);
+            const token = req.signedCookies.Authorization;
             const user = await UserService.getUserByToken(token as string);
             const verified = UserGetFromTokenSchema.parse(user);
 
@@ -37,7 +26,7 @@ class VerifyRole {
     }
     async verifyAdminOrModerator(req: Request, res: Response, next: NextFunction) {// verify if the user is an admin or moderator
         try {
-            const token = this.getToken(req);
+            const token = req.signedCookies.Authorization;
             const user = await UserService.getUserByToken(token as string);
             const verified = UserGetFromTokenSchema.parse(user);
             // Check if user is admin (authorization_lvl === 2)
@@ -61,7 +50,7 @@ class VerifyRole {
 
     async verifyTeacher(req: Request, res: Response, next: NextFunction) {// verify if the user is a teacher
         try {
-            const token = this.getToken(req);
+            const token = req.signedCookies.Authorization;
             const user = await UserService.getUserByToken(token as string);
             const verified = UserGetFromTokenSchema.parse(user);
             console.log("Verified user from token:", verified);
@@ -81,7 +70,7 @@ class VerifyRole {
     }
     async verifyUser(req: Request, res: Response, next: NextFunction) {// verify if the user is a teacher
         try {
-            const token = this.getToken(req);
+            const token = req.signedCookies.Authorization;
             const user = await UserService.getUserByToken(token as string);
             const verified = UserGetFromTokenSchema.parse(user);
             console.log("Verified user from token:", verified);
@@ -94,7 +83,7 @@ class VerifyRole {
     }
     async verifyModerator(req: Request, res: Response, next: NextFunction) {//verify if the user is a moderator
         try {
-            const token = this.getToken(req);
+            const token = req.signedCookies.Authorization;
             const user = await UserService.getUserByToken(token as string);
             const verified = UserGetFromTokenSchema.parse(user);
 
@@ -114,7 +103,7 @@ class VerifyRole {
 
     async verifyStudent(req: Request, res: Response, next: NextFunction) {// verify if the user is a student
         try {
-            const token = this.getToken(req);
+            const token = req.signedCookies?.Authorization;
             const user = await UserService.getUserByToken(token as string);
             const verified = UserGetFromTokenSchema.parse(user);
             if (verified.role === 'student') {
