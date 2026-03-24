@@ -5,7 +5,17 @@ import UserService from "../services/UserService.ts";
 class DashboardController {
     async getDashboard(req: Request, res: Response, next: NextFunction) {
         try {
-            const user = await UserService.getUserByToken(req.signedCookies.Authorization);
+            // Check Authorization header first (for cross-domain), then fall back to signed cookies
+            let token = req.headers.authorization;
+            if (!token || !token.startsWith('Bearer ')) {
+                token = req.signedCookies.Authorization;
+            }
+            
+            if (!token) {
+                return res.status(401).json({ message: "No token provided" });
+            }
+            
+            const user = await UserService.getUserByToken(token);
             if (!user) return res.status(401).json({ message: "Unauthorized" });
 
             const handlers: Record<string, () => Promise<any>> = {
