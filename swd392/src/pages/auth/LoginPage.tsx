@@ -35,12 +35,22 @@ const LoginPage = () => {
     setLoading(true);
 
     try {
+      console.log('🔍 Starting regular login...');
       await login(email, password);
 
+      console.log('✅ Login successful, reading user from localStorage');
       // Get the logged in user's role from the response
       const user = JSON.parse(localStorage.getItem('user') || '{}');
+      console.log('🔍 User from localStorage:', user);
+      
+      if (!user || !user.role) {
+        throw new Error('User data not found after login');
+      }
+      
+      console.log('🔍 Navigating to:', roleRoutes[user.role] || '/dashboard');
       navigate(roleRoutes[user.role] || '/dashboard');
     } catch (err: any) {
+      console.error('❌ Login error:', err);
       setError(err.message || 'Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.');
     } finally {
       setLoading(false);
@@ -51,11 +61,27 @@ const LoginPage = () => {
     setError('');
     setLoading(true);
     try {
+      console.log('🔍 Google credential response:', credentialResponse);
+      
+      if (!credentialResponse?.credential) {
+        throw new Error('No credential received from Google');
+      }
+      
+      console.log('🔍 Calling googleLogin...');
       await googleLogin(credentialResponse.credential);
 
+      console.log('✅ Google login successful, reading user from localStorage');
       const user = JSON.parse(localStorage.getItem('user') || '{}');
+      console.log('🔍 User from localStorage:', user);
+      
+      if (!user || !user.role) {
+        throw new Error('User data not found after login');
+      }
+      
+      console.log('🔍 Navigating to:', roleRoutes[user.role] || '/dashboard');
       navigate(roleRoutes[user.role] || '/dashboard');
     } catch (err: any) {
+      console.error('❌ Google login error:', err);
       setError(err.message || 'Đăng nhập bằng Google thất bại.');
     } finally {
       setLoading(false);

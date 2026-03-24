@@ -28,18 +28,24 @@ export interface ApiError {
 class AuthService {
     async login(credentials: LoginRequest): Promise<AuthResponse> {
         try {
+            console.log('🔍 Starting login with email:', credentials.email);
             // Backend expects email and password, and sets signed cookie automatically
             const loginResponse = await apiService.post('/login', credentials);
+            console.log('🔍 Login response:', JSON.stringify(loginResponse, null, 2));
 
             if (!loginResponse?.token) {
+                console.error('❌ No token in login response:', loginResponse);
                 throw new Error('Login failed - no token received');
             }
 
+            console.log('✅ Token received, storing in localStorage');
             // Store token in localStorage as backup (backend uses signed cookies as primary)
             localStorage.setItem('token', loginResponse.token);
 
+            console.log('🔍 Fetching current user...');
             // Get user data from /me endpoint
             const userResponse = await this.getCurrentUser();
+            console.log('✅ User fetched:', userResponse);
 
             return {
                 success: true,
@@ -47,7 +53,7 @@ class AuthService {
                 token: loginResponse.token
             };
         } catch (error: any) {
-            console.error('Login API error:', error);
+            console.error('❌ Login API error:', error);
             // Extract proper error message
             const errorMessage = error?.message || 'Login failed';
             throw new Error(errorMessage);
@@ -56,15 +62,21 @@ class AuthService {
 
     async googleLogin(credential: string): Promise<AuthResponse> {
         try {
+            console.log('🔍 Starting Google login with credential:', credential?.substring(0, 20) + '...');
             const loginResponse = await apiService.post('/google-login', { credential });
+            console.log('🔍 Google login response:', JSON.stringify(loginResponse, null, 2));
 
             if (!loginResponse?.token) {
+                console.error('❌ No token in Google login response:', loginResponse);
                 throw new Error('Google login failed - no token received');
             }
 
+            console.log('✅ Token received, storing in localStorage');
             localStorage.setItem('token', loginResponse.token);
 
+            console.log('🔍 Fetching current user...');
             const userResponse = await this.getCurrentUser();
+            console.log('✅ User fetched:', userResponse);
 
             return {
                 success: true,
@@ -72,7 +84,7 @@ class AuthService {
                 token: loginResponse.token
             };
         } catch (error: any) {
-            console.error('Google login API error:', error);
+            console.error('❌ Google login API error:', error);
             const errorMessage = error?.message || 'Google login failed';
             throw new Error(errorMessage);
         }
