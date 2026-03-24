@@ -129,7 +129,11 @@ class AuthService {
 
     async getCurrentUser(): Promise<User> {
         try {
+            console.log('🔍 [getCurrentUser] Calling /me endpoint...');
+            console.log('🔍 [getCurrentUser] Token in localStorage:', localStorage.getItem('token')?.substring(0, 30) + '...');
+            
             const response = await apiService.get('/me');
+            console.log('🔍 [getCurrentUser] Response received:', JSON.stringify(response, null, 2));
 
             // Backend returns { user: userData }
             const user = response.user || response;
@@ -143,13 +147,14 @@ class AuthService {
                     role: user.role
                 };
 
+                console.log('✅ [getCurrentUser] User transformed:', transformedUser);
                 localStorage.setItem('user', JSON.stringify(transformedUser));
                 return transformedUser;
             }
 
             throw new Error('No user data received');
         } catch (error) {
-            console.error('Get current user failed:', error);
+            console.error('❌ [getCurrentUser] Error:', error);
             // Clear invalid tokens
             this.clearLocalAuth();
             throw error;

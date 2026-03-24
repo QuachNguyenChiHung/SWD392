@@ -19,14 +19,20 @@ class ApiService {
         this.axiosInstance.interceptors.request.use(
             (config) => {
                 const token = localStorage.getItem('token');
+                console.log('🔍 [Axios Interceptor] Token from localStorage:', token ? token.substring(0, 30) + '...' : 'NULL');
+                
                 if (token) {
                     config.headers.Authorization = `Bearer ${token}`;
+                    console.log('✅ [Axios Interceptor] Authorization header set:', config.headers.Authorization.substring(0, 40) + '...');
+                } else {
+                    console.log('⚠️ [Axios Interceptor] No token found in localStorage');
                 }
-                console.log(`API Request: ${config.method?.toUpperCase()} ${config.baseURL}${config.url}`);
+                
+                console.log(`🔍 [Axios Request] ${config.method?.toUpperCase()} ${config.baseURL}${config.url}`);
                 return config;
             },
             (error) => {
-                console.error('Request interceptor error:', error);
+                console.error('❌ [Axios Interceptor] Request error:', error);
                 return Promise.reject(error);
             }
         );
