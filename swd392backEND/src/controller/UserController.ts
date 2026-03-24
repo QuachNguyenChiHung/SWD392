@@ -267,6 +267,8 @@ class UserController {
           .json({ message: "Password or email is incorrect" });
       }
       const token = await UserService.generateToken({ id_: p._id });
+      console.log('✅ [loginUser] Token generated:', token.substring(0, 20) + '...');
+      
       res.cookie("Authorization", `Bearer ${token}`, {
         expires: new Date(Date.now() + 3600000),
         httpOnly: true,
@@ -275,27 +277,36 @@ class UserController {
         signed: true,
       });
 
+      console.log('✅ [loginUser] Returning token in response');
       return res.status(200).json({ token: token });
     } catch (error: any) {
+      console.error('❌ [loginUser] Error:', error);
       next(error);
     }
   }
   async googleLogin(req: Request, res: Response, next: NextFunction) {
     try {
       const { credential } = googleLoginSchema.parse(req.body);
+      console.log('🔍 [googleLogin] Received credential:', credential.substring(0, 20) + '...');
+      
       const user = await UserService.googleLogin(credential);
+      console.log('✅ [googleLogin] User authenticated:', user.email);
 
       const token = await UserService.generateToken({ id_: user._id });
+      console.log('✅ [googleLogin] Token generated:', token.substring(0, 20) + '...');
+      
       res.cookie("Authorization", `Bearer ${token}`, {
         expires: new Date(Date.now() + 3600000),
         httpOnly: true,
-                secure:true,
+        secure:true,
         sameSite: "none",
         signed: true,
       });
 
+      console.log('✅ [googleLogin] Returning token in response');
       return res.status(200).json({ token });
     } catch (error: any) {
+      console.error('❌ [googleLogin] Error:', error);
       next(error);
     }
   }
@@ -303,23 +314,31 @@ class UserController {
     try {
       // Check Authorization header first (for cross-domain), then fall back to signed cookies
       let token = req.headers.authorization;
+      console.log('🔍 [getUserInfo] Authorization header:', token);
+      
       if (!token || !token.startsWith('Bearer ')) {
         token = req.signedCookies.Authorization;
+        console.log('🔍 [getUserInfo] Falling back to signed cookie:', token);
       }
       
       if (!token) {
+        console.error('❌ [getUserInfo] No token provided');
         return res.status(401).json({ message: "No token provided" });
       }
       
+      console.log('🔍 [getUserInfo] Getting user by token...');
       const verified = UserGetFromTokenSchema.parse(
         await UserService.getUserByToken(token as string),
       );
-      console.log(verified);
+      console.log('✅ [getUserInfo] User verified:', verified);
+      
       if (!verified) {
+        console.error('❌ [getUserInfo] Invalid or expired token');
         return res.status(401).json({ message: "Invalid or expired token" });
       }
       return res.status(200).json({ user: verified });
     } catch (error: any) {
+      console.error('❌ [getUserInfo] Error:', error);
       next(error);
     }
   }

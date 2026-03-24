@@ -140,19 +140,27 @@ class UserService {
   }
   async getUserByToken(token: string) {
     try {
+      console.log('🔍 [getUserByToken] Received token:', token?.substring(0, 30) + '...');
+      
       // Bearer 'token' or just 'token'
       const split = (
         token.startsWith("Bearer ") ? token.split(" ")[1] : token
       ) as string;
+      
+      console.log('🔍 [getUserByToken] Token after split:', split?.substring(0, 30) + '...');
+      
       const decoded = jwt.verify(
         split,
         process.env.SECRET_KEY as string,
       ) as any;
 
+      console.log('✅ [getUserByToken] Token decoded, user ID:', decoded.id_);
+
       let user = await this.getUserById(decoded.id_);
       const { password, status, username, email, date_create, _id, role } =
         user as IUser;
-      return {
+      
+      const result = {
         password,
         status,
         username,
@@ -161,7 +169,11 @@ class UserService {
         id: _id.toString(),
         role,
       };
+      
+      console.log('✅ [getUserByToken] Returning user:', result.email, result.role);
+      return result;
     } catch (error) {
+      console.error('❌ [getUserByToken] Error:', error);
       return null;
     }
   }
